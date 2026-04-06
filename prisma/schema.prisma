@@ -1,0 +1,244 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ─── Blog ────────────────────────────────────────────────────────────────────
+
+model Post {
+  id            String     @id @default(cuid())
+  title         String
+  slug          String     @unique
+  content       String
+  excerpt       String?
+  featuredImage String?
+  status        PostStatus @default(DRAFT)
+  publishedAt   DateTime?
+  scheduledFor  DateTime?
+  seoTitle      String?
+  seoDesc       String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  tags          Tag[]      @relation("PostTags")
+  category      Category?  @relation(fields: [categoryId], references: [id])
+  categoryId    String?
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  name  String @unique
+  slug  String @unique
+  posts Post[] @relation("PostTags")
+}
+
+model Category {
+  id    String @id @default(cuid())
+  name  String @unique
+  slug  String @unique
+  posts Post[]
+}
+
+// ─── Portfolio ───────────────────────────────────────────────────────────────
+
+model Project {
+  id          String      @id @default(cuid())
+  title       String
+  slug        String      @unique
+  summary     String
+  content     String
+  coverImage  String?
+  techTags    String[]
+  type        ProjectType @default(SOFTWARE)
+  githubUrl   String?
+  liveUrl     String?
+  featured    Boolean     @default(false)
+  order       Int         @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum ProjectType {
+  SOFTWARE
+  ROBOTICS
+  HARDWARE
+  RESEARCH
+}
+
+model Skill {
+  id       String        @id @default(cuid())
+  name     String
+  category SkillCategory
+  level    SkillLevel?
+  order    Int           @default(0)
+}
+
+enum SkillCategory {
+  LANGUAGE
+  FRAMEWORK
+  TOOL
+  ROBOTICS
+  EMBEDDED
+  DATABASE
+  OTHER
+}
+
+enum SkillLevel {
+  FAMILIAR
+  PROFICIENT
+  EXPERT
+}
+
+model Experience {
+  id          String    @id @default(cuid())
+  company     String
+  role        String
+  description String
+  startDate   DateTime
+  endDate     DateTime?
+  current     Boolean   @default(false)
+  location    String?
+  type        WorkType  @default(FULLTIME)
+  order       Int       @default(0)
+}
+
+enum WorkType {
+  FULLTIME
+  PARTTIME
+  CONTRACT
+  INTERNSHIP
+  VOLUNTEER
+}
+
+model ExternalLink {
+  id    String   @id @default(cuid())
+  label String
+  url   String
+  type  LinkType
+  icon  String?
+  order Int      @default(0)
+}
+
+enum LinkType {
+  GITHUB
+  LINKEDIN
+  TWITTER
+  YOUTUBE
+  EMAIL
+  OTHER
+}
+
+// ─── Media ───────────────────────────────────────────────────────────────────
+
+model MediaAsset {
+  id         String   @id @default(cuid())
+  filename   String
+  url        String
+  mimeType   String
+  sizeBytes  Int
+  uploadedAt DateTime @default(now())
+}
+
+// ─── AI Agents ───────────────────────────────────────────────────────────────
+
+model Agent {
+  id          String        @id @default(cuid())
+  name        String
+  type        AgentType
+  description String
+  enabled     Boolean       @default(true)
+  schedule    String
+  config      Json
+  lastRunAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  reports     AgentReport[]
+}
+
+enum AgentType {
+  GITHUB_SUMMARIZER
+  BRAND_MONITOR
+  ROBOTICS_NEWS
+  BLOG_SUGGESTER
+  OPPORTUNITY_WATCHER
+  MENTION_TRACKER
+}
+
+model AgentReport {
+  id        String   @id @default(cuid())
+  agentId   String
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  title     String
+  summary   String
+  rawData   Json?
+  sources   String[]
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([agentId])
+}
+
+model MonitoredTopic {
+  id       String   @id @default(cuid())
+  name     String
+  keywords String[]
+  sources  String[]
+  active   Boolean  @default(true)
+}
+
+// ─── Admin Tools ─────────────────────────────────────────────────────────────
+
+model ToolShortcut {
+  id           String  @id @default(cuid())
+  name         String
+  url          String
+  description  String?
+  icon         String?
+  openInNewTab Boolean @default(true)
+  order        Int     @default(0)
+}
+
+// ─── Audit Log ───────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}

@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #0f1117;
+    --bg-elevated: #1a1d27;
+    --bg-border: #2a2d3a;
+    --text-primary: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent: #06b6d4;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-[#0f1117] text-slate-100 font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-cyan-500/30 text-cyan-100;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-cyan-500;
+  }
+}
+
+@layer components {
+  .section-container {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-heading {
+    @apply text-3xl font-bold tracking-tight;
+  }
+
+  .accent-line {
+    @apply w-12 h-0.5 bg-cyan-500 mt-2 mb-8;
+  }
+
+  .card {
+    @apply bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-6 hover:border-cyan-500/40 transition-colors;
+  }
+
+  .tag {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-slate-900 font-semibold rounded-lg transition-colors;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 border border-[#2a2d3a] hover:border-cyan-500/60 text-slate-300 hover:text-cyan-400 font-medium rounded-lg transition-colors;
+  }
+}
