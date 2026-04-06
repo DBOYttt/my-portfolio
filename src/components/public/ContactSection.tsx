@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { OWNER } from "@/lib/mock-data";
 
 export default function ContactSection() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -45,21 +46,30 @@ export default function ContactSection() {
             interesting collaboration. Fill in the form or reach out directly.
           </p>
 
-          <div className="mb-8 flex gap-4">
+          <div className="mb-8 flex gap-4 flex-wrap">
             <a
-              href="mailto:you@example.com"
+              href={`mailto:${OWNER.email}`}
               className="font-mono text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
             >
-              you@example.com
+              {OWNER.email}
             </a>
             <span className="text-[#2a2d3a]">|</span>
             <a
-              href="https://linkedin.com/in/yourusername"
+              href={OWNER.linkedin}
               target="_blank"
               rel="noopener noreferrer"
               className="font-mono text-sm text-slate-400 hover:text-slate-300 transition-colors"
             >
               LinkedIn
+            </a>
+            <span className="text-[#2a2d3a]">|</span>
+            <a
+              href={OWNER.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-sm text-slate-400 hover:text-slate-300 transition-colors"
+            >
+              GitHub
             </a>
           </div>
 

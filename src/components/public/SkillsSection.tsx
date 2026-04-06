@@ -1,21 +1,4 @@
-const skillGroups = [
-  {
-    category: "Languages",
-    skills: ["Python", "TypeScript", "C++", "C", "Rust", "Bash"],
-  },
-  {
-    category: "Frameworks & Libraries",
-    skills: ["Next.js", "React", "FastAPI", "Node.js", "Prisma"],
-  },
-  {
-    category: "Robotics & Embedded",
-    skills: ["ROS2", "ROS", "SLAM", "OpenCV", "Arduino", "STM32", "RTOS"],
-  },
-  {
-    category: "Tools & Infrastructure",
-    skills: ["Docker", "Git", "Linux", "Nginx", "n8n", "PostgreSQL"],
-  },
-];
+import { SKILLS } from "@/lib/mock-data";
 
 export default function SkillsSection() {
   return (
@@ -25,7 +8,7 @@ export default function SkillsSection() {
         <div className="accent-line" />
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {skillGroups.map((group) => (
+          {SKILLS.map((group) => (
             <div key={group.category} className="card">
               <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
                 {group.category}

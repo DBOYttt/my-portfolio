@@ -5,13 +5,18 @@ import SkillsSection from "@/components/public/SkillsSection";
 import ExperienceSection from "@/components/public/ExperienceSection";
 import ProjectsSection from "@/components/public/ProjectsSection";
 import RoboticsSection from "@/components/public/RoboticsSection";
+import BlogPreviewSection from "@/components/public/BlogPreviewSection";
 import ContactSection from "@/components/public/ContactSection";
 import Footer from "@/components/public/Footer";
+import MockModeBanner from "@/components/public/MockModeBanner";
 
 export default function HomePage() {
+  const isMockMode = !process.env.DATABASE_URL;
+
   return (
     <>
       <Nav />
+      {isMockMode && <MockModeBanner />}
       <main>
         <HeroSection />
         <AboutSection />
@@ -19,6 +24,7 @@ export default function HomePage() {
         <ExperienceSection />
         <ProjectsSection />
         <RoboticsSection />
+        <BlogPreviewSection />
         <ContactSection />
       </main>
       <Footer />

@@ -1,35 +1,4 @@
-const projects = [
-  {
-    title: "Autonomous Navigation Robot",
-    summary:
-      "Built a ROS2-based differential drive robot with custom SLAM implementation. Reduced localization error by 40% compared to baseline.",
-    techTags: ["ROS2", "Python", "C++", "SLAM", "OpenCV"],
-    type: "ROBOTICS",
-    githubUrl: "https://github.com/yourusername/project-one",
-    liveUrl: null,
-    slug: "autonomous-navigation-robot",
-  },
-  {
-    title: "Automation Pipeline",
-    summary:
-      "Designed and implemented a data processing pipeline handling 50k+ events/day with sub-100ms latency using async Python and PostgreSQL.",
-    techTags: ["Python", "FastAPI", "PostgreSQL", "Docker", "n8n"],
-    type: "SOFTWARE",
-    githubUrl: "https://github.com/yourusername/project-two",
-    liveUrl: "https://example.com",
-    slug: "automation-pipeline",
-  },
-  {
-    title: "Embedded Sensor System",
-    summary:
-      "Developed a real-time multi-sensor fusion system on STM32, aggregating IMU, GPS, and ultrasonic data for a robotics platform.",
-    techTags: ["C", "STM32", "FreeRTOS", "SPI", "I2C"],
-    type: "HARDWARE",
-    githubUrl: "https://github.com/yourusername/project-three",
-    liveUrl: null,
-    slug: "embedded-sensor-system",
-  },
-];
+import { PROJECTS } from "@/lib/mock-data";
 
 const typeColors: Record<string, string> = {
   ROBOTICS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
@@ -46,14 +15,11 @@ export default function ProjectsSection() {
         <div className="accent-line" />
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
-            <article
-              key={project.slug}
-              className="card flex flex-col group"
-            >
+          {PROJECTS.map((project) => (
+            <article key={project.slug} className="card flex flex-col group">
               <div className="flex items-center justify-between mb-3">
                 <span
-                  className={`text-xs font-medium px-2 py-0.5 rounded border ${typeColors[project.type] ?? typeColors.SOFTWARE}`}
+                  className={`text-xs font-medium px-2 py-0.5 rounded border ${typeColors[project.type] ?? typeColors["SOFTWARE"]}`}
                 >
                   {project.type.charAt(0) + project.type.slice(1).toLowerCase()}
                 </span>
@@ -96,9 +62,7 @@ export default function ProjectsSection() {
 
               <div className="flex flex-wrap gap-1.5">
                 {project.techTags.map((tag) => (
-                  <span key={tag} className="tag">
-                    {tag}
-                  </span>
+                  <span key={tag} className="tag">{tag}</span>
                 ))}
               </div>
             </article>

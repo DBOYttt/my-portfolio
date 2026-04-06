@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { OWNER } from "@/lib/mock-data";
 
 export default function HeroSection() {
   return (
@@ -23,21 +24,16 @@ export default function HeroSection() {
           </p>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-4 animate-slide-up">
-            Your Name
+            {OWNER.name}
           </h1>
 
           <h2 className="text-2xl sm:text-3xl text-slate-400 font-light mb-6 animate-slide-up">
-            Software Engineer.{" "}
-            <span className="text-slate-500">I also build robots.</span>
+            {OWNER.tagline.split(". ")[0]}.{" "}
+            <span className="text-slate-500">{OWNER.tagline.split(". ")[1]}</span>
           </h2>
 
           <p className="text-slate-400 text-lg max-w-xl mb-10 leading-relaxed animate-fade-in">
-            I design and build embedded systems, automation pipelines, and
-            robotics platforms. Currently focused on{" "}
-            <span className="text-slate-300">
-              ROS2, Python, and real-time systems
-            </span>
-            .
+            {OWNER.bio[0]}
           </p>
 
           <div className="flex flex-wrap gap-4 animate-fade-in">
@@ -58,7 +54,7 @@ export default function HeroSection() {
           {/* Social links */}
           <div className="flex gap-5 mt-12">
             <a
-              href="https://github.com/yourusername"
+              href={OWNER.github}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub"
@@ -69,7 +65,7 @@ export default function HeroSection() {
               </svg>
             </a>
             <a
-              href="https://linkedin.com/in/yourusername"
+              href={OWNER.linkedin}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn"

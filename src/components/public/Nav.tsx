@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { OWNER } from "@/lib/mock-data";
 
 const navLinks = [
   { href: "#about", label: "About" },
@@ -37,7 +38,7 @@ export default function Nav() {
             href="/"
             className="font-mono text-cyan-400 font-semibold text-sm tracking-wider hover:text-cyan-300 transition-colors"
           >
-            &gt; your.name
+            &gt; {OWNER.name.toLowerCase().replace(" ", ".")}
           </Link>
 
           {/* Desktop nav */}
