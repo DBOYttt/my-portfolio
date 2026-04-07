@@ -115,21 +115,43 @@ When the admin panel + database are active (Milestone 3+), components will fetch
 
 ## Current Implementation State
 
-### Completed
-- [x] Milestone 1: Project scaffold, Prisma schema, DB models, auth middleware
+### Completed — Milestone 1
+- [x] Next.js 14 scaffold, Prisma schema, DB models, auth middleware
 - [x] Public sections: Nav, Hero, About, Skills, Experience, Projects, Robotics, Blog preview, Contact, Footer
 - [x] Zero-config mockup mode (no DB/env required)
 - [x] Contact form API with rate limiting
 - [x] AI agent scripts: GitHub Summarizer, Robotics News Curator
 - [x] Docker Compose + Nginx production config
 
-### Next Up — Milestone 2
-- [ ] Wire projects/experience sections to pull from DB when available
-- [ ] Project detail pages (`/projects/[slug]`)
-- [ ] Resend email integration on contact form
-- [ ] CV PDF (add real file to `public/cv.pdf`)
-- [ ] SEO: sitemap.xml, robots.txt, JSON-LD Person schema, OG images
-- [ ] Deploy to VPS or Vercel
+### Completed — Milestone 2
+- [x] `src/types/index.ts` — shared TypeScript interfaces (ProjectSummary, ProjectDetail, ExperienceItem, SkillGroup, BlogPostSummary, BlogPostDetail)
+- [x] `src/lib/data.ts` — central async data fetchers; DB-first with mock fallback for all sections
+- [x] All public sections wired to `data.ts` (Projects, Experience, Skills, BlogPreview, Blog page)
+- [x] `/projects/[slug]` — full case study detail page with `generateMetadata` + `generateStaticParams`
+- [x] `/blog/[slug]` — blog post detail page with JSON-LD Article schema
+- [x] Contact form: Resend email delivery + honeypot spam trap
+- [x] `AboutSection.tsx` — renders `public/photo.jpg` when present, SVG placeholder otherwise
+- [x] `sitemap.ts` — dynamic, includes all projects + blog posts, excludes `/admin`
+- [x] `robots.ts` — `Disallow: /admin` and `/api/`
+- [x] JSON-LD Person schema on homepage
+- [x] `opengraph-image.tsx` — dynamic OG image via `next/og` served at `/opengraph-image`
+- [x] `metadataBase` + OWNER-driven root metadata in `layout.tsx`
+
+### Still Needed — Milestone 2 Remainder
+- [ ] Owner provides `public/cv.pdf` (download link exists, file missing)
+- [ ] Owner provides `public/photo.jpg` (conditional render is wired, file missing)
+- [ ] `/projects` — standalone filterable projects index page
+- [ ] GitHub Actions CI: lint + type-check on push
+- [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
+
+### Next — Milestone 3 (Admin Panel + Blog)
+- [ ] `/admin/login` — Auth.js credentials login page
+- [ ] Admin layout: sidebar, dashboard, top bar
+- [ ] Blog CRUD (create/edit/delete posts with markdown editor)
+- [ ] Project CRUD in admin
+- [ ] Skills + Experience editors in admin
+- [ ] Markdown renderer for blog/project content (remark + rehype + syntax highlighting)
+- [ ] Media library (upload to R2 or `public/uploads`)
 
 See `docs/IMPLEMENTATION_PLAN.md` for the full phased breakdown.
 

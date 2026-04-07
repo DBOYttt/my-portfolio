@@ -28,44 +28,46 @@
 
 ---
 
-## Milestone 2 — Full Public Portfolio ⬜
+## Milestone 2 — Full Public Portfolio 🔄
 
 **Goal:** Every public page is complete, SEO-ready, and connected to the database. Site is deployable.
 
 ### Tasks
 
 #### Content pages
-- ⬜ `/projects/[slug]` — full case study detail page
-  - Hero with cover image, problem/approach/outcome sections
-  - Tech stack tags, GitHub link, live demo link
-  - "← Back to projects" navigation
+- ✅ `/projects/[slug]` — full case study detail page with cover image placeholder, tech tags, GitHub/live links, "← Back to projects" nav, `generateMetadata`, `generateStaticParams`
+- ✅ `/blog/[slug]` — blog post detail page with JSON-LD Article schema, `generateMetadata`, `generateStaticParams`
 - ⬜ `/projects` — standalone projects index page (filterable by type)
 - ⬜ `/experience` — standalone timeline page
 
 #### Data layer
-- ⬜ Projects section: fetch from DB when `DATABASE_URL` is set, fall back to `mock-data.ts`
-- ⬜ Experience section: same pattern
-- ⬜ Skills section: same pattern
+- ✅ `src/types/index.ts` — shared interfaces bridging mock and DB shapes
+- ✅ `src/lib/data.ts` — central async fetchers: `getProjects`, `getProjectBySlug`, `getExperience`, `getSkills`, `getBlogPosts`, `getBlogPostBySlug`
+- ✅ Projects section: DB-first with mock fallback
+- ✅ Experience section: DB-first with mock fallback
+- ✅ Skills section: DB-first with mock fallback
+- ✅ Blog preview section + Blog listing page: DB-first with mock fallback
 
 #### Contact form
-- ⬜ Wire Resend email delivery in `/api/contact/route.ts`
-- ⬜ Add honeypot field for spam reduction
+- ✅ Resend email delivery wired in `/api/contact/route.ts`
+- ✅ Honeypot field added for spam reduction
+- ✅ Graceful fallback when `RESEND_API_KEY` is absent (mock mode logs, returns 200)
 
 #### CV
-- ⬜ Add `public/cv.pdf` (owner provides real file)
+- ⬜ Owner must place real file at `public/cv.pdf` — download link exists in Nav and AboutSection
 - ⬜ `/cv` page with brief resume summary + download button
 
 #### SEO
-- ⬜ `sitemap.xml` — via `next-sitemap` or App Router `sitemap.ts`
-- ⬜ `robots.txt` — disallow `/admin`, allow everything else
-- ⬜ JSON-LD `Person` schema on homepage
-- ⬜ JSON-LD `Article` schema on blog posts
-- ⬜ OG image — static initially (`public/og-image.png`), dynamic via `next/og` later
-- ⬜ Per-page `<title>` and `<meta description>` from mock-data/DB
+- ✅ `src/app/sitemap.ts` — dynamic sitemap via App Router, includes all projects + blog posts, excludes `/admin`
+- ✅ `src/app/robots.ts` — `Disallow: /admin` and `/api/`
+- ✅ JSON-LD `Person` schema on homepage (`src/app/page.tsx`)
+- ✅ JSON-LD `Article` schema on every blog post (`src/app/blog/[slug]/page.tsx`)
+- ✅ Dynamic OG image via `next/og` at `/opengraph-image` (`src/app/opengraph-image.tsx`)
+- ✅ `metadataBase` set in `layout.tsx`; all public pages have `generateMetadata` or static `metadata` export
 
 #### Owner photo
-- ⬜ Add real photo to `public/photo.jpg`
-- ⬜ Update `AboutSection.tsx` to use `<Image src="/photo.jpg" alt="..." />`
+- ✅ `AboutSection.tsx` renders `<Image src="/photo.jpg">` when `public/photo.jpg` exists, SVG placeholder otherwise
+- ⬜ Owner must place real photo at `public/photo.jpg`
 
 #### Deployment
 - ⬜ Set up VPS (Hetzner CX22 recommended)
@@ -74,6 +76,11 @@
 - ⬜ PostgreSQL running in Docker
 - ⬜ `npm run db:seed` on first deploy
 - ⬜ GitHub Actions CI: lint + type-check on push
+
+#### Known implementation notes
+- Markdown content in `/projects/[slug]` and `/blog/[slug]` is rendered as plain `<p>` with `whitespace-pre-wrap` — a proper markdown renderer (remark + rehype + syntax highlighting) is deferred to Milestone 3
+- The middleware session check (`src/middleware.ts`) only validates cookie presence, not session validity — full Auth.js session verification is Milestone 3
+- Agent LLM summarization (`agents/github-summarizer.ts`) has an Anthropic API call stub — wiring is Milestone 4
 
 ---
 
