@@ -23,6 +23,7 @@ export default function OGImage() {
       >
         <div
           style={{
+            display: "flex",
             color: "#06b6d4",
             fontSize: "20px",
             marginBottom: "16px",
@@ -33,6 +34,7 @@ export default function OGImage() {
         </div>
         <div
           style={{
+            display: "flex",
             color: "#f8fafc",
             fontSize: "64px",
             fontWeight: "bold",
@@ -43,6 +45,7 @@ export default function OGImage() {
         </div>
         <div
           style={{
+            display: "flex",
             color: "#94a3b8",
             fontSize: "28px",
             marginTop: "16px",
@@ -52,6 +55,7 @@ export default function OGImage() {
         </div>
         <div
           style={{
+            display: "flex",
             color: "#06b6d4",
             fontSize: "18px",
             marginTop: "40px",
