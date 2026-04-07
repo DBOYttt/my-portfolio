@@ -11,10 +11,12 @@ export default function ContactSection() {
     setStatus("loading");
 
     const form = e.currentTarget;
+    const honeypot = (form.elements.namedItem("honeypot") as HTMLInputElement).value;
     const data = {
       name: (form.elements.namedItem("name") as HTMLInputElement).value,
       email: (form.elements.namedItem("email") as HTMLInputElement).value,
       message: (form.elements.namedItem("message") as HTMLTextAreaElement).value,
+      honeypot,
     };
 
     try {
@@ -116,6 +118,16 @@ export default function ContactSection() {
                 placeholder="Tell me about your project or role..."
               />
             </div>
+
+            {/* Honeypot — hidden from real users, traps bots that fill all fields */}
+            <input
+              type="text"
+              name="honeypot"
+              aria-hidden="true"
+              tabIndex={-1}
+              autoComplete="off"
+              className="absolute left-[-9999px] opacity-0 pointer-events-none"
+            />
 
             <button
               type="submit"
