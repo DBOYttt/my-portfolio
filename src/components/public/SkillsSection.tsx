@@ -26,7 +26,7 @@ export default async function SkillsSection() {
         </div>
 
         <p className="mt-6 text-slate-600 text-sm font-mono">
-          // Skills reflect current working knowledge. Not exhaustive.
+          {/* Skills reflect current working knowledge. Not exhaustive. */}
         </p>
       </div>
     </section>

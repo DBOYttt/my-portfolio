@@ -31,7 +31,8 @@ export default function RoboticsSection() {
 
           <div className="mt-10 p-6 border border-dashed border-[#2a2d3a] rounded-xl text-center">
             <p className="text-slate-600 font-mono text-sm">
-              // Project gallery and build logs — add photos to make this section shine
+              {/* Project gallery and build logs — add photos to make this section shine */}
+              Gallery coming soon.
             </p>
           </div>
         </div>

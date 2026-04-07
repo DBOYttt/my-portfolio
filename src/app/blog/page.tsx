@@ -49,7 +49,8 @@ export default async function BlogPage() {
           {posts.length === 0 && (
             <div className="border border-dashed border-[#2a2d3a] rounded-xl p-12 text-center">
               <p className="text-slate-600 font-mono text-sm">
-                // No posts yet — add them in src/lib/mock-data.ts or via the admin panel
+                {/* No posts yet — add them in src/lib/mock-data.ts or via the admin panel */}
+                No posts yet.
               </p>
             </div>
           )}
