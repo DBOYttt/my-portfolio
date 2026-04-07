@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Nav from "@/components/public/Nav";
 import Footer from "@/components/public/Footer";
 import { getBlogPosts } from "@/lib/data";
@@ -23,26 +24,25 @@ export default async function BlogPage() {
 
           <div className="space-y-4">
             {posts.map((post) => (
-              <article
-                key={post.slug}
-                className="card flex flex-col sm:flex-row sm:items-center gap-4 group"
-              >
-                <div className="flex-1">
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {post.tags.map((tag) => (
-                      <span key={tag} className="tag">{tag}</span>
-                    ))}
+              <Link key={post.slug} href={`/blog/${post.slug}`}>
+                <article className="card flex flex-col sm:flex-row sm:items-center gap-4 group">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {post.tags.map((tag) => (
+                        <span key={tag} className="tag">{tag}</span>
+                      ))}
+                    </div>
+                    <h2 className="font-semibold text-slate-100 group-hover:text-cyan-400 transition-colors mb-1">
+                      {post.title}
+                    </h2>
+                    <p className="text-slate-400 text-sm">{post.excerpt}</p>
                   </div>
-                  <h2 className="font-semibold text-slate-100 group-hover:text-cyan-400 transition-colors mb-1">
-                    {post.title}
-                  </h2>
-                  <p className="text-slate-400 text-sm">{post.excerpt}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="font-mono text-xs text-slate-500">{post.date}</p>
-                  <p className="font-mono text-xs text-slate-600">{post.readTime} read</p>
-                </div>
-              </article>
+                  <div className="shrink-0 text-right">
+                    <p className="font-mono text-xs text-slate-500">{post.date}</p>
+                    <p className="font-mono text-xs text-slate-600">{post.readTime} read</p>
+                  </div>
+                </article>
+              </Link>
             ))}
           </div>
 

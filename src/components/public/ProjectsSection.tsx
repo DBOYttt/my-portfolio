@@ -19,8 +19,15 @@ export default async function ProjectsSection() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
-            <article key={project.slug} className="card flex flex-col group">
-              <div className="flex items-center justify-between mb-3">
+            <article key={project.slug} className="card flex flex-col group relative">
+              {/* Overlay link makes the whole card clickable */}
+              <Link
+                href={`/projects/${project.slug}`}
+                className="absolute inset-0 z-0 rounded-xl"
+                aria-label={`View ${project.title} case study`}
+              />
+
+              <div className="flex items-center justify-between mb-3 relative z-10">
                 <span
                   className={`text-xs font-medium px-2 py-0.5 rounded border ${typeColors[project.type] ?? typeColors["SOFTWARE"]}`}
                 >
@@ -56,14 +63,9 @@ export default async function ProjectsSection() {
                 </div>
               </div>
 
-              <Link
-                href={`/projects/${project.slug}`}
-                className="hover:text-cyan-400 transition-colors"
-              >
-                <h3 className="font-semibold text-slate-100 mb-2">
-                  {project.title}
-                </h3>
-              </Link>
+              <h3 className="font-semibold text-slate-100 mb-2 group-hover:text-cyan-400 transition-colors">
+                {project.title}
+              </h3>
               <p className="text-slate-400 text-sm leading-relaxed flex-1 mb-4">
                 {project.summary}
               </p>
