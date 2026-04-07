@@ -131,6 +131,10 @@ export const BLOG_POSTS: {
   date: string;
   readTime: string;
   tags: string[];
+  content: string;
+  seoTitle: string | null;
+  seoDesc: string | null;
+  publishedAt: Date | null;
 }[] = [
   {
     slug: "ros2-slam-from-scratch",
@@ -140,6 +144,10 @@ export const BLOG_POSTS: {
     date: "2024-03-15",
     readTime: "12 min",
     tags: ["ROS2", "SLAM", "Robotics"],
+    content: "*Full post content is not available in preview mode.*",
+    seoTitle: null,
+    seoDesc: null,
+    publishedAt: null,
   },
   {
     slug: "freertos-on-stm32",
@@ -149,6 +157,10 @@ export const BLOG_POSTS: {
     date: "2024-02-08",
     readTime: "8 min",
     tags: ["Embedded", "FreeRTOS", "STM32"],
+    content: "*Full post content is not available in preview mode.*",
+    seoTitle: null,
+    seoDesc: null,
+    publishedAt: null,
   },
   {
     slug: "n8n-home-automation",
@@ -158,5 +170,9 @@ export const BLOG_POSTS: {
     date: "2024-01-22",
     readTime: "6 min",
     tags: ["Automation", "n8n", "Self-hosted"],
+    content: "*Full post content is not available in preview mode.*",
+    seoTitle: null,
+    seoDesc: null,
+    publishedAt: null,
   },
 ];
