@@ -1,6 +1,7 @@
-import { SKILLS } from "@/lib/mock-data";
+import { getSkills } from "@/lib/data";
 
-export default function SkillsSection() {
+export default async function SkillsSection() {
+  const skills = await getSkills();
   return (
     <section id="skills" className="py-24 border-t border-[#2a2d3a]">
       <div className="section-container">
@@ -8,7 +9,7 @@ export default function SkillsSection() {
         <div className="accent-line" />
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {SKILLS.map((group) => (
+          {skills.map((group) => (
             <div key={group.category} className="card">
               <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
                 {group.category}

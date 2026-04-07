@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { BLOG_POSTS } from "@/lib/mock-data";
+import { getBlogPosts } from "@/lib/data";
 
-export default function BlogPreviewSection() {
-  const posts = BLOG_POSTS.slice(0, 3);
+export default async function BlogPreviewSection() {
+  const allPosts = await getBlogPosts();
+  const posts = allPosts.slice(0, 3);
 
   return (
     <section id="blog" className="py-24 border-t border-[#2a2d3a]">

@@ -1,6 +1,7 @@
-import { EXPERIENCE } from "@/lib/mock-data";
+import { getExperience } from "@/lib/data";
 
-export default function ExperienceSection() {
+export default async function ExperienceSection() {
+  const experience = await getExperience();
   return (
     <section id="experience" className="py-24 border-t border-[#2a2d3a]">
       <div className="section-container">
@@ -11,7 +12,7 @@ export default function ExperienceSection() {
           <div className="absolute left-0 top-0 bottom-0 w-px bg-[#2a2d3a] ml-1.5" />
 
           <div className="space-y-10 pl-8">
-            {EXPERIENCE.map((exp, i) => (
+            {experience.map((exp, i) => (
               <div key={i} className="relative">
                 <div className="absolute -left-8 top-1.5 w-3 h-3 rounded-full bg-cyan-500/30 border border-cyan-500" />
                 <div>

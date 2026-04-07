@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import Nav from "@/components/public/Nav";
 import Footer from "@/components/public/Footer";
-import { BLOG_POSTS } from "@/lib/mock-data";
+import { getBlogPosts } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Blog",
   description: "Technical writing on software engineering, robotics, and embedded systems.",
 };
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const posts = await getBlogPosts();
   return (
     <>
       <Nav />
@@ -21,7 +22,7 @@ export default function BlogPage() {
           </p>
 
           <div className="space-y-4">
-            {BLOG_POSTS.map((post) => (
+            {posts.map((post) => (
               <article
                 key={post.slug}
                 className="card flex flex-col sm:flex-row sm:items-center gap-4 group"
@@ -45,7 +46,7 @@ export default function BlogPage() {
             ))}
           </div>
 
-          {BLOG_POSTS.length === 0 && (
+          {posts.length === 0 && (
             <div className="border border-dashed border-[#2a2d3a] rounded-xl p-12 text-center">
               <p className="text-slate-600 font-mono text-sm">
                 // No posts yet — add them in src/lib/mock-data.ts or via the admin panel
