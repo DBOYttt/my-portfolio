@@ -1,3 +1,4 @@
+import { OWNER } from "@/lib/mock-data";
 import Nav from "@/components/public/Nav";
 import HeroSection from "@/components/public/HeroSection";
 import AboutSection from "@/components/public/AboutSection";
@@ -15,6 +16,20 @@ export default function HomePage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Person",
+            name: OWNER.name,
+            url: process.env.NEXT_PUBLIC_BASE_URL ?? "https://yourdomain.com",
+            sameAs: [OWNER.github, OWNER.linkedin],
+            jobTitle: "Software Engineer",
+            email: OWNER.email,
+          }),
+        }}
+      />
       <Nav />
       {isMockMode && <MockModeBanner />}
       <main>

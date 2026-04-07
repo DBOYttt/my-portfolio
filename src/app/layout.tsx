@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { OWNER } from "@/lib/mock-data";
 import "./globals.css";
 
 const inter = Inter({
@@ -8,18 +9,21 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_BASE_URL ?? "https://yourdomain.com"
+  ),
   title: {
-    default: "Your Name — Software Engineer",
-    template: "%s | Your Name",
+    default: `${OWNER.name} — Software Engineer`,
+    template: `%s | ${OWNER.name}`,
   },
-  description:
-    "Software engineer and robotics enthusiast. I build embedded systems, automation pipelines, and robotics platforms.",
-  keywords: ["software engineer", "robotics", "programmer", "portfolio"],
-  authors: [{ name: "Your Name" }],
+  description: OWNER.bio[0],
+  keywords: ["software engineer", "robotics", "embedded systems", "portfolio", OWNER.name],
+  authors: [{ name: OWNER.name }],
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "Your Name — Portfolio",
+    siteName: `${OWNER.name} — Portfolio`,
+    images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
   },
   robots: {
     index: true,
