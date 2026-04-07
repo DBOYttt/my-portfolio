@@ -1,4 +1,5 @@
-import { PROJECTS } from "@/lib/mock-data";
+import Link from "next/link";
+import { getProjects } from "@/lib/data";
 
 const typeColors: Record<string, string> = {
   ROBOTICS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
@@ -7,7 +8,9 @@ const typeColors: Record<string, string> = {
   RESEARCH: "text-purple-400 bg-purple-500/10 border-purple-500/20",
 };
 
-export default function ProjectsSection() {
+export default async function ProjectsSection() {
+  const projects = await getProjects();
+
   return (
     <section id="projects" className="py-24 border-t border-[#2a2d3a]">
       <div className="section-container">
@@ -15,7 +18,7 @@ export default function ProjectsSection() {
         <div className="accent-line" />
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {PROJECTS.map((project) => (
+          {projects.map((project) => (
             <article key={project.slug} className="card flex flex-col group">
               <div className="flex items-center justify-between mb-3">
                 <span
@@ -53,9 +56,14 @@ export default function ProjectsSection() {
                 </div>
               </div>
 
-              <h3 className="font-semibold text-slate-100 mb-2 group-hover:text-cyan-400 transition-colors">
-                {project.title}
-              </h3>
+              <Link
+                href={`/projects/${project.slug}`}
+                className="hover:text-cyan-400 transition-colors"
+              >
+                <h3 className="font-semibold text-slate-100 mb-2">
+                  {project.title}
+                </h3>
+              </Link>
               <p className="text-slate-400 text-sm leading-relaxed flex-1 mb-4">
                 {project.summary}
               </p>

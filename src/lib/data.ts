@@ -13,7 +13,9 @@ import type {
   SkillGroup,
 } from "../types";
 
-const isMock = () => !process.env.DATABASE_URL;
+const isMock = () =>
+  !process.env.DATABASE_URL ||
+  process.env.DATABASE_URL.startsWith("prisma+postgres://");
 
 // ─── Projects ────────────────────────────────────────────────────────────────
 
