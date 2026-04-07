@@ -1,7 +1,8 @@
-# CLAUDE.md — AI Agent Instructions for My Portfolio Platform
+# CLAUDE.md
 
-This file is automatically read by Claude Code at the start of every session.
-Read it fully before making any changes to this codebase.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+> AI Agent Instructions for My Portfolio Platform — read fully before making any changes.
 
 ---
 
@@ -108,6 +109,8 @@ Do NOT hardcode strings in components. When adding a new section that needs cont
 
 When the admin panel + database are active (Milestone 3+), components will fetch from the DB instead. `mock-data.ts` becomes the fallback/seed source.
 
+**Mock mode** is active when `DATABASE_URL` is absent. The homepage (`src/app/page.tsx`) checks `!process.env.DATABASE_URL` to conditionally render `<MockModeBanner />`.
+
 ---
 
 ## Current Implementation State
@@ -141,7 +144,7 @@ Key variables:
 - `DATABASE_URL` — PostgreSQL connection string. If absent, site runs in mock mode.
 - `AUTH_SECRET` — Generate with `openssl rand -base64 32`. Required for admin login.
 - `ADMIN_EMAIL` / `ADMIN_PASSWORD` — Used by `npm run db:seed` to create the admin user.
-- `RESEND_API_KEY` — Required for contact form email delivery.
+- `RESEND_API_KEY` — Required for contact form email delivery. `resend` package is already installed; the integration stub is in `src/app/api/contact/route.ts`.
 - `ANTHROPIC_API_KEY` — Required for AI agent LLM summarization.
 
 ---
@@ -156,6 +159,7 @@ Key variables:
 - Do not add progress bars or percentage meters to the Skills section — they are perceived as arbitrary.
 - Do not add particle effects, typing animations on the hero, or scroll-jacking — ever.
 - Do not expose the admin panel URL in the public sitemap or robots.txt.
+- Do not treat the middleware session check as a full auth guard — it only checks for cookie presence, not validity. Real session verification is planned for Milestone 3 via Auth.js.
 
 ---
 
@@ -184,6 +188,8 @@ CSS classes (defined in globals.css):
 ```bash
 npm run dev          # Start dev server (works without DB — mock mode)
 npm run build        # Production build
+npm run lint         # ESLint via Next.js
+npm run db:generate  # Re-generate Prisma client after schema changes
 npm run db:push      # Apply schema to DB (no migration history)
 npm run db:migrate   # Apply schema with migration history (use in prod)
 npm run db:seed      # Create admin user
