@@ -109,7 +109,7 @@ Do NOT hardcode strings in components. When adding a new section that needs cont
 
 When the admin panel + database are active (Milestone 3+), components will fetch from the DB instead. `mock-data.ts` becomes the fallback/seed source.
 
-**Mock mode** is active when `DATABASE_URL` is absent. The homepage (`src/app/page.tsx`) checks `!process.env.DATABASE_URL` to conditionally render `<MockModeBanner />`.
+**Mock mode** is active when `DATABASE_URL` is absent or starts with `prisma+postgres://`. The `isMock()` helper in `src/lib/data.ts` centralises this check; all fetchers use it. The homepage (`src/app/page.tsx`) checks `!process.env.DATABASE_URL` to conditionally render `<MockModeBanner />`.
 
 ---
 
@@ -144,14 +144,32 @@ When the admin panel + database are active (Milestone 3+), components will fetch
 - [ ] GitHub Actions CI: lint + type-check on push
 - [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
 
-### Next — Milestone 3 (Admin Panel + Blog)
-- [ ] `/admin/login` — Auth.js credentials login page
-- [ ] Admin layout: sidebar, dashboard, top bar
-- [ ] Blog CRUD (create/edit/delete posts with markdown editor)
-- [ ] Project CRUD in admin
-- [ ] Skills + Experience editors in admin
-- [ ] Markdown renderer for blog/project content (remark + rehype + syntax highlighting)
-- [ ] Media library (upload to R2 or `public/uploads`)
+### Completed — Milestone 3
+- [x] `src/auth.ts` — Auth.js v5 credentials login with custom inline Prisma adapter (database sessions, 24h maxAge)
+- [x] `src/middleware.ts` — replaced with `export { auth as middleware }` for real session validation
+- [x] `/admin/login` — server-action login form (`LoginForm.tsx` client component with `useFormStatus`)
+- [x] Admin route groups: `(auth)/login` (no sidebar), `(panel)/*` (sidebar shell)
+- [x] Admin shell: `(panel)/layout.tsx`, `Sidebar.tsx` (`usePathname` active links), `TopBar.tsx` (logout server action)
+- [x] Admin dashboard: stats (posts/projects/skills), agent insights widget, quick actions
+- [x] `src/lib/admin-auth.ts` — `requireAdminSession()` guard for all `/api/admin/*` routes
+- [x] Blog CRUD: list, create, edit pages + `PostForm.tsx` (MDEditor, tag chips, SEO, scheduling)
+- [x] Project CRUD: list, create, edit pages + `ProjectForm.tsx` (MDEditor, tech tags, type, featured)
+- [x] Skills editor: grouped by category, inline server-action add/delete
+- [x] Experience editor: inline server-action add/delete with full date/type support
+- [x] Agents dashboard: agent list with unread badges, report list, full report detail with `MarkdownRenderer`
+- [x] Tools shortcuts manager: grid view, inline add/delete server actions
+- [x] Media library: `public/uploads/` upload, image grid, delete, `MediaUploader` client component
+- [x] `src/lib/markdown.ts` + `MarkdownRenderer.tsx` — unified pipeline (remark + rehype + highlight + sanitize)
+- [x] `/blog/[slug]` and `/projects/[slug]` — content rendered via `MarkdownRenderer`
+
+### Next — Milestone 4
+- [ ] `/projects` — standalone filterable projects index page
+- [ ] Markdown-renderer improvements: table of contents, copy-code button
+- [ ] Milestone 4 agents: Blog Suggester, Brand Monitor, Opportunity Watcher
+- [ ] Admin "Run now" button for agents (`POST /api/admin/agents/[id]/run`)
+- [ ] GitHub Actions CI: lint + type-check on push
+- [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
+- [ ] Owner provides `public/cv.pdf` and `public/photo.jpg`
 
 See `docs/IMPLEMENTATION_PLAN.md` for the full phased breakdown.
 
