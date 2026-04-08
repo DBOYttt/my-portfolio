@@ -1,0 +1,281 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+
+interface PostFormData {
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  status: "DRAFT" | "PUBLISHED" | "SCHEDULED";
+  scheduledFor: string;
+  seoTitle: string;
+  seoDesc: string;
+  tags: string[];
+}
+
+interface PostFormProps {
+  initialData?: {
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    content: string;
+    status: string;
+    scheduledFor: Date | string | null;
+    seoTitle: string | null;
+    seoDesc: string | null;
+    tags: { name: string }[];
+  };
+  postId?: string;
+}
+
+function toSlug(s: string) {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function toDatetimeLocal(value: Date | string | null): string {
+  if (!value) return "";
+  const d = value instanceof Date ? value : new Date(value);
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 16);
+}
+
+export default function PostForm({ initialData, postId }: PostFormProps) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [showSeo, setShowSeo] = useState(false);
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!initialData);
+
+  const [form, setForm] = useState<PostFormData>({
+    title: initialData?.title ?? "",
+    slug: initialData?.slug ?? "",
+    excerpt: initialData?.excerpt ?? "",
+    content: initialData?.content ?? "",
+    status: (initialData?.status as PostFormData["status"]) ?? "DRAFT",
+    scheduledFor: toDatetimeLocal(initialData?.scheduledFor ?? null),
+    seoTitle: initialData?.seoTitle ?? "",
+    seoDesc: initialData?.seoDesc ?? "",
+    tags: initialData?.tags.map((t) => t.name) ?? [],
+  });
+
+  function set(key: keyof PostFormData, value: string | string[]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleTitleChange(value: string) {
+    set("title", value);
+    if (!slugManuallyEdited) set("slug", toSlug(value));
+  }
+
+  function addTag() {
+    const tag = tagInput.trim();
+    if (tag && !form.tags.includes(tag)) {
+      set("tags", [...form.tags, tag]);
+    }
+    setTagInput("");
+  }
+
+  function removeTag(tag: string) {
+    set("tags", form.tags.filter((t) => t !== tag));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(
+        postId ? `/api/admin/posts/${postId}` : "/api/admin/posts",
+        {
+          method: postId ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...form }),
+        }
+      );
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to save");
+      }
+      router.push("/admin/blog");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unexpected error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+      {error && <p className="text-red-400 text-sm font-mono">{error}</p>}
+
+      <div>
+        <label className="block text-sm text-slate-400 mb-1">Title</label>
+        <input
+          type="text"
+          value={form.title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          required
+          className="w-full bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-cyan-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm text-slate-400 mb-1">Slug</label>
+        <input
+          type="text"
+          value={form.slug}
+          onChange={(e) => {
+            setSlugManuallyEdited(true);
+            set("slug", e.target.value);
+          }}
+          required
+          className="w-full bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm font-mono focus:outline-none focus:border-cyan-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm text-slate-400 mb-1">Excerpt</label>
+        <textarea
+          value={form.excerpt}
+          onChange={(e) => set("excerpt", e.target.value)}
+          rows={2}
+          className="w-full bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-cyan-500 resize-none"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm text-slate-400 mb-1">Content</label>
+        <div data-color-mode="dark">
+          <MDEditor
+            value={form.content}
+            onChange={(val) => set("content", val ?? "")}
+            height={400}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm text-slate-400 mb-1">Tags</label>
+        <div className="flex gap-2 flex-wrap mb-2">
+          {form.tags.map((tag) => (
+            <span key={tag} className="tag flex items-center gap-1">
+              {tag}
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="text-slate-500 hover:text-red-400 ml-1"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                e.preventDefault();
+                addTag();
+              }
+            }}
+            placeholder="Add tag, press Enter"
+            className="flex-1 bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-cyan-500"
+          />
+          <button type="button" onClick={addTag} className="btn-secondary text-sm">
+            Add
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-4 items-end flex-wrap">
+        <div>
+          <label className="block text-sm text-slate-400 mb-1">Status</label>
+          <select
+            value={form.status}
+            onChange={(e) => set("status", e.target.value)}
+            className="bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-cyan-500"
+          >
+            <option value="DRAFT">Draft</option>
+            <option value="PUBLISHED">Published</option>
+            <option value="SCHEDULED">Scheduled</option>
+          </select>
+        </div>
+        {form.status === "SCHEDULED" && (
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">
+              Schedule for
+            </label>
+            <input
+              type="datetime-local"
+              value={form.scheduledFor}
+              onChange={(e) => set("scheduledFor", e.target.value)}
+              className="bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-cyan-500"
+            />
+          </div>
+        )}
+      </div>
+
+      <div>
+        <button
+          type="button"
+          onClick={() => setShowSeo((v) => !v)}
+          className="text-sm text-slate-500 hover:text-slate-300 font-mono"
+        >
+          {showSeo ? "▾" : "▸"} SEO fields
+        </button>
+        {showSeo && (
+          <div className="mt-3 space-y-3">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">
+                SEO title
+              </label>
+              <input
+                type="text"
+                value={form.seoTitle}
+                onChange={(e) => set("seoTitle", e.target.value)}
+                className="w-full bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">
+                SEO description
+              </label>
+              <textarea
+                value={form.seoDesc}
+                onChange={(e) => set("seoDesc", e.target.value)}
+                rows={2}
+                className="w-full bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-cyan-500 resize-none"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <button type="submit" disabled={saving} className="btn-primary">
+          {saving ? "Saving…" : postId ? "Update post" : "Create post"}
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push("/admin/blog")}
+          className="btn-secondary"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
