@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Nav from "@/components/public/Nav";
 import Footer from "@/components/public/Footer";
 import { getProjectBySlug, getProjects } from "@/lib/data";
+import MarkdownRenderer from "@/components/ui/MarkdownRenderer";
 
 const typeColors: Record<string, string> = {
   ROBOTICS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
@@ -131,10 +132,7 @@ export default async function ProjectPage({
 
           {/* Content */}
           <div className="max-w-3xl">
-            <p className="text-slate-400 leading-relaxed whitespace-pre-wrap">
-              {/* TODO(M3): replace with markdown renderer */}
-              {project.content}
-            </p>
+            <MarkdownRenderer content={project.content} />
           </div>
         </div>
       </main>

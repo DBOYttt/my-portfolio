@@ -5,6 +5,7 @@ import Nav from "@/components/public/Nav";
 import Footer from "@/components/public/Footer";
 import { getBlogPostBySlug, getBlogPosts } from "@/lib/data";
 import { OWNER } from "@/lib/mock-data";
+import MarkdownRenderer from "@/components/ui/MarkdownRenderer";
 
 export const dynamicParams = true;
 
@@ -102,10 +103,7 @@ export default async function BlogPostPage({
 
           {/* Content */}
           <div className="border-t border-[#2a2d3a] pt-8">
-            <p className="text-slate-400 leading-relaxed whitespace-pre-wrap">
-              {/* TODO(M3): replace with markdown renderer */}
-              {post.content}
-            </p>
+            <MarkdownRenderer content={post.content} />
           </div>
         </div>
       </main>

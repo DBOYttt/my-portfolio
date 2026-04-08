@@ -1,0 +1,16 @@
+import { markdownToHtml } from "@/lib/markdown";
+
+interface Props {
+  content: string;
+  className?: string;
+}
+
+export default async function MarkdownRenderer({ content, className }: Props) {
+  const html = await markdownToHtml(content);
+  return (
+    <div
+      className={`markdown-content ${className ?? ""}`}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
