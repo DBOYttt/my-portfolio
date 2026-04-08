@@ -134,6 +134,7 @@ All items below are implemented and manually tested against a live local databas
 - ⬜ **Blog Topic Suggester** agent — inputs: existing titles + recent GitHub + recent news → 5 suggestions
 - ⬜ **Personal Brand Monitor** agent — search owner name via Brave/SerpAPI, deduplicate mentions
 - ⬜ **Career Opportunity Watcher** agent — Adzuna or Remotive API, LLM fit score
+- ⬜ **Skills Inference agent** — analyses blog posts, project content, and GitHub repo data to detect technologies and concepts actually in use; suggests new skills to add or proficiency upgrades for existing ones; owner reviews suggestions in `/admin/agents` before anything is written to DB (never auto-writes — always a human-approval step)
 
 ### Admin agent controls
 - ⬜ `POST /api/admin/agents/[id]/run` — trigger agent on demand
@@ -152,7 +153,56 @@ All items below are implemented and manually tested against a live local databas
 
 ---
 
-## Milestone 4.5 — AI-Powered CV Generation ⬜
+## Milestone 4.5 — Skills Inference Agent ⬜
+
+**Goal:** The skills page stays accurate without manual maintenance. The agent reads what the owner actually builds — blog posts, project descriptions, GitHub repos — and surfaces technologies and concepts they demonstrably use. Owner approves before anything changes.
+
+### Why this matters for a portfolio
+Skills listed on most portfolios are self-reported and often stale. This agent makes the skills section evidence-based: every item can be traced back to a real project, commit, or post — which is far more credible to a technical employer.
+
+### How it works
+
+```
+GitHub repos (languages, topics, README content, recent commits)
+  + Project records in DB (content, tech tags)
+  + Blog post content in DB
+        ↓
+Anthropic Claude extracts and scores technologies
+        ↓
+Cross-references against existing Skill rows in DB
+        ↓
+Produces a diff: suggested additions, proficiency upgrades, stale removals
+        ↓
+Writes AgentReport — owner reviews in /admin/agents
+        ↓
+Owner clicks "Apply" per suggestion → writes to Skill table
+```
+
+### Agent: `agents/skills-inference.ts`
+- **GitHub source** — fetch repos via GitHub API: primary language per repo, repo topics, README text, languages breakdown (`/repos/{owner}/{repo}/languages`)
+- **DB sources** — read all `Project.content` + `Project.techTags`, all `Post.content` and `Post.tags`
+- **LLM prompt** — ask Claude to extract a deduplicated list of technologies with evidence snippets, then score each as FAMILIAR / PROFICIENT / EXPERT based on frequency and depth of use
+- **Diff logic** — compare against existing `Skill` rows; flag: new (not in DB), upgrade (current level lower than inferred), stale (in DB but no evidence found in any source)
+- **Output** — structured JSON: `{ add: [...], upgrade: [...], stale: [...] }` with evidence snippets per item
+- Writes one `AgentReport` with the full diff as the summary (markdown table)
+
+### Admin UI additions
+- `/admin/agents` report shows the diff as a table: Skill | Current level | Suggested level | Evidence source
+- Per-row "Apply" button (inline server action) — writes the change to `Skill` table
+- "Apply all additions" bulk action
+- Stale skills are highlighted but never auto-removed — owner decides
+
+### Trigger modes
+- On demand via "Run now" button
+- Scheduled weekly (after GitHub Summarizer runs, so data is fresh)
+- Could also run after a new blog post or project is published
+
+### Schema — no changes needed
+Uses existing `Skill`, `Agent`, `AgentReport` tables. Evidence snippets live in the report JSON (`rawData`).
+
+---
+
+## Milestone 4.6 — AI-Powered CV Generation ⬜
 
 **Goal:** The CV at `public/cv.pdf` is always up to date. When skills, experience, or projects change in the DB, an agent re-generates a well-structured PDF automatically — no manual document editing ever again.
 
