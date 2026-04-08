@@ -7,12 +7,14 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!pathname.startsWith("/admin/login")) {
-    // Auth.js v5 renamed the cookie: authjs.session-token (dev) / __Secure-authjs.session-token (prod)
+    // Auth.js v5 JWT strategy cookie names (dev / prod)
     const sessionToken =
       request.cookies.get("authjs.session-token") ??
       request.cookies.get("__Secure-authjs.session-token") ??
       request.cookies.get("next-auth.session-token") ??
-      request.cookies.get("__Secure-next-auth.session-token");
+      request.cookies.get("__Secure-next-auth.session-token") ??
+      request.cookies.get("__Secure-authjs.session-token.0") ??
+      request.cookies.get("authjs.session-token.0");
 
     if (!sessionToken) {
       const loginUrl = new URL("/admin/login", request.url);
