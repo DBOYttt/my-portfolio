@@ -250,15 +250,77 @@ Alternative: Puppeteer rendering a hidden `/cv/print` Next.js page to PDF (more 
 - Auth-gated via `requireAdminSession()`
 - Writes an `AgentReport` row on completion (or failure) so the result appears in `/admin/agents`
 
-### Admin UI additions
-- "Regenerate CV" button on `/admin/agents` page (or on a dedicated `/admin/cv` page)
-- Shows last generated timestamp
-- Preview link: opens `/cv.pdf` in new tab
-- AgentReport entry shows what changed vs previous generation
+### Admin CV page: `/admin/cv`
+
+Dedicated page combining generation, editing, and manual upload. Replaces scattered agent buttons.
+
+```
+/admin/cv
+├── Source toggle: "AI Generated" | "Manual Upload"
+├── [AI Generated mode]
+│   ├── "Regenerate" button → runs cv-generator agent
+│   ├── Last generated: April 8, 2026 at 17:21
+│   ├── CV Section Editor (see below)
+│   └── "Render to PDF" button → re-renders edited content → overwrites public/cv.pdf
+└── [Manual Upload mode]
+    ├── Upload field: accepts PDF only, max 5 MB
+    ├── On upload: saves to public/cv.pdf (overwrites whatever is there)
+    └── Note: "Switching back to AI mode will overwrite this file on next regeneration"
+```
+
+### CV Section Editor (fixing AI hallucinations)
+
+The agent stores its structured output as JSON in `CvContent` (see schema below) — not just the final PDF. The admin CV page renders this JSON into editable fields so you can fix anything Claude got wrong before re-rendering to PDF.
+
+```
+Summary         [textarea — free text]
+Skills          [tag list per category — add/remove/edit level]
+Experience      [list of entries — each field editable inline]
+  └── Company, Role, Dates, Bullets (one per line)
+Projects        [list — Title, Description, Tech tags, Links]
+```
+
+"Render to PDF" takes the current (possibly edited) JSON → feeds it back through `cv-template.tsx` → writes `public/cv.pdf`. No AI call on re-render — just pure template rendering from saved data.
+
+This means:
+- AI generates once → you fix any hallucinations in the editor → render clean PDF
+- Future regenerations start fresh from DB data again (editor edits are not persisted as the source of truth — the DB is)
+
+### Manual upload path
+
+For when you want full control or have an existing PDF you prefer:
+- `POST /api/admin/cv/upload` — multipart, PDF only, max 5 MB, auth-gated
+- Validates MIME type (`application/pdf`) server-side
+- Writes directly to `public/cv.pdf`
+- Sets a `cvSource: "manual" | "generated"` flag on the `User` record so the UI shows which mode is active
+- The AI generation trigger checks this flag — if `"manual"`, it skips auto-regeneration on content saves (only runs if explicitly triggered)
 
 ### Schema additions
-No new models needed. The agent uses the existing `Agent` + `AgentReport` tables.
-Consider adding a `cvGeneratedAt DateTime?` field to the `User` model to track last generation time.
+```prisma
+model User {
+  ...
+  cvGeneratedAt  DateTime?          // last successful AI generation
+  cvSource       String  @default("manual")  // "generated" | "manual"
+  cvContent      Json?              // structured CV JSON from last AI generation
+}
+```
+
+`cvContent` shape:
+```typescript
+{
+  summary: string,
+  skills: { category: string, items: { name: string, level: string }[] }[],
+  experience: { company: string, role: string, start: string, end: string, bullets: string[] }[],
+  projects: { title: string, description: string, tech: string[], url?: string }[]
+}
+```
+
+### API routes
+- `POST /api/admin/agents/cv-generator/run` — trigger AI generation
+- `POST /api/admin/cv/upload` — manual PDF upload
+- `GET  /api/admin/cv` — return current `cvContent` JSON + metadata
+- `PUT  /api/admin/cv` — save edited `cvContent` JSON (from section editor)
+- `POST /api/admin/cv/render` — re-render current `cvContent` to PDF without calling AI
 
 ### Dependencies to install
 ```bash
