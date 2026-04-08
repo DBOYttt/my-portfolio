@@ -54,7 +54,7 @@ Before the site is fully functional you must supply the following. The site runs
 |---|---|
 | Personal info | Edit the `OWNER` object in `src/lib/mock-data.ts` — name, title, bio, social links |
 | Photo | Place at `public/photo.jpg` — About section shows it automatically |
-| CV / resume | Place at `public/cv.pdf` — Nav and About section link to it |
+| CV / resume | Generated automatically by the CV Generator agent (Milestone 4.5) once skills, experience, and projects are in the DB. Can also be placed manually at `public/cv.pdf` as a temporary placeholder. |
 | Projects, skills, experience | Use the admin panel at `/admin` once DB is running, or edit `src/lib/mock-data.ts` for mock mode |
 
 ---

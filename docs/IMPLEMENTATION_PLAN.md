@@ -152,6 +152,73 @@ All items below are implemented and manually tested against a live local databas
 
 ---
 
+## Milestone 4.5 — AI-Powered CV Generation ⬜
+
+**Goal:** The CV at `public/cv.pdf` is always up to date. When skills, experience, or projects change in the DB, an agent re-generates a well-structured PDF automatically — no manual document editing ever again.
+
+### How it works
+
+```
+DB change (skills / experience / projects / OWNER info)
+    ↓
+CV Generator agent reads all current data from DB
+    ↓
+Anthropic Claude structures and writes the CV content
+    ↓
+PDF rendered via @react-pdf/renderer (or puppeteer)
+    ↓
+PDF written to public/cv.pdf (served by Next.js as a static file)
+    ↓
+Admin notified via agent report in /admin/agents
+```
+
+### Trigger modes
+- **On demand** — "Regenerate CV" button in admin (calls `POST /api/admin/agents/cv-generator/run`)
+- **Automatic** — agent runs after any save in `/api/admin/skills`, `/api/admin/experience`, `/api/admin/projects`
+- **Scheduled** — weekly cron job as a fallback catch-all
+
+### Agent: `agents/cv-generator.ts`
+- Reads from DB: `User` (OWNER info), all `Skill` rows grouped by category, all `Experience` rows ordered by date, all `Project` rows (featured first)
+- Sends structured data to Anthropic API with a CV-writing system prompt:
+  - Tailor tone for software engineering / robotics roles
+  - Order sections: Summary → Skills → Experience → Projects → Education
+  - Keep bullet points action-verb first ("Built", "Designed", "Led")
+  - Output: clean structured JSON (`{ summary, skills[], experience[], projects[] }`)
+- Renders the structured JSON to PDF
+
+### PDF rendering
+Use `@react-pdf/renderer` (runs in Node.js, no browser needed):
+- `src/lib/cv-template.tsx` — React PDF document component
+  - Matches portfolio design tokens: dark/light theme option, monospace font for code labels
+  - Sections: Header (name, title, contact, links), Summary, Skills (grouped), Experience (timeline), Projects (featured only, with tech tags)
+- `agents/cv-generator.ts` calls `renderToBuffer(CvDocument)` → writes `public/cv.pdf`
+
+Alternative: Puppeteer rendering a hidden `/cv/print` Next.js page to PDF (more layout control, heavier dependency).
+
+### API route
+- `POST /api/admin/agents/cv-generator/run` — triggers the agent, returns job ID
+- Auth-gated via `requireAdminSession()`
+- Writes an `AgentReport` row on completion (or failure) so the result appears in `/admin/agents`
+
+### Admin UI additions
+- "Regenerate CV" button on `/admin/agents` page (or on a dedicated `/admin/cv` page)
+- Shows last generated timestamp
+- Preview link: opens `/cv.pdf` in new tab
+- AgentReport entry shows what changed vs previous generation
+
+### Schema additions
+No new models needed. The agent uses the existing `Agent` + `AgentReport` tables.
+Consider adding a `cvGeneratedAt DateTime?` field to the `User` model to track last generation time.
+
+### Dependencies to install
+```bash
+npm install @react-pdf/renderer
+# or, if using puppeteer approach:
+npm install puppeteer
+```
+
+---
+
 ## Milestone 5 — Deployment ⬜
 
 **Goal:** Live on a real domain with HTTPS, SSL, and a real PostgreSQL instance.
@@ -161,7 +228,8 @@ All items below are implemented and manually tested against a live local databas
 - ⬜ Nginx HTTPS with Let's Encrypt (Certbot)
 - ⬜ Set all production env vars (see `.env.example`)
 - ⬜ `npm run db:push && npm run db:seed` on first deploy
-- ⬜ Owner places `public/cv.pdf` and `public/photo.jpg`
+- ⬜ Owner places `public/photo.jpg`
+- ⬜ Run CV Generator agent to produce initial `public/cv.pdf` (replaces manual placement)
 - ⬜ Cron jobs for agents (`crontab -e` on VPS)
 - ⬜ Update `OWNER` object in `src/lib/mock-data.ts` with real info
 
