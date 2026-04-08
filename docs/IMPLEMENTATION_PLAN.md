@@ -252,48 +252,49 @@ Alternative: Puppeteer rendering a hidden `/cv/print` Next.js page to PDF (more 
 
 ### Admin CV page: `/admin/cv`
 
-Dedicated page combining generation, editing, and manual upload. Replaces scattered agent buttons.
+Dedicated page for CV management. **AI generation is the default and primary path.** Manual upload is an escape hatch, not a parallel workflow.
 
 ```
 /admin/cv
-├── Source toggle: "AI Generated" | "Manual Upload"
-├── [AI Generated mode]
-│   ├── "Regenerate" button → runs cv-generator agent
-│   ├── Last generated: April 8, 2026 at 17:21
-│   ├── CV Section Editor (see below)
-│   └── "Render to PDF" button → re-renders edited content → overwrites public/cv.pdf
-└── [Manual Upload mode]
-    ├── Upload field: accepts PDF only, max 5 MB
-    ├── On upload: saves to public/cv.pdf (overwrites whatever is there)
-    └── Note: "Switching back to AI mode will overwrite this file on next regeneration"
+├── [Default view — AI Generated]
+│   ├── Status: "Generated April 8, 2026 at 17:21" | "Never generated"
+│   ├── "Regenerate from DB" button → runs cv-generator agent, overwrites cvContent + re-renders PDF
+│   ├── "Preview PDF" link → opens /cv.pdf in new tab
+│   ├── CV Section Editor — edit AI output before rendering (see below)
+│   ├── "Save & Render PDF" button → saves cvContent edits, re-renders PDF, no AI call
+│   └── ─────────────────────────────────────────────
+│       "Upload your own PDF instead" (collapsed / secondary)
+│       └── Upload field → overwrites public/cv.pdf, sets cvSource = "manual"
+│           Warning shown when active: "AI generation is paused — using uploaded PDF"
+│           "Switch back to AI" button → clears flag, next regeneration takes over
+└──
 ```
+
+The manual upload option is visually de-emphasised (below the fold, secondary styling) so the AI path is the obvious default.
 
 ### CV Section Editor (fixing AI hallucinations)
 
-The agent stores its structured output as JSON in `CvContent` (see schema below) — not just the final PDF. The admin CV page renders this JSON into editable fields so you can fix anything Claude got wrong before re-rendering to PDF.
+The agent stores its structured output as JSON (`cvContent` on `User`) — not just the final PDF. This JSON is rendered into editable fields so you can correct anything Claude got wrong before committing to PDF.
 
 ```
 Summary         [textarea — free text]
 Skills          [tag list per category — add/remove/edit level]
 Experience      [list of entries — each field editable inline]
-  └── Company, Role, Dates, Bullets (one per line)
+  └── Company, Role, Dates, Bullets (one per line, reorderable)
 Projects        [list — Title, Description, Tech tags, Links]
 ```
 
-"Render to PDF" takes the current (possibly edited) JSON → feeds it back through `cv-template.tsx` → writes `public/cv.pdf`. No AI call on re-render — just pure template rendering from saved data.
+Flow: AI generates → `cvContent` saved to DB → editor loads it → you fix hallucinations inline → "Save & Render PDF" → PDF written, no second AI call.
 
-This means:
-- AI generates once → you fix any hallucinations in the editor → render clean PDF
-- Future regenerations start fresh from DB data again (editor edits are not persisted as the source of truth — the DB is)
+On the next "Regenerate from DB": `cvContent` is overwritten fresh from DB data. Manual edits to `cvContent` are intentionally ephemeral — the DB (skills, experience, projects) is the source of truth, not the editor.
 
 ### Manual upload path
 
-For when you want full control or have an existing PDF you prefer:
-- `POST /api/admin/cv/upload` — multipart, PDF only, max 5 MB, auth-gated
-- Validates MIME type (`application/pdf`) server-side
-- Writes directly to `public/cv.pdf`
-- Sets a `cvSource: "manual" | "generated"` flag on the `User` record so the UI shows which mode is active
-- The AI generation trigger checks this flag — if `"manual"`, it skips auto-regeneration on content saves (only runs if explicitly triggered)
+Escape hatch for when you have a polished PDF you want to use as-is:
+- `POST /api/admin/cv/upload` — PDF only, max 5 MB, auth-gated
+- Writes to `public/cv.pdf`, sets `cvSource = "manual"` on `User`
+- While `cvSource = "manual"`: auto-regeneration on content saves is suppressed; "Regenerate" button still works if explicitly clicked
+- "Switch back to AI" clears the flag and re-enables auto-regeneration
 
 ### Schema additions
 ```prisma
