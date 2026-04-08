@@ -27,9 +27,10 @@ npm run dev
 
 # 4. (Optional) Set up database for full mode
 cp .env.example .env
-# Edit .env: set DATABASE_URL, AUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
+# Edit .env — set DATABASE_URL to a direct postgres:// URL (see note below),
+# then set AUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
 
-npm run db:push    # Apply schema
+npm run db:push    # Apply schema (use db:push, not migrate dev — see note below)
 npm run db:seed    # Create admin user
 npm run dev        # Now runs against real DB
 ```
@@ -46,8 +47,8 @@ npm run lint         # ESLint check
 
 # Database
 npm run db:generate  # Regenerate Prisma client after schema changes
-npm run db:push      # Sync schema to DB without migration history (dev)
-npm run db:migrate   # Create + apply migration (use for production changes)
+npm run db:push      # Sync schema to DB (preferred in dev — migrate dev requires shadow DB)
+npm run db:migrate   # Create + apply migration with history (use for production changes)
 npm run db:studio    # Open Prisma Studio GUI at localhost:5555
 npm run db:seed      # Create admin user (uses ADMIN_EMAIL + ADMIN_PASSWORD from .env)
 
@@ -68,10 +69,30 @@ cp .env.example .env
 
 ### Required for full mode (DB + auth)
 ```
-DATABASE_URL        PostgreSQL connection string
+DATABASE_URL        Direct postgres:// connection string (see DATABASE_URL note below)
 AUTH_SECRET         Random secret — openssl rand -base64 32
 ADMIN_EMAIL         Email for admin login
 ADMIN_PASSWORD      Password for admin login (min 12 chars recommended)
+```
+
+### DATABASE_URL note
+Must be a standard `postgres://` URL — **not** `prisma+postgres://`.
+The `PrismaPg` adapter uses the `pg` library which requires a direct TCP connection to postgres.
+
+```
+# Local dev example (with prisma dev running):
+DATABASE_URL="postgres://postgres:postgres@127.0.0.1:51214/template1?sslmode=disable"
+
+# Production example:
+DATABASE_URL="postgres://user:password@your-db-host:5432/portfolio"
+```
+
+If postgres only listens on `127.0.0.1` (not `localhost`/`::1`) on your machine, always use the explicit IP.
+
+### Seeding with a direct URL
+If the default `DATABASE_URL` in `.env` doesn't connect for scripts, override inline:
+```bash
+DATABASE_URL="postgres://postgres:postgres@127.0.0.1:51214/template1?sslmode=disable" npm run db:seed
 ```
 
 ### Required for contact form email
@@ -114,15 +135,18 @@ R2_*                  Cloudflare R2 credentials (for media uploads in Phase 2+)
 4. Add a nav anchor to `src/components/public/Nav.tsx` if needed
 
 ### Adding a new admin page
-1. Create `src/app/admin/your-page/page.tsx`
-2. The middleware in `src/middleware.ts` automatically protects all `/admin/*` routes
-3. Add to the admin sidebar nav (once built in Milestone 3)
+1. Create `src/app/admin/(panel)/your-page/page.tsx` inside the `(panel)` route group
+2. `(panel)/layout.tsx` calls `auth()` and redirects unauthenticated users server-side
+3. `src/middleware.ts` also guards `/admin/*` via cookie presence check (Edge-compatible)
+4. Add a `<Link>` to `src/components/admin/Sidebar.tsx`
 
 ### Modifying the database schema
 1. Edit `prisma/schema.prisma`
-2. Run `npm run db:migrate -- --name describe_the_change`
+2. Run `npm run db:push` (dev) or `npm run db:migrate -- --name describe_the_change` (prod)
 3. Run `npm run db:generate`
-4. Commit both `prisma/schema.prisma` and the new migration file
+4. Commit `prisma/schema.prisma` (and migration files if using `migrate`)
+
+Note: `migrate dev` requires a shadow database which the Prisma dev proxy does not support. Use `db:push` in local dev.
 
 ### Adding a new API route
 ```

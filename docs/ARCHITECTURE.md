@@ -22,7 +22,7 @@ Both are served by a single Next.js 14 App Router application. There is no separ
 | Styling | Tailwind CSS v3 + globals.css | Utility-first, co-located styles, custom design tokens in config |
 | Database | PostgreSQL 16 | Relational, reliable, good full-text search, Prisma support |
 | ORM | Prisma | Type-safe queries, migrations, schema as source of truth |
-| Auth | Auth.js v5 (credentials) | Simple single-user admin auth, session-based |
+| Auth | Auth.js v5 (credentials, JWT strategy) | Single-user admin auth. JWT required — database sessions unsupported with Credentials provider |
 | Email | Resend | Reliable transactional email, generous free tier |
 | File storage | Cloudflare R2 (or local `/public/uploads`) | S3-compatible, no egress fees |
 | AI agents | TypeScript scripts + cron | Simple, debuggable, no queue framework needed for low-frequency jobs |
@@ -187,3 +187,9 @@ Full-text search support, better concurrency, production-ready from day one. SQL
 
 **Why Auth.js credentials over OAuth?**
 Single user. No need for OAuth complexity. A username/password login with a strong secret is simpler and less attack surface.
+
+**Auth.js v5 session strategy constraint:**
+Auth.js v5 does not support `strategy: "database"` with the Credentials provider — only `strategy: "jwt"` is allowed. The JWT is signed with `AUTH_SECRET` and validated on every request via `auth()` in `(panel)/layout.tsx`.
+
+**Middleware is Edge-only (cookie check, not full session validation):**
+`src/middleware.ts` runs in the Edge runtime and cannot import Prisma or bcryptjs (Node.js-only). It checks for session cookie presence as a fast guard. Real session validity is enforced server-side in the Node.js runtime by `auth()` inside `(panel)/layout.tsx` and `requireAdminSession()` in API routes.

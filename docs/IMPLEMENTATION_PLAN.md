@@ -2,7 +2,6 @@
 
 ## Status Legend
 - ✅ Done
-- 🔄 In progress
 - ⬜ Not started
 - ⏸ Deferred
 
@@ -12,10 +11,9 @@
 
 **Goal:** Project compiles, runs without setup, public portfolio is visually complete with mock data.
 
-### Tasks
 - ✅ Next.js 14 (App Router, TypeScript, Tailwind v3) scaffold
 - ✅ Prisma schema — all entities (User, Post, Project, Skill, Experience, Agent, AgentReport, MonitoredTopic, ToolShortcut, AuditLog, MediaAsset)
-- ✅ Auth.js middleware guard on `/admin/*`
+- ✅ Auth middleware guard on `/admin/*`
 - ✅ Public sections: Nav, Hero, About, Skills, Experience, Projects, Robotics, Blog preview, Contact, Footer
 - ✅ `src/lib/mock-data.ts` — zero-config content layer
 - ✅ MockModeBanner — shows when running without DB
@@ -24,213 +22,211 @@
 - ✅ Docker Compose + Nginx production config
 - ✅ `.env.example` with all variables documented
 - ✅ `CLAUDE.md`, `docs/` documentation suite
-- ✅ GitHub repository: https://github.com/DBOYttt/my-portfolio
 
 ---
 
-## Milestone 2 — Full Public Portfolio 🔄
+## Milestone 2 — Full Public Portfolio ✅
 
-**Goal:** Every public page is complete, SEO-ready, and connected to the database. Site is deployable.
+**Goal:** Every public page is complete, SEO-ready, and connected to the database.
 
-### Tasks
-
-#### Content pages
-- ✅ `/projects/[slug]` — full case study detail page with cover image placeholder, tech tags, GitHub/live links, "← Back to projects" nav, `generateMetadata`, `generateStaticParams`
-- ✅ `/blog/[slug]` — blog post detail page with JSON-LD Article schema, `generateMetadata`, `generateStaticParams`
-- ⬜ `/projects` — standalone projects index page (filterable by type)
-- ⬜ `/experience` — standalone timeline page
-
-#### Data layer
 - ✅ `src/types/index.ts` — shared interfaces bridging mock and DB shapes
-- ✅ `src/lib/data.ts` — central async fetchers: `getProjects`, `getProjectBySlug`, `getExperience`, `getSkills`, `getBlogPosts`, `getBlogPostBySlug`
-- ✅ Projects section: DB-first with mock fallback
-- ✅ Experience section: DB-first with mock fallback
-- ✅ Skills section: DB-first with mock fallback
-- ✅ Blog preview section + Blog listing page: DB-first with mock fallback
+- ✅ `src/lib/data.ts` — central async fetchers (DB-first, mock fallback)
+- ✅ `/projects/[slug]` — case study detail with `generateMetadata`, `generateStaticParams`
+- ✅ `/blog/[slug]` — post detail with JSON-LD Article schema
+- ✅ All public sections wired to `data.ts` (Projects, Experience, Skills, BlogPreview, Blog)
+- ✅ Contact form: Resend email + honeypot spam trap
+- ✅ `AboutSection.tsx` — conditional `<Image>` when `public/photo.jpg` exists
+- ✅ `sitemap.ts` — dynamic, admin excluded
+- ✅ `robots.ts` — `Disallow: /admin` and `/api/`
+- ✅ JSON-LD Person schema on homepage
+- ✅ `opengraph-image.tsx` — dynamic OG image via `next/og`
+- ✅ `metadataBase` + owner-driven metadata in `layout.tsx`
+- ✅ Blog post dates formatted as human-readable strings ("April 8, 2026")
 
-#### Contact form
-- ✅ Resend email delivery wired in `/api/contact/route.ts`
-- ✅ Honeypot field added for spam reduction
-- ✅ Graceful fallback when `RESEND_API_KEY` is absent (mock mode logs, returns 200)
+**Owner actions still needed:**
+- ⬜ Place `public/cv.pdf` (download link exists but 404s)
+- ⬜ Place `public/photo.jpg` (conditional render is wired)
 
-#### CV
-- ⬜ Owner must place real file at `public/cv.pdf` — download link exists in Nav and AboutSection
-- ⬜ `/cv` page with brief resume summary + download button
-
-#### SEO
-- ✅ `src/app/sitemap.ts` — dynamic sitemap via App Router, includes all projects + blog posts, excludes `/admin`
-- ✅ `src/app/robots.ts` — `Disallow: /admin` and `/api/`
-- ✅ JSON-LD `Person` schema on homepage (`src/app/page.tsx`)
-- ✅ JSON-LD `Article` schema on every blog post (`src/app/blog/[slug]/page.tsx`)
-- ✅ Dynamic OG image via `next/og` at `/opengraph-image` (`src/app/opengraph-image.tsx`)
-- ✅ `metadataBase` set in `layout.tsx`; all public pages have `generateMetadata` or static `metadata` export
-
-#### Owner photo
-- ✅ `AboutSection.tsx` renders `<Image src="/photo.jpg">` when `public/photo.jpg` exists, SVG placeholder otherwise
-- ⬜ Owner must place real photo at `public/photo.jpg`
-
-#### Deployment
-- ⬜ Set up VPS (Hetzner CX22 recommended)
-- ⬜ Docker Compose deployment
-- ⬜ Nginx HTTPS with Let's Encrypt (Certbot)
-- ⬜ PostgreSQL running in Docker
-- ⬜ `npm run db:seed` on first deploy
+**Code still needed:**
+- ⬜ `/projects` — standalone filterable projects index page
 - ⬜ GitHub Actions CI: lint + type-check on push
 
-#### Known implementation notes
-- Markdown content in `/projects/[slug]` and `/blog/[slug]` is rendered as plain `<p>` with `whitespace-pre-wrap` — a proper markdown renderer (remark + rehype + syntax highlighting) is deferred to Milestone 3
-- The middleware session check (`src/middleware.ts`) only validates cookie presence, not session validity — full Auth.js session verification is Milestone 3
-- Agent LLM summarization (`agents/github-summarizer.ts`) has an Anthropic API call stub — wiring is Milestone 4
-
 ---
 
-## Milestone 3 — Admin Panel + Blog ⬜
+## Milestone 3 — Admin Panel + Blog ✅
 
 **Goal:** Owner can manage all content via admin panel. No code changes needed for content updates.
 
+All items below are implemented and manually tested against a live local database.
+
+### Auth
+- ✅ `src/auth.ts` — Auth.js v5, Credentials provider, `strategy: "jwt"`, `maxAge: 86400`
+  - **Critical:** Credentials provider requires JWT strategy. Database sessions are unsupported by Auth.js v5 with Credentials.
+- ✅ `src/middleware.ts` — Edge-compatible cookie-presence check (lightweight guard)
+  - **Critical:** Cannot use `export { auth as middleware }` — Prisma and bcryptjs are Node.js-only, incompatible with the Edge runtime.
+- ✅ Real session validation enforced server-side in `(panel)/layout.tsx` via `auth()`
+- ✅ `src/app/api/auth/[...nextauth]/route.ts` — Auth.js route handler
+- ✅ `src/lib/admin-auth.ts` — `requireAdminSession()` guard for all `/api/admin/*` routes
+
 ### Admin shell
-- ⬜ Admin layout: sidebar navigation, content area, top bar with logout
-- ⬜ Dashboard overview: stats row, recent posts, agent digest preview, quick actions
-- ⬜ Login page at `/admin/login` (Auth.js credentials form)
-- ⬜ Audit log table populated on admin actions
+- ✅ Route groups: `(auth)/login` (no sidebar), `(panel)/*` (sidebar shell)
+- ✅ `src/app/admin/(auth)/login/page.tsx` — server action login form
+- ✅ `src/components/admin/LoginForm.tsx` — client component with `useFormStatus`
+- ✅ `src/app/admin/(panel)/layout.tsx` — session guard + sidebar + topbar
+- ✅ `src/components/admin/Sidebar.tsx` — `usePathname` active-link highlighting
+- ✅ `src/components/admin/TopBar.tsx` — user email + sign-out server action
+- ✅ `src/app/admin/(panel)/page.tsx` — dashboard: stat cards, agent insights widget, quick actions
 
-### Blog management
-- ⬜ Blog post list (`/admin/blog`)
-  - Table: title, status badge, published date, tags, edit/delete actions
-  - Filter by status (draft/published/scheduled)
-- ⬜ Create post (`/admin/blog/new`)
-  - Markdown editor with live preview (`@uiw/react-md-editor`)
-  - Title, slug (auto-generated, editable), excerpt
-  - Featured image upload
-  - Tags (create on-the-fly), category selector
-  - SEO fields: seoTitle, seoDesc
-  - Status: draft / published / scheduled (with date picker)
-- ⬜ Edit post (`/admin/blog/[id]`)
-- ⬜ Delete post (with confirmation)
-- ⬜ Public blog listing reads from DB (`/blog`)
-- ⬜ Public blog post detail (`/blog/[slug]`)
-  - Markdown rendered to HTML (remark + rehype)
-  - Syntax highlighting for code blocks (rehype-highlight or shiki)
+### Markdown renderer
+- ✅ `src/lib/markdown.ts` — unified pipeline: remark-parse → remark-rehype → rehype-highlight → rehype-sanitize → rehype-stringify
+- ✅ `src/components/ui/MarkdownRenderer.tsx` — async Server Component, `dangerouslySetInnerHTML`
+- ✅ `src/app/globals.css` — `.markdown-content` prose styles (no `@tailwindcss/typography`)
+- ✅ `/blog/[slug]` and `/projects/[slug]` render content via `MarkdownRenderer`
 
-### Project management
-- ⬜ Project list + CRUD in admin
-- ⬜ Project detail pages read from DB
+### Blog CRUD
+- ✅ `src/app/api/admin/posts/route.ts` — `GET` list, `POST` create
+- ✅ `src/app/api/admin/posts/[id]/route.ts` — `GET`, `PUT`, `DELETE`
+- ✅ `src/components/admin/PostForm.tsx` — MDEditor (dynamic import, SSR disabled), tag chips, SEO fields, status selector, scheduling
+- ✅ `src/app/admin/(panel)/blog/page.tsx` — post list with status badges
+- ✅ `src/app/admin/(panel)/blog/new/page.tsx` — create form
+- ✅ `src/app/admin/(panel)/blog/[id]/page.tsx` — edit form
 
-### Content management
-- ⬜ Skills editor in admin
-- ⬜ Experience timeline editor in admin
-- ⬜ External links manager (GitHub, LinkedIn, etc.)
+### Project CRUD
+- ✅ `src/app/api/admin/projects/route.ts` — `GET`, `POST`
+- ✅ `src/app/api/admin/projects/[id]/route.ts` — `GET`, `PUT`, `DELETE`
+- ✅ `src/components/admin/ProjectForm.tsx` — MDEditor, tech tags, type, featured, order
+- ✅ `src/app/admin/(panel)/projects/page.tsx`
+- ✅ `src/app/admin/(panel)/projects/new/page.tsx`
+- ✅ `src/app/admin/(panel)/projects/[id]/page.tsx`
+
+### Skills + Experience editors
+- ✅ `src/app/api/admin/skills/route.ts` + `[id]/route.ts`
+- ✅ `src/app/api/admin/experience/route.ts` + `[id]/route.ts`
+- ✅ `src/app/admin/(panel)/skills/page.tsx` — grouped by category, inline server actions
+- ✅ `src/app/admin/(panel)/experience/page.tsx` — inline server actions
+
+### Agents + Tools dashboard
+- ✅ `src/app/api/admin/agents/route.ts` — list agents with latest report
+- ✅ `src/app/api/admin/agents/reports/[id]/route.ts` — mark as read
+- ✅ `src/app/api/admin/tools/route.ts` + `[id]/route.ts`
+- ✅ `src/app/admin/(panel)/agents/page.tsx` — agent list with unread badges
+- ✅ `src/app/admin/(panel)/agents/[id]/page.tsx` — report list per agent
+- ✅ `src/app/admin/(panel)/agents/reports/[reportId]/page.tsx` — full report with MarkdownRenderer
+- ✅ `src/app/admin/(panel)/tools/page.tsx` — tool shortcut grid, inline add/delete
 
 ### Media library
-- ⬜ Upload endpoint (`/api/admin/media/upload`)
-- ⬜ Store to Cloudflare R2 (or local `public/uploads` as fallback)
-- ⬜ Media grid in admin (`/admin/media`)
-- ⬜ Image picker in blog/project editors
+- ✅ `src/app/api/admin/media/upload/route.ts` — multipart upload to `public/uploads/`, DB record
+- ✅ `src/app/api/admin/media/route.ts` — list assets
+- ✅ `src/app/api/admin/media/[id]/route.ts` — delete (file + DB record)
+- ✅ `src/components/admin/MediaUploader.tsx` — client upload component
+- ✅ `src/app/admin/(panel)/media/page.tsx` — image grid + uploader
 
 ---
 
-## Milestone 4 — AI Agents ⬜
+## Milestone 4 — AI Agents + Remaining Polish ⬜ (CURRENT)
 
-**Goal:** Agents run on schedule, results appear in admin dashboard.
+**Goal:** Agents produce real output. Admin dashboard shows live data. Remaining public pages complete.
 
-### Infrastructure
-- ⬜ Cron job setup (system crontab or GitHub Actions scheduled workflow)
-- ⬜ Agent error handling + retry logic
-- ⬜ Agent status tracking (running / success / error) in DB
+### Agent completions
+- ⬜ Wire Anthropic API in `agents/github-summarizer.ts` (stub exists at `TODO(M4)`)
+- ⬜ Replace regex RSS parser in `agents/robotics-news.ts` with `rss-parser` npm package
+- ⬜ Add more feed sources to robotics agent (IEEE Spectrum, Hackaday, ROS Discourse)
+- ⬜ **Blog Topic Suggester** agent — inputs: existing titles + recent GitHub + recent news → 5 suggestions
+- ⬜ **Personal Brand Monitor** agent — search owner name via Brave/SerpAPI, deduplicate mentions
+- ⬜ **Career Opportunity Watcher** agent — Adzuna or Remotive API, LLM fit score
 
-### Agent implementations
-- ⬜ **GitHub Summarizer** — complete LLM summarization (currently stub)
-  - Wire Anthropic API call in `agents/github-summarizer.ts`
-  - Fetch recent commits, PRs, and repo stats
-- ⬜ **Robotics News Curator** — complete LLM summarization
-  - Use a proper RSS parser (`rss-parser` npm package)
-  - Add more feed sources (IEEE, Hackaday, ROS Discourse)
-- ⬜ **Blog Topic Suggester**
-  - Input: existing post titles, recent GitHub activity, recent news digest
-  - Output: 5 suggested titles with rationale
-- ⬜ **Personal Brand Monitor**
-  - Input: owner name, handle, project names
-  - Search via Brave Search API or SerpAPI
-  - Output: new web mentions with source + snippet
-  - Deduplication against previous reports
-- ⬜ **Career Opportunity Watcher**
-  - Input: job title keywords, location, stack
-  - Search via Adzuna API or Remotive API (public, no scraping)
-  - Output: matching listings with fit score (LLM-assessed)
+### Admin agent controls
+- ⬜ `POST /api/admin/agents/[id]/run` — trigger agent on demand
+- ⬜ "Run now" button on `/admin/agents` page
+- ⬜ Agent status field (idle / running / error) + last error message in DB + UI
 
-### Admin AI panel
-- ⬜ Agent list page (`/admin/agents`)
-  - Card per agent: name, type, last run, status, "Run now" button
-- ⬜ Report detail page (`/admin/agents/reports/[id]`)
-  - Markdown-rendered summary
-  - Source list with links
-  - Mark as read
-- ⬜ Agent insights widget on dashboard overview
-- ⬜ "Blog Topic Suggester" → click suggestion → prefills new post title
+### Public pages
+- ⬜ `/projects` — standalone filterable projects index page (filter by type: SOFTWARE / ROBOTICS / HARDWARE / RESEARCH)
+
+### Markdown renderer improvements
+- ⬜ Copy-code button on code blocks
+- ⬜ Table of contents sidebar for long posts
+
+### Infra
+- ⬜ GitHub Actions CI: lint + type-check on push
 
 ---
 
-## Milestone 5 — Tools, Polish, Analytics ⬜
+## Milestone 5 — Deployment ⬜
 
-**Goal:** Admin is a complete workspace. Public site scores 90+ Lighthouse. Ready for employer sharing.
+**Goal:** Live on a real domain with HTTPS, SSL, and a real PostgreSQL instance.
 
-### Tool shortcuts
-- ⬜ Tool shortcuts page (`/admin/tools`)
-  - Grid of cards: name, description, icon, "Open" button
-  - Managed via `ToolShortcut` DB model
-  - n8n link configured by default (from seed)
-- ⬜ Tool shortcuts CRUD in admin settings
+- ⬜ Provision VPS (Hetzner CX22 or equivalent)
+- ⬜ Docker Compose deployment (Next.js + PostgreSQL + Nginx)
+- ⬜ Nginx HTTPS with Let's Encrypt (Certbot)
+- ⬜ Set all production env vars (see `.env.example`)
+- ⬜ `npm run db:push && npm run db:seed` on first deploy
+- ⬜ Owner places `public/cv.pdf` and `public/photo.jpg`
+- ⬜ Cron jobs for agents (`crontab -e` on VPS)
+- ⬜ Update `OWNER` object in `src/lib/mock-data.ts` with real info
 
-### n8n integration
-- ⬜ Document Tailscale VPN setup for secure n8n access
-- ⬜ Add n8n shortcut to seed data with correct local URL
+---
+
+## Milestone 6 — Polish + Analytics ⬜
+
+**Goal:** Public site scores 90+ Lighthouse. Ready for employer sharing.
 
 ### Performance
-- ⬜ Lighthouse audit — fix all issues < 90
-- ⬜ Replace all `<img>` tags with `next/image`
-- ⬜ Add `next/font` for Inter and JetBrains Mono (eliminates Google Fonts request)
+- ⬜ Lighthouse audit — fix all issues below 90
+- ⬜ `next/font` for Inter and JetBrains Mono (eliminates Google Fonts request)
 - ⬜ Lazy load below-fold sections
-- ⬜ Add loading skeletons for DB-fetched content
+- ⬜ Loading skeletons for DB-fetched content
 
 ### Accessibility
 - ⬜ Full keyboard navigation test
 - ⬜ Screen reader test on homepage
-- ⬜ All images have meaningful `alt` text
-- ⬜ Color contrast audit (WCAG AA minimum)
+- ⬜ Color contrast audit (WCAG AA)
 - ⬜ Skip-to-content link
 
 ### Analytics
 - ⬜ Self-hosted Umami (Docker, same VPS)
-- ⬜ Add Umami tracking script to layout
-- ⬜ Privacy-first: no cookies, no GDPR banner needed
+- ⬜ Add Umami tracking script to layout (privacy-first, no cookies)
 
 ### Dark/light mode
-- ⬜ Theme toggle button in Nav
+- ⬜ Theme toggle in Nav
 - ⬜ CSS variables for both themes in globals.css
 - ⬜ Persist preference in localStorage
 
 ---
 
-## Milestone 6 — Growth Features ⏸ (Deferred)
+## Milestone 7 — Growth Features ⏸ (Deferred)
 
 Defer until site is live and generating traffic.
 
 - ⏸ Newsletter integration (Resend audiences or Buttondown)
 - ⏸ Testimonials/references section
-- ⏸ GitHub live activity widget on homepage
-- ⏸ Dynamic OG images via `next/og`
-- ⏸ Blog comments (only if needed — spam risk)
+- ⏸ Blog comments (spam risk — low priority)
 - ⏸ TOTP/2FA for admin login
 - ⏸ Multi-language support
 
 ---
 
-## Recommended Build Order
+## Infra Notes for Future Agents
 
-When starting a new session, always work in this priority order:
+### DATABASE_URL
+Must be a direct `postgres://` connection string — **not** `prisma+postgres://`.
+The `PrismaPg` adapter uses the `pg` library which requires a standard postgres TCP connection.
+The `prisma+postgres://` URL is for the Prisma Accelerate protocol only.
 
-1. Whatever the owner explicitly asks for
-2. The lowest-numbered incomplete Milestone 2 task
-3. Never jump ahead to Milestone 3+ until Milestone 2 is done
+Local dev with `prisma dev` running:
+```
+DATABASE_URL="postgres://postgres:postgres@127.0.0.1:51214/template1?sslmode=disable"
+```
+Note: use `127.0.0.1`, not `localhost` — on this machine `localhost` resolves to `::1` (IPv6) but postgres only listens on `127.0.0.1`.
 
-The site is useful at Milestone 2. Everything after that is additive.
+### Schema changes
+Use `npx prisma db push` (not `migrate dev`). The Prisma dev proxy does not support the shadow database required by `migrate dev`.
+
+### Seeding
+```bash
+DATABASE_URL="postgres://postgres:postgres@127.0.0.1:51214/template1?sslmode=disable" npm run db:seed
+```
+
+### Auth.js v5 + Credentials
+- JWT strategy is mandatory — `strategy: "database"` is unsupported with Credentials provider.
+- Middleware must be an Edge-compatible cookie check. Do not `export { auth as middleware }` — Prisma and bcryptjs cannot run in the Edge runtime.
