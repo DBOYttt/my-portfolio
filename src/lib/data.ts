@@ -177,7 +177,9 @@ export async function getBlogPosts(): Promise<BlogPostSummary[]> {
     slug: p.slug,
     title: p.title,
     excerpt: p.excerpt ?? "",
-    date: p.publishedAt?.toISOString() ?? "",
+    date: p.publishedAt
+      ? p.publishedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+      : "",
     readTime: "",
     tags: p.tags.map((t) => t.name),
   }));
@@ -214,7 +216,9 @@ export async function getBlogPostBySlug(
     slug: p.slug,
     title: p.title,
     excerpt: p.excerpt ?? "",
-    date: p.publishedAt?.toISOString() ?? "",
+    date: p.publishedAt
+      ? p.publishedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+      : "",
     readTime: "",
     tags: p.tags.map((t) => t.name),
     content: p.content,
