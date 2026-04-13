@@ -180,6 +180,11 @@ Keep summary to 3 sentences. Keep experience descriptions to 2 sentences each. U
       const jsonText = rawText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
       const parsed = JSON.parse(jsonText) as Record<string, unknown>;
 
+      const parsedContact =
+        typeof parsed.contact === "object" && parsed.contact !== null
+          ? (parsed.contact as Record<string, unknown>)
+          : {};
+
       cvContent = {
         summary: typeof parsed.summary === "string" ? parsed.summary : "",
         skills: Array.isArray(parsed.skills) ? parsed.skills : [],
@@ -188,12 +193,12 @@ Keep summary to 3 sentences. Keep experience descriptions to 2 sentences each. U
         contact: {
           email: user.email,
           github:
-            typeof parsed.contact?.github === "string" && parsed.contact.github
-              ? parsed.contact.github
+            typeof parsedContact.github === "string" && parsedContact.github
+              ? parsedContact.github
               : githubLink?.url ?? undefined,
           website:
-            typeof parsed.contact?.website === "string" && parsed.contact.website
-              ? parsed.contact.website
+            typeof parsedContact.website === "string" && parsedContact.website
+              ? parsedContact.website
               : websiteLink?.url ?? undefined,
         },
       };
