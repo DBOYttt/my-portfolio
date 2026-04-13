@@ -17,6 +17,9 @@ model User {
   emailVerified DateTime?
   passwordHash  String
   name          String?
+  cvGeneratedAt DateTime?
+  cvSource      String    @default("manual")
+  cvContent     Json?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
@@ -201,6 +204,10 @@ enum AgentType {
   BLOG_SUGGESTER
   OPPORTUNITY_WATCHER
   MENTION_TRACKER
+  SKILLS_INFERENCE
+  GITHUB_PROJECT_IMPORTER
+  CV_GENERATOR
+  PLATFORM_SYNC
 }
 
 model AgentReport {
