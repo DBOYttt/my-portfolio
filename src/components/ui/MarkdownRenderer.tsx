@@ -1,4 +1,5 @@
 import { markdownToHtml } from "@/lib/markdown";
+import CodeCopyEnhancer from "./CodeCopyEnhancer";
 
 interface Props {
   content: string;
@@ -8,9 +9,11 @@ interface Props {
 export default async function MarkdownRenderer({ content, className }: Props) {
   const html = await markdownToHtml(content);
   return (
-    <div
-      className={`markdown-content ${className ?? ""}`}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <CodeCopyEnhancer>
+      <div
+        className={`markdown-content ${className ?? ""}`}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </CodeCopyEnhancer>
   );
 }
