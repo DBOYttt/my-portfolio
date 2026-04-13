@@ -145,8 +145,8 @@ When the admin panel + database are active (Milestone 3+), components will fetch
 - [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
 
 ### Completed — Milestone 3
-- [x] `src/auth.ts` — Auth.js v5 credentials login with custom inline Prisma adapter (database sessions, 24h maxAge)
-- [x] `src/middleware.ts` — replaced with `export { auth as middleware }` for real session validation
+- [x] `src/auth.ts` — Auth.js v5 Credentials provider, **JWT strategy** (`strategy: "jwt"`, 24h maxAge). Database sessions are unsupported with Credentials in Auth.js v5.
+- [x] `src/middleware.ts` — lightweight **Edge-compatible cookie-presence check** (cannot use `export { auth as middleware }` — Prisma and bcryptjs are Node.js-only, incompatible with the Edge runtime). Real session validity is enforced server-side by `auth()` in `(panel)/layout.tsx`.
 - [x] `/admin/login` — server-action login form (`LoginForm.tsx` client component with `useFormStatus`)
 - [x] Admin route groups: `(auth)/login` (no sidebar), `(panel)/*` (sidebar shell)
 - [x] Admin shell: `(panel)/layout.tsx`, `Sidebar.tsx` (`usePathname` active links), `TopBar.tsx` (logout server action)
@@ -162,16 +162,25 @@ When the admin panel + database are active (Milestone 3+), components will fetch
 - [x] `src/lib/markdown.ts` + `MarkdownRenderer.tsx` — unified pipeline (remark + rehype + highlight + sanitize)
 - [x] `/blog/[slug]` and `/projects/[slug]` — content rendered via `MarkdownRenderer`
 
-### Next — Milestone 4
-- [ ] `/projects` — standalone filterable projects index page
+### Next — Milestone 4 (current)
+- [ ] `/projects` — standalone filterable projects index page (filter by SOFTWARE / ROBOTICS / HARDWARE / RESEARCH)
 - [ ] Markdown-renderer improvements: table of contents, copy-code button
 - [ ] Milestone 4 agents: Blog Suggester, Brand Monitor, Opportunity Watcher
-- [ ] Admin "Run now" button for agents (`POST /api/admin/agents/[id]/run`)
+- [ ] Admin "Run now" button for agents (`POST /api/admin/agents/[id]/run`) + status field (idle/running/error)
 - [ ] GitHub Actions CI: lint + type-check on push
-- [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
-- [ ] Owner provides `public/cv.pdf` and `public/photo.jpg`
 
-See `docs/IMPLEMENTATION_PLAN.md` for the full phased breakdown.
+### Milestone 4.5 — Skills Inference Agent
+- [ ] `agents/skills-inference.ts` — reads GitHub repos + DB projects/posts, uses Claude to extract technologies, diffs against existing `Skill` rows, writes an `AgentReport` with suggested additions/upgrades/stale items
+- [ ] Admin UI: diff table on agent report page, per-row "Apply" button (inline server action), "Apply all" bulk — **never auto-writes to DB; always owner-approved**
+
+### Milestone 4.6 — AI-Powered CV Generation
+- [ ] `agents/cv-generator.ts` — reads DB (User, Skills, Experience, Projects), calls Claude to write structured CV JSON, renders to `public/cv.pdf` via `@react-pdf/renderer`
+- [ ] `/admin/cv` page: "Regenerate from DB" button, PDF preview, inline section editor (corrects AI output before rendering), manual PDF upload as escape hatch
+- [ ] Schema additions: `cvGeneratedAt`, `cvSource` (`"generated" | "manual"`), `cvContent` (Json) on `User`
+- [ ] API routes: `POST /api/admin/agents/cv-generator/run`, `GET|PUT /api/admin/cv`, `POST /api/admin/cv/upload`, `POST /api/admin/cv/render`
+- [ ] See `docs/IMPLEMENTATION_PLAN.md` for full spec including the CV Section Editor flow
+
+See `docs/IMPLEMENTATION_PLAN.md` for the full phased breakdown (Milestones 5–7 cover deployment, polish, and growth features).
 
 ---
 
@@ -193,13 +202,13 @@ Key variables:
 
 - Do not add `console.log` to production code paths.
 - Do not install new dependencies without checking if existing packages cover the need.
-- Do not modify `prisma/schema.prisma` without running `npm run db:migrate` and committing the migration.
+- Do not modify `prisma/schema.prisma` without running `npm run db:push` (local) or `npm run db:migrate` (prod) and committing the change.
 - Do not add client components (`"use client"`) unless the feature genuinely requires browser APIs or interactivity.
 - Do not create a new component file for something that can be a local variable or inline JSX.
 - Do not add progress bars or percentage meters to the Skills section — they are perceived as arbitrary.
 - Do not add particle effects, typing animations on the hero, or scroll-jacking — ever.
 - Do not expose the admin panel URL in the public sitemap or robots.txt.
-- Do not treat the middleware session check as a full auth guard — it only checks for cookie presence, not validity. Real session verification is planned for Milestone 3 via Auth.js.
+- Do not treat the middleware session check as a full auth guard — it only checks for cookie presence, not validity. Real session verification is done server-side in `src/app/admin/(panel)/layout.tsx` via `auth()`, and in every `/api/admin/*` route via `requireAdminSession()` in `src/lib/admin-auth.ts`.
 
 ---
 
@@ -230,10 +239,20 @@ npm run dev          # Start dev server (works without DB — mock mode)
 npm run build        # Production build
 npm run lint         # ESLint via Next.js
 npm run db:generate  # Re-generate Prisma client after schema changes
-npm run db:push      # Apply schema to DB (no migration history)
-npm run db:migrate   # Apply schema with migration history (use in prod)
+npm run db:push      # Apply schema to DB — use this locally (migrate dev unsupported with Prisma dev proxy)
+npm run db:migrate   # Apply schema with migration history — use in production only
 npm run db:seed      # Create admin user
 npm run db:studio    # Open Prisma Studio (DB browser)
 npx tsx agents/github-summarizer.ts   # Run agent manually
 npx tsx agents/robotics-news.ts       # Run agent manually
 ```
+
+### Local DB connection
+`DATABASE_URL` must be a direct `postgres://` connection string — **not** `prisma+postgres://`.
+Use `127.0.0.1`, not `localhost` (postgres only listens on IPv4 on this machine):
+```
+DATABASE_URL="postgres://postgres:postgres@127.0.0.1:51214/template1?sslmode=disable"
+```
+Pass it inline to seed: `DATABASE_URL="postgres://..." npm run db:seed`
+
+Do **not** modify `prisma/schema.prisma` without running `npm run db:push` and committing the change.
