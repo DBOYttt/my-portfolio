@@ -61,7 +61,7 @@ export default async function ProjectPage({
         <div className="section-container">
           {/* Back link */}
           <Link
-            href="/#projects"
+            href="/projects"
             className="inline-flex items-center gap-2 font-mono text-sm text-slate-500 hover:text-cyan-400 transition-colors mb-8"
           >
             ← Back to projects
