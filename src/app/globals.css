@@ -109,6 +109,7 @@
   margin: 1rem 0;
   font-size: 0.875rem;
   line-height: 1.6;
+  position: relative;
 }
 .markdown-content pre code {
   background: transparent;
@@ -150,4 +151,26 @@
   max-width: 100%;
   border-radius: 0.5rem;
   margin: 1rem 0;
+}
+
+/* ─── Copy code button ──────────────────────────────────────────────────────── */
+.copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.7rem;
+  font-family: theme(fontFamily.mono);
+  color: theme(colors.slate.500);
+  background: #0f1117;
+  border: 1px solid #2a2d3a;
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  cursor: pointer;
+  transition: color 0.15s;
+  line-height: 1.5;
+}
+.copy-btn:hover,
+.copy-btn.copied {
+  color: theme(colors.cyan.400);
+  border-color: theme(colors.cyan.500/20);
 }
