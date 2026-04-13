@@ -7,9 +7,17 @@ interface Props {
   agentId: string;
   agentEnabled: boolean;
   agentStatus: string;
+  label?: string;
+  redirectOnSuccess?: boolean;
 }
 
-export default function RunAgentButton({ agentId, agentEnabled, agentStatus }: Props) {
+export default function RunAgentButton({
+  agentId,
+  agentEnabled,
+  agentStatus,
+  label,
+  redirectOnSuccess = false,
+}: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [lastResult, setLastResult] = useState<"ok" | "error" | null>(null);
@@ -23,6 +31,13 @@ export default function RunAgentButton({ agentId, agentEnabled, agentStatus }: P
       const res = await fetch(`/api/admin/agents/${agentId}/run`, { method: "POST" });
       if (res.ok) {
         setLastResult("ok");
+        if (redirectOnSuccess) {
+          const data = (await res.json()) as { reportId?: string };
+          if (data.reportId) {
+            router.push(`/admin/agents/reports/${data.reportId}`);
+            return;
+          }
+        }
         router.refresh();
       } else {
         setLastResult("error");
@@ -61,7 +76,7 @@ export default function RunAgentButton({ agentId, agentEnabled, agentStatus }: P
       ) : agentStatus === "running" ? (
         "Running…"
       ) : (
-        "Run now"
+        label ?? "Run now"
       )}
     </button>
   );

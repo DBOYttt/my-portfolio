@@ -24,7 +24,7 @@ export async function POST(
 
   try {
     const result = await runner();
-    await prisma.agentReport.create({
+    const report = await prisma.agentReport.create({
       data: {
         agentId: agent.id,
         title: result.title,
@@ -37,7 +37,7 @@ export async function POST(
       where: { id: params.id },
       data: { status: "idle", lastRunAt: new Date() },
     });
-    return NextResponse.json({ ok: true, title: result.title });
+    return NextResponse.json({ ok: true, title: result.title, rawData: result.rawData, reportId: report.id });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await prisma.agent.update({

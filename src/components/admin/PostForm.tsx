@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import AgentSuggestPanel from "./AgentSuggestPanel";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
@@ -126,6 +127,48 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
           onChange={(e) => handleTitleChange(e.target.value)}
           required
           className="w-full bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-cyan-500"
+        />
+        <AgentSuggestPanel
+          agentId="agent-blog-suggester"
+          buttonLabel="💡 Suggest topics"
+          className="mt-2"
+          renderResult={(rawData) => {
+            const data = rawData as { suggestions?: Array<{ title: string; tags: string[]; rationale: string }> };
+            const suggestions = data?.suggestions ?? [];
+            if (suggestions.length === 0)
+              return <p className="text-slate-500 text-sm">No suggestions available.</p>;
+            return (
+              <div className="space-y-2">
+                <p className="text-slate-500 text-xs font-mono">Click a suggestion to apply it:</p>
+                <div className="flex flex-col gap-2">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        set("title", s.title);
+                        if (!slugManuallyEdited) set("slug", toSlug(s.title));
+                        set("tags", (() => {
+                          const existing = new Set(form.tags.map((t) => t.toLowerCase()));
+                          const newTags = s.tags.filter((t) => !existing.has(t.toLowerCase()));
+                          return [...form.tags, ...newTags];
+                        })());
+                      }}
+                      className="text-left p-3 rounded-lg border border-[#2a2d3a] hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-colors"
+                    >
+                      <p className="text-slate-100 text-sm font-medium">{s.title}</p>
+                      <p className="text-slate-500 text-xs mt-0.5">{s.rationale}</p>
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {s.tags.map((tag) => (
+                          <span key={tag} className="tag text-xs">{tag}</span>
+                        ))}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          }}
         />
       </div>
 

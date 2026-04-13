@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import RunAgentButton from "@/components/admin/RunAgentButton";
 
 const typeColors: Record<string, string> = {
   ROBOTICS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
@@ -14,7 +15,10 @@ export default async function ProjectsAdminPage() {
   const session = await auth();
   if (!session) redirect("/admin/login");
 
-  const projects = await prisma.project.findMany({ orderBy: { order: "asc" } });
+  const [projects, importerAgent] = await Promise.all([
+    prisma.project.findMany({ orderBy: { order: "asc" } }),
+    prisma.agent.findUnique({ where: { id: "agent-github-project-importer" } }),
+  ]);
 
   async function deleteProject(formData: FormData) {
     "use server";
@@ -32,9 +36,20 @@ export default async function ProjectsAdminPage() {
             {projects.length} total
           </p>
         </div>
-        <Link href="/admin/projects/new" className="btn-primary">
-          New project
-        </Link>
+        <div className="flex items-center gap-2">
+          {importerAgent && (
+            <RunAgentButton
+              agentId="agent-github-project-importer"
+              agentEnabled={importerAgent.enabled}
+              agentStatus={importerAgent.status}
+              label="Import from GitHub"
+              redirectOnSuccess={true}
+            />
+          )}
+          <Link href="/admin/projects/new" className="btn-primary">
+            New project
+          </Link>
+        </div>
       </div>
 
       {projects.length === 0 ? (

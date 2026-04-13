@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import RunAgentButton from "@/components/admin/RunAgentButton";
 
 const CATEGORIES = ["LANGUAGE", "FRAMEWORK", "TOOL", "ROBOTICS", "EMBEDDED", "DATABASE", "OTHER"] as const;
 const LEVELS = ["FAMILIAR", "PROFICIENT", "EXPERT"] as const;
@@ -20,7 +21,10 @@ export default async function SkillsAdminPage() {
   const session = await auth();
   if (!session) redirect("/admin/login");
 
-  const skills = await prisma.skill.findMany({ orderBy: [{ category: "asc" }, { order: "asc" }] });
+  const [skills, inferenceAgent] = await Promise.all([
+    prisma.skill.findMany({ orderBy: [{ category: "asc" }, { order: "asc" }] }),
+    prisma.agent.findUnique({ where: { id: "agent-skills-inference" } }),
+  ]);
 
   const grouped = new Map<string, typeof skills>();
   for (const skill of skills) {
@@ -51,9 +55,20 @@ export default async function SkillsAdminPage() {
 
   return (
     <div className="max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-100">Skills</h1>
-        <p className="text-slate-500 text-sm font-mono mt-0.5">{skills.length} total</p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-100">Skills</h1>
+          <p className="text-slate-500 text-sm font-mono mt-0.5">{skills.length} total</p>
+        </div>
+        {inferenceAgent && (
+          <RunAgentButton
+            agentId="agent-skills-inference"
+            agentEnabled={inferenceAgent.enabled}
+            agentStatus={inferenceAgent.status}
+            label="Sync from GitHub"
+            redirectOnSuccess={true}
+          />
+        )}
       </div>
 
       <div className="card p-4 mb-6">
