@@ -137,10 +137,9 @@ When the admin panel + database are active (Milestone 3+), components will fetch
 - [x] `opengraph-image.tsx` — dynamic OG image via `next/og` served at `/opengraph-image`
 - [x] `metadataBase` + OWNER-driven root metadata in `layout.tsx`
 
-### Still Needed — Milestone 2 Remainder
-- [ ] Owner provides `public/cv.pdf` (download link exists, file missing)
-- [ ] Owner provides `public/photo.jpg` (conditional render is wired, file missing)
-- [ ] `/projects` — standalone filterable projects index page
+### Still Needed — Owner actions before going live
+- [ ] Owner provides `public/photo.jpg` (About section conditional render is wired, file missing)
+- [ ] Owner fills in real personal info in `src/lib/mock-data.ts` (`OWNER` object — name, title, bio, social links)
 - [ ] GitHub Actions CI: lint + type-check on push
 - [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
 
@@ -162,25 +161,59 @@ When the admin panel + database are active (Milestone 3+), components will fetch
 - [x] `src/lib/markdown.ts` + `MarkdownRenderer.tsx` — unified pipeline (remark + rehype + highlight + sanitize)
 - [x] `/blog/[slug]` and `/projects/[slug]` — content rendered via `MarkdownRenderer`
 
-### Next — Milestone 4 (current)
-- [ ] `/projects` — standalone filterable projects index page (filter by SOFTWARE / ROBOTICS / HARDWARE / RESEARCH)
-- [ ] Markdown-renderer improvements: table of contents, copy-code button
-- [ ] Milestone 4 agents: Blog Suggester, Brand Monitor, Opportunity Watcher
-- [ ] Admin "Run now" button for agents (`POST /api/admin/agents/[id]/run`) + status field (idle/running/error)
+### Completed — Milestone 4
+- [x] `/projects` — standalone filterable projects index page (filter by SOFTWARE / ROBOTICS / HARDWARE / RESEARCH type badges)
+- [x] Markdown-renderer improvements: table of contents (auto-generated from headings), copy-code button
+- [x] `rehype-sanitize` configured with `clobberPrefix: ""` so ToC anchor IDs are not mangled
+- [x] Milestone 4 AI agents: Blog Suggester, Brand Monitor, Opportunity Watcher — all with CLI runners in `agents/`
+- [x] Admin "Run now" button (`RunAgentButton.tsx`) → `POST /api/admin/agents/[id]/run` — status cycles idle → running → idle/error with badges
+- [x] Agent run API response includes `{ ok, title, rawData, reportId }` — enables contextual redirect and inline UI
+- [x] All CLI runners (`agents/*.ts`) use shared `prisma` singleton from `src/lib/prisma` (not `new PrismaClient()`) — required for PrismaPg adapter compatibility
+
+### Completed — Milestone 4.5: Skills Inference Agent
+- [x] `src/lib/agents/skills-inference.ts` — fetches GitHub repo languages (top 15 repos), diffs against DB skills + project techTags + post tags, calls Claude haiku to produce structured diff JSON
+- [x] rawData shape: `{ type: "SKILLS_DIFF", add: [...], upgrade: [...], stale: [...] }`
+- [x] `agents/skills-inference.ts` — CLI runner; seeds agent row in DB on first run
+- [x] Report detail page (`/admin/agents/reports/[reportId]`) renders SKILLS_DIFF as Apply/Upgrade tables with inline server actions — **never auto-writes; always owner-approved**
+- [x] Skills page (`/admin/skills`) — "Sync from GitHub" button (`RunAgentButton` with `redirectOnSuccess`) appears once agent row exists in DB
+
+### Completed — Milestone 4.6: AI-Powered CV Generation
+- [x] `src/lib/cv-template.tsx` — `@react-pdf/renderer` PDF template: dark header, cyan accent line, sections for Profile/Skills/Experience/Projects/Contact; exported as `renderCvToPdf(cvContent): Promise<Buffer>`
+- [x] `src/lib/agents/cv-generator.ts` — reads DB (User, Skill, Experience, Project), calls Claude haiku (max_tokens 1500) to write structured CV JSON, falls back to raw DB build if no API key or parse fails, renders PDF to `public/cv.pdf`, saves `cvContent`/`cvGeneratedAt`/`cvSource` to User
+- [x] `agents/cv-generator.ts` — CLI runner; seeds agent row in DB on first run
+- [x] Schema additions on `User`: `cvGeneratedAt DateTime?`, `cvSource String @default("manual")`, `cvContent Json?`
+- [x] `/admin/cv` — Server Component page: generated date + source badge, Open PDF link, Run now button, `CvEditor`, manual upload section
+- [x] `src/components/admin/CvEditor.tsx` — client component: editable summary textarea, skills read-only list (edit via Skills page), experience + projects editors, "Save & Render PDF" → PUT /api/admin/cv then POST /api/admin/cv/render
+- [x] API routes (all `runtime = "nodejs"`, all behind `requireAdminSession`): `POST /api/admin/cv/run`, `GET|PUT /api/admin/cv`, `POST /api/admin/cv/render`, `POST /api/admin/cv/upload`
+
+### Completed — Milestone 4.7: GitHub Project Importer
+- [x] `src/lib/agents/github-project-importer.ts` — fetches public repos, filters out ones already in DB by githubUrl, fetches README + languages for new repos (up to 10), calls Claude to generate portfolio project entries as JSON
+- [x] rawData shape: `{ type: "PROJECT_SUGGESTIONS", suggestions: [...] }`
+- [x] `agents/github-project-importer.ts` — CLI runner
+- [x] Report detail page renders PROJECT_SUGGESTIONS as suggestion cards with tech tags, type badge, GitHub link, and "Create as Draft" server action (creates `Project` row with `publishedAt: null`)
+- [x] Projects page (`/admin/projects`) — "Import from GitHub" button appears once agent row exists in DB
+
+### Completed — Milestone 4.8: Inline Agent Triggers in Editors
+- [x] `src/components/admin/AgentSuggestPanel.tsx` — reusable `"use client"` component: `{ agentId, buttonLabel, renderResult, className? }`; states: idle → loading → result panel → close; error shown inline
+- [x] Blog editor (`PostForm.tsx`) — "💡 Suggest topics" button below Title field runs Blog Suggester inline, shows 5 clickable suggestion pills; clicking a pill sets title, auto-generates slug, and adds tags
+- [x] Blog Suggester `rawData` now structured: `{ suggestions: [{ title, tags, rationale }], existingTopics: N }`
+- [x] `RunAgentButton` extended with `label?` and `redirectOnSuccess?` props
+
+### Completed — Milestone 4.9: Multi-Platform Scraping & Dashboard
+- [x] `src/lib/agents/github-summarizer.ts` — extended with `fetchGitHubProfile()` (`GET /users/{username}`); rawData now includes `{ repos: [...], profile: { bio, location, blog, twitter_username, followers } }`
+- [x] `src/lib/agents/twitter-profile.ts` — Twitter API v2 user + tweets fetch; returns `null` gracefully if `TWITTER_BEARER_TOKEN` not set
+- [x] `src/lib/agents/platform-sync.ts` — orchestrates GitHub profile + Twitter fetch; produces combined markdown report
+- [x] `agents/platform-sync.ts` — CLI runner
+- [x] LinkedIn: no auto-scraping (ToS violation, no free API) — `POST /api/admin/linkedin/import` parses Positions.csv + Skills.csv from LinkedIn data export and returns preview
+- [x] Admin dashboard Platform Connections card: GitHub (green if `GITHUB_USERNAME` set), X/Twitter (grey + hint if unconfigured), LinkedIn (Export data link)
+- [x] New `AgentType` enum values: `SKILLS_INFERENCE`, `GITHUB_PROJECT_IMPORTER`, `CV_GENERATOR`, `PLATFORM_SYNC`
+
+### Next — Milestone 5: Deployment
+- [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
 - [ ] GitHub Actions CI: lint + type-check on push
+- [ ] Owner fills in real personal data (name, bio, photo, skills, experience, projects)
 
-### Milestone 4.5 — Skills Inference Agent
-- [ ] `agents/skills-inference.ts` — reads GitHub repos + DB projects/posts, uses Claude to extract technologies, diffs against existing `Skill` rows, writes an `AgentReport` with suggested additions/upgrades/stale items
-- [ ] Admin UI: diff table on agent report page, per-row "Apply" button (inline server action), "Apply all" bulk — **never auto-writes to DB; always owner-approved**
-
-### Milestone 4.6 — AI-Powered CV Generation
-- [ ] `agents/cv-generator.ts` — reads DB (User, Skills, Experience, Projects), calls Claude to write structured CV JSON, renders to `public/cv.pdf` via `@react-pdf/renderer`
-- [ ] `/admin/cv` page: "Regenerate from DB" button, PDF preview, inline section editor (corrects AI output before rendering), manual PDF upload as escape hatch
-- [ ] Schema additions: `cvGeneratedAt`, `cvSource` (`"generated" | "manual"`), `cvContent` (Json) on `User`
-- [ ] API routes: `POST /api/admin/agents/cv-generator/run`, `GET|PUT /api/admin/cv`, `POST /api/admin/cv/upload`, `POST /api/admin/cv/render`
-- [ ] See `docs/IMPLEMENTATION_PLAN.md` for full spec including the CV Section Editor flow
-
-See `docs/IMPLEMENTATION_PLAN.md` for the full phased breakdown (Milestones 5–7 cover deployment, polish, and growth features).
+See `docs/IMPLEMENTATION_PLAN.md` for the full phased breakdown.
 
 ---
 
@@ -243,9 +276,19 @@ npm run db:push      # Apply schema to DB — use this locally (migrate dev unsu
 npm run db:migrate   # Apply schema with migration history — use in production only
 npm run db:seed      # Create admin user
 npm run db:studio    # Open Prisma Studio (DB browser)
-npx tsx agents/github-summarizer.ts   # Run agent manually
-npx tsx agents/robotics-news.ts       # Run agent manually
+npx tsx agents/github-summarizer.ts          # Run agent manually
+npx tsx agents/robotics-news.ts              # Run agent manually
+npx tsx agents/blog-suggester.ts             # Run agent manually
+npx tsx agents/brand-monitor.ts              # Run agent manually
+npx tsx agents/opportunity-watcher.ts        # Run agent manually
+npx tsx agents/skills-inference.ts           # Run agent manually (seeds DB row on first run)
+npx tsx agents/github-project-importer.ts    # Run agent manually (seeds DB row on first run)
+npx tsx agents/cv-generator.ts               # Run agent manually (seeds DB row on first run)
+npx tsx agents/platform-sync.ts              # Run agent manually (seeds DB row on first run)
 ```
+
+> **Important:** All CLI runners import `{ prisma }` from `src/lib/prisma` (not `new PrismaClient()`).
+> The PrismaPg adapter is set up in the singleton — using `new PrismaClient()` directly fails.
 
 ### Local DB connection
 `DATABASE_URL` must be a direct `postgres://` connection string — **not** `prisma+postgres://`.
