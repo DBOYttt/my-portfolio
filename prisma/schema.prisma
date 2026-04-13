@@ -186,6 +186,8 @@ model Agent {
   enabled     Boolean       @default(true)
   schedule    String
   config      Json
+  status      String        @default("idle")
+  lastError   String?
   lastRunAt   DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
