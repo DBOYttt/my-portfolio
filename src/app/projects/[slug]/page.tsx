@@ -6,6 +6,8 @@ import Nav from "@/components/public/Nav";
 import Footer from "@/components/public/Footer";
 import { getProjectBySlug, getProjects } from "@/lib/data";
 import MarkdownRenderer from "@/components/ui/MarkdownRenderer";
+import TableOfContents from "@/components/ui/TableOfContents";
+import { extractTocHeadings } from "@/lib/markdown";
 
 const typeColors: Record<string, string> = {
   ROBOTICS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
@@ -52,6 +54,7 @@ export default async function ProjectPage({
   const project = await getProjectBySlug(params.slug);
   if (!project) notFound();
 
+  const headings = extractTocHeadings(project.content);
   const typeColor = typeColors[project.type] ?? typeColors["SOFTWARE"];
 
   return (
@@ -132,7 +135,26 @@ export default async function ProjectPage({
 
           {/* Content */}
           <div className="max-w-3xl">
-            <MarkdownRenderer content={project.content} />
+            {/* Mobile ToC — collapsible, hidden on lg */}
+            {headings.length >= 3 && (
+              <details className="lg:hidden mb-6 border border-[#2a2d3a] rounded-lg p-4">
+                <summary className="text-xs font-mono text-slate-500 uppercase tracking-wider cursor-pointer">
+                  Contents
+                </summary>
+                <div className="mt-3">
+                  <TableOfContents headings={headings} />
+                </div>
+              </details>
+            )}
+
+            <div className={headings.length >= 3 ? "lg:grid lg:grid-cols-[1fr_220px] lg:gap-12 lg:items-start" : undefined}>
+              <MarkdownRenderer content={project.content} />
+              {headings.length >= 3 && (
+                <aside className="hidden lg:block sticky top-24 self-start">
+                  <TableOfContents headings={headings} />
+                </aside>
+              )}
+            </div>
           </div>
         </div>
       </main>
