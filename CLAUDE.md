@@ -208,6 +208,24 @@ When the admin panel + database are active (Milestone 3+), components will fetch
 - [x] Admin dashboard Platform Connections card: GitHub (green if `GITHUB_USERNAME` set), X/Twitter (grey + hint if unconfigured), LinkedIn (Export data link)
 - [x] New `AgentType` enum values: `SKILLS_INFERENCE`, `GITHUB_PROJECT_IMPORTER`, `CV_GENERATOR`, `PLATFORM_SYNC`
 
+### Completed — Milestone 4.10: Pre-Deployment Security Audit
+Curl-based pentest run locally (39 PASS / 0 FAIL / 2 WARN). Results:
+
+- [x] **Auth bypass (API)** — all 9 `/api/admin/*` routes return 401 without session (GET + POST)
+- [x] **Admin route guard** — all 7 `/admin/*` pages return 307 redirect to login without session
+- [x] **Security headers** — `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` present on all responses
+- [x] **Cookie flags** — Auth.js sets `HttpOnly: true`, `SameSite: lax` by default; `Secure` added automatically on HTTPS (confirmed in `@auth/core` source)
+- [x] **Information disclosure** — 404 and API error responses do not leak stack traces, Prisma paths, or filesystem paths
+- [x] **Sensitive files** — `.env`, `.env.local`, `package.json`, `tsconfig.json`, `prisma/schema.prisma`, `.git/config` all return 404
+- [x] **Rate limiting** — contact form returns 429 at request 6 (threshold working)
+- [x] **XSS payloads** — `<script>`, `<img onerror>`, `javascript:`, `<iframe>` all blocked at API layer (401 — auth required)
+- [x] **Open redirect** — `callbackUrl` param does not redirect to `evil.com`, `//evil.com`, or encoded variants
+- [x] **Path traversal** — `..%2F`, `%2e%2e%2f`, `....//` patterns blocked on `/api/admin/media`
+- [x] **File exposure** — no static files from project root are served through Next.js public dir
+- [ ] **Nikto scan** — not run (tool not installed); run `sudo dnf install nikto && nikto -h http://localhost:3000` before VPS deploy
+- [ ] **File upload MIME validation** — manual test pending (requires authenticated session + media endpoint)
+- [ ] **LinkedIn CSV input fuzzing** — pending (requires authenticated session)
+
 ### Next — Milestone 5: Deployment
 - [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
 - [ ] GitHub Actions CI: lint + type-check on push

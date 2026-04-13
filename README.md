@@ -158,7 +158,8 @@ Or use the "Run now" button on `/admin/agents` or the shortcut buttons on `/admi
 - **Milestone 2** — Full portfolio: projects, experience, contact form, SEO ✅
 - **Milestone 3** — Admin + Blog: CRUD editor, markdown, media uploads ✅
 - **Milestone 4** — AI Agents, CV generator, skills inference, project importer, inline editor triggers, platform scraping ✅
-- **Milestone 5** — Deployment: VPS, Docker Compose, Nginx HTTPS, PostgreSQL ← next
+- **Milestone 4.10** — Pre-deployment security audit: 39/39 checks passed (auth bypass, headers, rate limiting, XSS, open redirect, path traversal) ✅
+- **Milestone 5** — Deployment: VPS, Docker Compose, Nginx HTTPS, PostgreSQL
 - **Milestone 6** — Polish: Lighthouse 90+, analytics, accessibility
 
 ## Security Notes
