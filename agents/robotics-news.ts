@@ -11,10 +11,8 @@
  * for programmatic consumption. No scraping, no ToS violation.
  */
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../src/lib/prisma";
 import { runRoboticsNews } from "../src/lib/agents/robotics-news";
-
-const prisma = new PrismaClient();
 
 async function run() {
   console.log("[robotics-news] Starting...");

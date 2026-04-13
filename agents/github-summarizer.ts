@@ -8,10 +8,8 @@
  * Schedule via cron: 0 9 * * 1 (every Monday at 9am)
  */
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../src/lib/prisma";
 import { runGithubSummarizer } from "../src/lib/agents/github-summarizer";
-
-const prisma = new PrismaClient();
 
 async function run() {
   console.log("[github-summarizer] Starting...");

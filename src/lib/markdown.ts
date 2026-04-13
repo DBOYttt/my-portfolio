@@ -40,6 +40,7 @@ export async function markdownToHtml(content: string): Promise<string> {
     .use(rehypeSlug)
     .use(rehypeSanitize, {
       ...defaultSchema,
+      clobberPrefix: "",
       attributes: {
         ...defaultSchema.attributes,
         // Allow language-* classes from remark-rehype and hljs* classes from rehype-highlight

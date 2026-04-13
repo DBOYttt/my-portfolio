@@ -8,10 +8,8 @@
  * Schedule via cron: 0 10 * * 1 (every Monday at 10am)
  */
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../src/lib/prisma";
 import { runBlogSuggester } from "../src/lib/agents/blog-suggester";
-
-const prisma = new PrismaClient();
 
 async function run() {
   console.log("[blog-suggester] Starting...");

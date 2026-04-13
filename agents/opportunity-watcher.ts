@@ -8,10 +8,8 @@
  * Schedule via cron: 0 8 * * 1 (every Monday at 8am)
  */
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../src/lib/prisma";
 import { runOpportunityWatcher } from "../src/lib/agents/opportunity-watcher";
-
-const prisma = new PrismaClient();
 
 async function run() {
   console.log("[opportunity-watcher] Starting...");

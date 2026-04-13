@@ -8,10 +8,8 @@
  * Schedule via cron: 0 9 * * 3 (every Wednesday at 9am)
  */
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../src/lib/prisma";
 import { runBrandMonitor } from "../src/lib/agents/brand-monitor";
-
-const prisma = new PrismaClient();
 
 async function run() {
   console.log("[brand-monitor] Starting...");
