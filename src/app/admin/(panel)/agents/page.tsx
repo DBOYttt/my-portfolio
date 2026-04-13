@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import RunAgentButton from "@/components/admin/RunAgentButton";
 
 export default async function AgentsAdminPage() {
   const session = await auth();
@@ -53,6 +54,16 @@ export default async function AgentsAdminPage() {
                           {unread} new
                         </span>
                       )}
+                      {agent.status === "running" && (
+                        <span className="text-xs px-1.5 py-0.5 rounded border text-yellow-400 bg-yellow-500/10 border-yellow-500/20">
+                          running
+                        </span>
+                      )}
+                      {agent.status === "error" && (
+                        <span className="text-xs px-1.5 py-0.5 rounded border text-red-400 bg-red-500/10 border-red-500/20">
+                          error
+                        </span>
+                      )}
                       <span
                         className={`text-xs px-1.5 py-0.5 rounded border ${
                           agent.enabled
@@ -66,6 +77,11 @@ export default async function AgentsAdminPage() {
                     <p className="text-slate-500 text-xs mb-2">
                       {agent.description}
                     </p>
+                    {agent.status === "error" && agent.lastError && (
+                      <p className="text-red-400 text-xs font-mono mb-2 truncate">
+                        {agent.lastError}
+                      </p>
+                    )}
                     {latestReport ? (
                       <p className="text-slate-400 text-sm truncate">
                         Latest:{" "}
@@ -82,12 +98,19 @@ export default async function AgentsAdminPage() {
                       </p>
                     )}
                   </div>
-                  <Link
-                    href={`/admin/agents/${agent.id}`}
-                    className="btn-secondary text-xs py-1.5 px-3 ml-4 flex-shrink-0"
-                  >
-                    View reports
-                  </Link>
+                  <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                    <RunAgentButton
+                      agentId={agent.id}
+                      agentEnabled={agent.enabled}
+                      agentStatus={agent.status}
+                    />
+                    <Link
+                      href={`/admin/agents/${agent.id}`}
+                      className="btn-secondary text-xs py-1.5 px-3"
+                    >
+                      View reports
+                    </Link>
+                  </div>
                 </div>
               </div>
             );

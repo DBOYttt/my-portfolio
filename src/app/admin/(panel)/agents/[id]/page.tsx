@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import RunAgentButton from "@/components/admin/RunAgentButton";
 
 export default async function AgentDetailPage({
   params,
@@ -35,12 +36,19 @@ export default async function AgentDetailPage({
   return (
     <div className="max-w-4xl">
       <div className="mb-6">
-        <Link
-          href="/admin/agents"
-          className="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors"
-        >
-          ← All agents
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link
+            href="/admin/agents"
+            className="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors"
+          >
+            ← All agents
+          </Link>
+          <RunAgentButton
+            agentId={agent.id}
+            agentEnabled={agent.enabled}
+            agentStatus={agent.status}
+          />
+        </div>
         <h1 className="text-2xl font-bold text-slate-100 mt-2">{agent.name}</h1>
         <p className="text-slate-500 text-sm font-mono mt-0.5">
           {agent.reports.length} reports
