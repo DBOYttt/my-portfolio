@@ -221,11 +221,11 @@ export async function runGithubProjectImporter(): Promise<AgentRunResult> {
   ]);
 
   const existingUrls = new Set(
-    existingProjects.map((p) => p.githubUrl).filter(Boolean) as string[]
+    existingProjects.map((p) => p.githubUrl?.toLowerCase()).filter(Boolean) as string[]
   );
   const existingSlugs = new Set(existingProjects.map((p) => p.slug.toLowerCase()));
 
-  const newRepos = repos.filter((r) => !existingUrls.has(r.html_url)).slice(0, 5);
+  const newRepos = repos.filter((r) => !existingUrls.has(r.html_url.toLowerCase())).slice(0, 5);
 
   const monthYear = new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
@@ -258,7 +258,7 @@ export async function runGithubProjectImporter(): Promise<AgentRunResult> {
   // Auto-create project drafts — skip any whose slug conflicts with an existing project
   const created: CreatedProject[] = [];
   for (const s of suggestions) {
-    if (existingSlugs.has(s.slug.toLowerCase()) || existingUrls.has(s.githubUrl)) continue;
+    if (existingSlugs.has(s.slug.toLowerCase()) || existingUrls.has(s.githubUrl.toLowerCase())) continue;
     const project = await prisma.project.create({
       data: {
         title: s.title,
