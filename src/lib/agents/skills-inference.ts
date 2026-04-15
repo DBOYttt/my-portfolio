@@ -70,6 +70,7 @@ async function fetchRepoLanguages(repoName: string): Promise<Record<string, numb
 
 async function buildSkillsDiff(
   repoLanguages: Record<string, number>,
+  repoTopics: string[],
   techTags: string[],
   postTags: string[],
   existingSkills: Array<{ name: string; category: string; level: string | null }>
@@ -88,17 +89,20 @@ async function buildSkillsDiff(
     .map((s) => `${s.name} (${s.category}, ${s.level ?? "no level"})`)
     .join(", ");
 
-  const prompt = `You are analyzing a developer's portfolio to suggest skill updates.
+  const topicsText = repoTopics.length > 0 ? repoTopics.join(", ") : "none";
+
+  const prompt = `You are analyzing a developer's GitHub profile to build a complete, accurate skills list for their portfolio.
 
 Technologies detected in their GitHub repos (language: bytes of code):
 ${repoLangText || "none"}
 
+Repo topics/tags: ${topicsText}
 Technologies in their projects: ${techTags.length > 0 ? techTags.join(", ") : "none"}
 Technologies in their blog posts: ${postTags.length > 0 ? postTags.join(", ") : "none"}
 
-Their existing skills: ${existingSkillsText || "none"}
+Their existing skills already in portfolio: ${existingSkillsText || "none (portfolio is empty — infer ALL skills from the evidence above)"}
 
-Produce a JSON diff of suggested changes. Return ONLY valid JSON, no explanation:
+Your goal: produce a COMPLETE diff so the portfolio reflects everything visible in their GitHub. Return ONLY valid JSON, no markdown, no explanation:
 {
   "add": [{"name":"...","category":"LANGUAGE|FRAMEWORK|TOOL|ROBOTICS|EMBEDDED|DATABASE|OTHER","level":"FAMILIAR|PROFICIENT|EXPERT","evidence":"..."}],
   "upgrade": [{"name":"...","currentLevel":"...","suggestedLevel":"...","evidence":"..."}],
@@ -106,16 +110,19 @@ Produce a JSON diff of suggested changes. Return ONLY valid JSON, no explanation
 }
 
 Rules:
-- Only add skills with strong evidence (significant code bytes or repeated use)
-- Don't add skills already in existing list (exact name match, case-insensitive)
-- Only suggest upgrades if evidence clearly supports higher level
+- Add EVERY technology visible in the evidence (languages, frameworks, tools, topics) — do not skip any
+- If existing skills list is empty, treat all detected technologies as additions
+- Don't add skills already in the existing list (exact name match, case-insensitive)
+- Level guide: FAMILIAR = any presence, PROFICIENT = significant bytes or repeated use, EXPERT = dominant language across many repos
+- Infer frameworks from topics/tags (e.g. topic "react" → add React as FRAMEWORK)
+- Only suggest upgrades if evidence clearly supports a higher level
 - Stale = skills that appear nowhere in the evidence
-- Return at most 10 additions, 5 upgrades, 5 stale`;
+- There is no cap on the number of suggestions — return all of them`;
 
   const client = new Anthropic({ apiKey });
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1000,
+    max_tokens: 2048,
     messages: [{ role: "user", content: prompt }],
   });
 
@@ -143,16 +150,19 @@ export async function runSkillsInference(): Promise<AgentRunResult> {
   const { prisma } = await import("@/lib/prisma");
 
   const repos = await fetchRepos();
-  const topRepos = repos.slice(0, 15);
+  const topRepos = repos.slice(0, 30);
 
-  // Aggregate language bytes across top repos
+  // Aggregate language bytes and topics across all repos
   const aggregatedLanguages: Record<string, number> = {};
+  const allTopics: string[] = [];
   for (const repo of topRepos) {
     const langs = await fetchRepoLanguages(repo.name);
     for (const [lang, bytes] of Object.entries(langs)) {
       aggregatedLanguages[lang] = (aggregatedLanguages[lang] ?? 0) + bytes;
     }
+    if (repo.topics) allTopics.push(...repo.topics);
   }
+  const uniqueTopics = [...new Set(allTopics)];
 
   // Read DB data
   const [existingSkills, projects, tags] = await Promise.all([
@@ -166,6 +176,7 @@ export async function runSkillsInference(): Promise<AgentRunResult> {
 
   const diff = await buildSkillsDiff(
     aggregatedLanguages,
+    uniqueTopics,
     techTags,
     postTags,
     existingSkills.map((s) => ({ name: s.name, category: s.category, level: s.level }))
