@@ -56,6 +56,7 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
   const [tagInput, setTagInput] = useState("");
   const [showSeo, setShowSeo] = useState(false);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!initialData);
+  const [generatingContent, setGeneratingContent] = useState(false);
 
   const [form, setForm] = useState<PostFormData>({
     title: initialData?.title ?? "",
@@ -88,6 +89,30 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
 
   function removeTag(tag: string) {
     set("tags", form.tags.filter((t) => t !== tag));
+  }
+
+  async function generateContent() {
+    if (!form.title.trim()) return;
+    setGeneratingContent(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/blog/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: form.title, tags: form.tags, excerpt: form.excerpt }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to generate content");
+        return;
+      }
+      const data = await res.json();
+      set("content", data.content as string);
+    } catch {
+      setError("Failed to generate content");
+    } finally {
+      setGeneratingContent(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -201,7 +226,17 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm text-slate-400 mb-1">Content</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-sm text-slate-400">Content</label>
+          <button
+            type="button"
+            onClick={generateContent}
+            disabled={generatingContent || !form.title.trim()}
+            className="text-xs text-slate-500 hover:text-cyan-400 font-mono disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {generatingContent ? "Generating…" : "✍ Generate draft"}
+          </button>
+        </div>
         <div data-color-mode="dark">
           <MDEditor
             value={form.content}

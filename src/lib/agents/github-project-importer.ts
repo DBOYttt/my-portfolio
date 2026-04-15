@@ -187,6 +187,14 @@ Rules for type:
   }
 }
 
+interface CreatedProject {
+  id: string;
+  title: string;
+  slug: string;
+  type: string;
+  githubUrl: string;
+}
+
 export async function runGithubProjectImporter(): Promise<AgentRunResult> {
   if (!GITHUB_USERNAME) {
     throw new Error("GITHUB_USERNAME not set in environment");
@@ -196,12 +204,13 @@ export async function runGithubProjectImporter(): Promise<AgentRunResult> {
 
   const [repos, existingProjects] = await Promise.all([
     fetchRepos(),
-    prisma.project.findMany({ select: { githubUrl: true } }),
+    prisma.project.findMany({ select: { githubUrl: true, slug: true } }),
   ]);
 
   const existingUrls = new Set(
     existingProjects.map((p) => p.githubUrl).filter(Boolean) as string[]
   );
+  const existingSlugs = new Set(existingProjects.map((p) => p.slug.toLowerCase()));
 
   const newRepos = repos.filter((r) => !existingUrls.has(r.html_url)).slice(0, 10);
 
@@ -213,9 +222,9 @@ export async function runGithubProjectImporter(): Promise<AgentRunResult> {
       summary: `## GitHub Project Import\n\nAll ${repos.length} public repositories are already in the portfolio.`,
       sources: [],
       rawData: {
-        type: "PROJECT_SUGGESTIONS",
-        suggestions: [],
-        existingCount: existingProjects.length,
+        type: "PROJECT_CREATED",
+        created: [],
+        skipped: existingProjects.length,
       },
     };
   }
@@ -233,12 +242,34 @@ export async function runGithubProjectImporter(): Promise<AgentRunResult> {
 
   const suggestions = await suggestWithLLM(repoDataList);
 
+  // Auto-create project drafts — skip any whose slug conflicts with an existing project
+  const created: CreatedProject[] = [];
+  for (const s of suggestions) {
+    if (existingSlugs.has(s.slug.toLowerCase()) || existingUrls.has(s.githubUrl)) continue;
+    const project = await prisma.project.create({
+      data: {
+        title: s.title,
+        slug: s.slug,
+        summary: s.summary,
+        content: s.content,
+        type: s.type,
+        techTags: s.techTags,
+        githubUrl: s.githubUrl,
+        featured: false,
+        order: 0,
+        publishedAt: null,
+      },
+    });
+    created.push({ id: project.id, title: s.title, slug: s.slug, type: s.type, githubUrl: s.githubUrl });
+    existingSlugs.add(s.slug.toLowerCase());
+  }
+
   const summary = [
     "## GitHub Project Import",
     "",
-    `Found **${newRepos.length}** repositor${newRepos.length !== 1 ? "ies" : "y"} not yet in portfolio. **${suggestions.length}** project draft${suggestions.length !== 1 ? "s" : ""} suggested.`,
+    `Scanned **${newRepos.length}** new repositor${newRepos.length !== 1 ? "ies" : "y"} and automatically created **${created.length}** project draft${created.length !== 1 ? "s" : ""}.`,
     "",
-    suggestions.map((s) => `- **${s.title}** (${s.type}) — ${s.summary}`).join("\n"),
+    created.map((p) => `- **${p.title}** (${p.type})`).join("\n"),
   ].join("\n");
 
   return {
@@ -246,9 +277,9 @@ export async function runGithubProjectImporter(): Promise<AgentRunResult> {
     summary,
     sources: newRepos.map((r) => r.html_url),
     rawData: {
-      type: "PROJECT_SUGGESTIONS",
-      suggestions,
-      existingCount: existingProjects.length,
+      type: "PROJECT_CREATED",
+      created,
+      skipped: existingProjects.length,
     },
   };
 }

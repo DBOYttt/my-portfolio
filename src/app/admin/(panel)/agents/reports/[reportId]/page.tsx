@@ -43,10 +43,25 @@ interface ProjectSuggestion {
   githubUrl: string;
 }
 
+// Legacy rawData shape (old reports)
 interface ProjectSuggestionsRawData {
   type: "PROJECT_SUGGESTIONS";
   suggestions: ProjectSuggestion[];
   existingCount: number;
+}
+
+interface CreatedProject {
+  id: string;
+  title: string;
+  slug: string;
+  type: string;
+  githubUrl: string;
+}
+
+interface ProjectCreatedRawData {
+  type: "PROJECT_CREATED";
+  created: CreatedProject[];
+  skipped: number;
 }
 
 const typeColors: Record<string, string> = {
@@ -151,9 +166,15 @@ export default async function ReportDetailPage({
   const isProjectSuggestions =
     report.agent.type === "GITHUB_PROJECT_IMPORTER" && rawDataType === "PROJECT_SUGGESTIONS";
 
+  const isProjectCreated =
+    report.agent.type === "GITHUB_PROJECT_IMPORTER" && rawDataType === "PROJECT_CREATED";
+
   const skillsDiff = isSkillsDiff ? (rawData as unknown as SkillsDiffRawData) : null;
   const projectSuggestions = isProjectSuggestions
     ? (rawData as unknown as ProjectSuggestionsRawData)
+    : null;
+  const projectCreated = isProjectCreated
+    ? (rawData as unknown as ProjectCreatedRawData)
     : null;
 
   return (
@@ -379,6 +400,51 @@ export default async function ReportDetailPage({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Project Created UI (new auto-import reports) */}
+      {projectCreated && (
+        <div className="mb-6">
+          <p className="text-slate-100 text-sm font-medium mb-3">
+            Projects Created ({projectCreated.created.length})
+          </p>
+          {projectCreated.created.length === 0 ? (
+            <div className="card p-4">
+              <p className="text-slate-500 text-sm">All repositories are already in the portfolio.</p>
+            </div>
+          ) : (
+            <div className="card overflow-hidden">
+              <ul className="divide-y divide-[#2a2d3a]">
+                {projectCreated.created.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between px-4 py-2.5 gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={`text-xs px-2 py-0.5 rounded border flex-shrink-0 ${typeColors[p.type] ?? typeColors.SOFTWARE}`}>
+                        {p.type.charAt(0) + p.type.slice(1).toLowerCase()}
+                      </span>
+                      <span className="text-slate-100 text-sm font-medium truncate">{p.title}</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <a
+                        href={p.githubUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors hidden md:block"
+                      >
+                        {p.githubUrl.replace("https://github.com/", "github/")}
+                      </a>
+                      <Link
+                        href={`/admin/projects/${p.id}`}
+                        className="text-xs py-1 px-2.5 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors"
+                      >
+                        Edit draft →
+                      </Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
