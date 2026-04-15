@@ -33,11 +33,15 @@ All agents must comply with these rules. Do not implement anything that violates
 
 ```
 agents/
-├── github-summarizer.ts     ← Weekly GitHub activity
-├── robotics-news.ts         ← Weekly RSS digest
-├── blog-suggester.ts        ← Monthly content ideas  [TODO: Milestone 4]
-├── brand-monitor.ts         ← Brand/mention monitoring [TODO: Milestone 4]
-└── opportunity-watcher.ts   ← Job listing monitor    [TODO: Milestone 4]
+├── github-summarizer.ts       ← Weekly GitHub activity + profile sync
+├── robotics-news.ts           ← Weekly RSS digest (robotics/tech feeds)
+├── blog-suggester.ts          ← Monthly content ideas
+├── brand-monitor.ts           ← Web mention monitoring
+├── opportunity-watcher.ts     ← Job listing monitor
+├── skills-inference.ts        ← GitHub/project/post analysis → skill diff
+├── github-project-importer.ts ← Auto-create project drafts from GitHub repos
+├── cv-generator.ts            ← AI-written CV → public/cv.pdf
+└── platform-sync.ts           ← GitHub profile + Twitter combined report
 ```
 
 ### Agent script structure
@@ -45,9 +49,9 @@ agents/
 Every agent script follows this pattern:
 
 ```typescript
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+// CRITICAL: Always import from the singleton — never use new PrismaClient()
+// The PrismaPg adapter is only set up in the singleton; direct instantiation fails.
+import { prisma } from "../src/lib/prisma";
 
 async function run() {
   // 1. Upsert the Agent configuration record
@@ -109,7 +113,7 @@ Use `claude-haiku-4-5-20251001` for agents — it's cheap and fast for summariza
 | Rate limit | 5000 req/hr with token; 60/hr without |
 | Auth | `GITHUB_TOKEN` env var (optional but recommended) |
 
-**Current state:** Data fetching complete. LLM call is a stub — wire `ANTHROPIC_API_KEY` to activate.
+**Current state:** Fully implemented. Fetches repos + full GitHub profile (`/users/{username}`). rawData includes `{ repos: [...], profile: { bio, location, blog, twitter_username, followers } }`. Requires `ANTHROPIC_API_KEY` for LLM summary; falls back to structured output without it.
 
 **Config JSON shape:**
 ```json
@@ -130,7 +134,7 @@ Use `claude-haiku-4-5-20251001` for agents — it's cheap and fast for summariza
 | Rate limit | RSS is pull-based; no rate limits |
 | Auth | None required |
 
-**Current state:** RSS fetching and basic XML parsing complete. Uses regex — replace with `rss-parser` npm package in Milestone 4 for robustness.
+**Current state:** Implemented. Fetches and parses RSS feeds. Reports written to DB.
 
 **Config JSON shape:**
 ```json
@@ -144,56 +148,80 @@ Use `claude-haiku-4-5-20251001` for agents — it's cheap and fast for summariza
 
 ---
 
-## Planned Agents (Milestone 4)
+## Additional Implemented Agents
 
-### Blog Topic Suggester
+### Blog Topic Suggester (`agents/blog-suggester.ts`)
 
 **Purpose:** Monthly content idea generation based on owner's activity.
 
-**Inputs:**
-- Existing post titles and tags (from DB)
-- Recent GitHub activity (from AgentReport of GitHub Summarizer)
-- Recent news digest (from AgentReport of Robotics News Curator)
-- Trending topics from Hacker News API (`https://hacker-news.firebaseio.com/v0/topstories.json` — fully public)
-
-**Output:** 5 suggested post titles with 1-line rationale each.
-
+**Inputs:** Existing post titles + tags (DB), trending Hacker News API stories
+**Output:** `{ suggestions: [{ title, tags, rationale }], existingTopics: N }`
 **Schedule:** `0 9 1 * *` (1st of each month)
-
-**Admin UI:** "Content Ideas" card on dashboard — click suggestion → pre-fills new post form.
+**Admin UI:** Inline "💡 Suggest topics" panel in blog editor; clicking a suggestion pill pre-fills title, slug, tags.
 
 ---
 
-### Personal Brand Monitor
+### Personal Brand Monitor (`agents/brand-monitor.ts`)
 
 **Purpose:** Find new public web mentions of the owner's name and projects.
 
-**Inputs:** Owner name, GitHub username, project names (from `Agent.config`)
-**Data source:** Brave Search API (`search.brave.com/api`) or SerpAPI — both have free tiers
-**Output:** List of new URLs mentioning the owner, with title and snippet
-
-**Deduplication:** Hash source URLs and skip ones already in previous reports.
-
-**Schedule:** `0 9 * * 3` (Wednesday 9am — bi-weekly effective)
-
-**Legal note:** Only public search results via official API. No scraping of indexed pages.
+**Data source:** Brave Search API or SerpAPI (official APIs only — no scraping)
+**Output:** List of new URLs with title + snippet; deduplicates against previous reports
+**Schedule:** `0 9 * * 3` (Wednesday 9am)
 
 ---
 
-### Career Opportunity Watcher
+### Career Opportunity Watcher (`agents/opportunity-watcher.ts`)
 
 **Purpose:** Surface relevant job postings automatically.
 
-**Data source options (no scraping):**
-- Adzuna API (`api.adzuna.com`) — free tier, 1000 req/day
-- Remotive API (`remotive.com/api/remote-jobs`) — fully public, no auth
-- Arbeitnow API (`arbeitnow.com/api/job-board-api`) — free, EU-focused
-
-**Output:** New matching listings with title, company, link, location, and LLM-assessed fit score.
-
+**Data source:** Remotive API (`remotive.com/api/remote-jobs`) — fully public, no auth required
+**Output:** New matching listings with title, company, link, location, LLM fit score
 **Schedule:** `0 9 * * 1,4` (Monday and Thursday 9am)
 
-**Important:** Do NOT implement LinkedIn scraping. It violates ToS and can result in IP bans.
+**Important:** Do NOT implement LinkedIn scraping — ToS violation, IP ban risk.
+
+---
+
+### Skills Inference (`agents/skills-inference.ts`)
+
+**Purpose:** Keep the Skills section evidence-based and up to date without manual editing.
+
+**Inputs:** GitHub repo languages + topics, `Project.techTags`, `Post.tags`
+**LLM:** Claude haiku produces `{ add: [...], upgrade: [...], stale: [...] }` diff
+**Admin UI:** Apply/Upgrade tables in report detail — **never auto-writes to DB; always owner-approved**
+**Schedule:** Weekly, after GitHub Summarizer
+
+---
+
+### GitHub Project Importer (`agents/github-project-importer.ts`)
+
+**Purpose:** Auto-create draft Project rows from new public GitHub repos.
+
+**Process:** Fetch up to 5 new repos → README + languages → Claude haiku generates title/summary/content → `prisma.project.create()` as draft (unpublished)
+**rawData:** `{ type: "PROJECT_CREATED", created: [...], skipped: N }`
+**Slug collision:** Wrapped in try-catch; P2002 skipped silently; `existingSlugs` set updated after each insert to prevent intra-batch collisions
+**Admin UI:** Projects page "Import from GitHub" button; report shows "Edit draft →" links
+
+---
+
+### CV Generator (`agents/cv-generator.ts`)
+
+**Purpose:** Keep `public/cv.pdf` current without manual document editing.
+
+**Process:** Read DB (User, Skill, Experience, Project) → Claude haiku writes structured JSON → `@react-pdf/renderer` renders PDF → written to `public/cv.pdf`
+**Fallback:** If `ANTHROPIC_API_KEY` absent or LLM parse fails, builds PDF directly from raw DB data
+**Admin UI:** `/admin/cv` page — generated date, Open PDF link, Run now button, `CvEditor` for inline corrections
+
+---
+
+### Platform Sync (`agents/platform-sync.ts`)
+
+**Purpose:** Combined GitHub profile + X/Twitter snapshot report.
+
+**Sources:** GitHub `/users/{username}` profile API + Twitter API v2 (graceful null if `TWITTER_BEARER_TOKEN` unset)
+**Output:** Markdown report combining both platform summaries
+**Admin UI:** Admin dashboard "Platform Connections" card shows status of each platform integration
 
 ---
 
@@ -203,6 +231,13 @@ Use `claude-haiku-4-5-20251001` for agents — it's cheap and fast for summariza
 ```bash
 npx tsx agents/github-summarizer.ts
 npx tsx agents/robotics-news.ts
+npx tsx agents/blog-suggester.ts
+npx tsx agents/brand-monitor.ts
+npx tsx agents/opportunity-watcher.ts
+npx tsx agents/skills-inference.ts           # seeds DB row on first run
+npx tsx agents/github-project-importer.ts    # seeds DB row on first run
+npx tsx agents/cv-generator.ts               # seeds DB row on first run
+npx tsx agents/platform-sync.ts              # seeds DB row on first run
 ```
 
 ### Cron setup (system crontab)
@@ -219,9 +254,9 @@ Add:
 0 8 * * 5 cd /path/to/my-portfolio && npx tsx agents/robotics-news.ts >> /var/log/portfolio-agents.log 2>&1
 ```
 
-### Manual trigger from admin panel (Milestone 4)
-The `/admin/agents` page will have a "Run now" button for each agent.
-This calls `POST /api/admin/agents/[id]/run` which spawns the script as a child process.
+### Manual trigger from admin panel
+The `/admin/agents` page has a "Run now" button for each agent.
+This calls `POST /api/admin/agents/[id]/run`. The route uses an atomic `updateMany` lock so concurrent clicks cannot create duplicate reports — only the first request claiming the `status: { not: "running" }` condition wins; others receive 409.
 
 ---
 

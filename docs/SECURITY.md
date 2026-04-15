@@ -18,9 +18,9 @@ The primary risks are:
 ### Admin login
 - Single admin user, created via `npm run db:seed`
 - Password hashed with bcrypt (cost factor 12)
-- Auth.js database sessions (not JWT — allows instant revocation)
-- Session cookie: `HttpOnly`, `Secure`, `SameSite=Lax`
-- Session expiry: 24 hours, rolling refresh on activity
+- Auth.js v5 with **JWT strategy** (`strategy: "jwt"`) — database sessions are unsupported with the Credentials provider in Auth.js v5
+- Session cookie: `HttpOnly`, `Secure` (on HTTPS), `SameSite=Lax`
+- Session expiry: 24 hours (`maxAge: 86400`)
 
 ### Route protection
 - `src/middleware.ts` intercepts all `/admin/*` requests
@@ -29,13 +29,13 @@ The primary risks are:
 - Unauthenticated requests return a redirect, not a 401 (avoids confirming the route exists)
 
 ### Admin API routes
-Every `/api/admin/*` route must validate the session at the top:
+Every `/api/admin/*` route must validate the session at the top using the shared guard:
 ```typescript
-import { auth } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/admin-auth";
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  const { error } = await requireAdminSession();
+  if (error) return error; // returns NextResponse 401
   // ... rest of handler
 }
 ```
@@ -77,7 +77,7 @@ The `/api/contact` endpoint is public. Protections applied:
 - **Rate limiting:** 5 requests per IP per hour (in-memory for MVP; use Upstash Redis in production)
 - **Input validation:** name, email format, message presence checked server-side
 - **No reflection:** form data is never echoed back in the response
-- **Honeypot field:** (TODO: Milestone 2) Hidden field that bots fill in; humans don't
+- **Honeypot field:** Hidden `website` field — if non-empty the request is silently discarded
 
 For production, move rate limiting to Upstash Redis to survive server restarts:
 ```typescript

@@ -55,6 +55,13 @@ npm run db:seed      # Create admin user (uses ADMIN_EMAIL + ADMIN_PASSWORD from
 # AI Agents (run manually or via cron)
 npx tsx agents/github-summarizer.ts
 npx tsx agents/robotics-news.ts
+npx tsx agents/blog-suggester.ts
+npx tsx agents/brand-monitor.ts
+npx tsx agents/opportunity-watcher.ts
+npx tsx agents/skills-inference.ts           # seeds DB row on first run
+npx tsx agents/github-project-importer.ts    # seeds DB row on first run
+npx tsx agents/cv-generator.ts               # seeds DB row on first run
+npx tsx agents/platform-sync.ts              # seeds DB row on first run
 ```
 
 ---
@@ -103,9 +110,10 @@ CONTACT_EMAIL       Where contact form emails are delivered
 
 ### Required for AI agents
 ```
-ANTHROPIC_API_KEY   Get from console.anthropic.com
-GITHUB_USERNAME     Your GitHub username
-GITHUB_TOKEN        GitHub PAT with public_repo read scope (for higher rate limits)
+ANTHROPIC_API_KEY      Get from console.anthropic.com
+GITHUB_USERNAME        Your GitHub username (required for GitHub Summarizer + Project Importer)
+GITHUB_TOKEN           GitHub PAT with public_repo read scope (for higher rate limits)
+TWITTER_BEARER_TOKEN   Twitter API v2 bearer token (optional — Platform Sync works without it)
 ```
 
 ### Optional
@@ -202,7 +210,9 @@ In mock mode: add to `PROJECTS` array in `mock-data.ts`.
 In DB mode (Milestone 3+): use the admin panel at `/admin/projects/new`.
 
 ### Add your CV
-Place your PDF at `public/cv.pdf`. The nav and hero already link to `/cv.pdf`.
+The CV Generator agent creates `public/cv.pdf` automatically. In the admin panel, go to `/admin/cv` and click "Run now" to generate the first PDF from your DB content. The AI call requires `ANTHROPIC_API_KEY`; if absent it falls back to raw DB data.
+
+To use a manually crafted PDF instead: upload it at `/admin/cv` — the page provides an upload section that writes to `public/cv.pdf` and sets `cvSource = "manual"` so AI regeneration is suppressed until you switch back.
 
 ### Add your photo
 Place your photo at `public/photo.jpg` (or any format).

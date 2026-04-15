@@ -80,7 +80,8 @@ my-portfolio/
 │   │   └── api/               ← API routes (contact, admin, auth)
 │   ├── components/
 │   │   ├── public/            ← All public-facing UI components
-│   │   └── admin/             ← Admin panel UI components
+│   │   ├── admin/             ← Admin panel UI components
+│   │   └── ui/                ← Shared UI primitives (MarkdownRenderer, TableOfContents, CodeCopyEnhancer)
 │   ├── lib/
 │   │   ├── mock-data.ts       ← ALL placeholder content lives here
 │   │   └── prisma.ts          ← Prisma client singleton
@@ -91,7 +92,14 @@ my-portfolio/
 │   └── seed.ts                ← Admin user seeder
 ├── agents/                    ← Standalone AI agent scripts (run via cron)
 │   ├── github-summarizer.ts
-│   └── robotics-news.ts
+│   ├── robotics-news.ts
+│   ├── blog-suggester.ts
+│   ├── brand-monitor.ts
+│   ├── opportunity-watcher.ts
+│   ├── skills-inference.ts
+│   ├── github-project-importer.ts
+│   ├── cv-generator.ts
+│   └── platform-sync.ts
 └── nginx/
     └── portfolio.conf         ← Nginx reverse proxy config
 ```
@@ -187,15 +195,17 @@ When the admin panel + database are active (Milestone 3+), components will fetch
 - [x] API routes (all `runtime = "nodejs"`, all behind `requireAdminSession`): `POST /api/admin/cv/run`, `GET|PUT /api/admin/cv`, `POST /api/admin/cv/render`, `POST /api/admin/cv/upload`
 
 ### Completed — Milestone 4.7: GitHub Project Importer
-- [x] `src/lib/agents/github-project-importer.ts` — fetches public repos, filters out ones already in DB by githubUrl, fetches README + languages for new repos (up to 10), calls Claude to generate portfolio project entries as JSON
-- [x] rawData shape: `{ type: "PROJECT_SUGGESTIONS", suggestions: [...] }`
+- [x] `src/lib/agents/github-project-importer.ts` — fetches public repos, filters out ones already in DB by githubUrl, fetches README + languages for new repos (up to 5), calls Claude haiku to generate project entries, then **auto-creates draft `Project` rows** (no owner approval required at import time)
+- [x] rawData shape: `{ type: "PROJECT_CREATED", created: [...], skipped: N }` — `PROJECT_SUGGESTIONS` is the legacy shape still rendered for old reports
 - [x] `agents/github-project-importer.ts` — CLI runner
-- [x] Report detail page renders PROJECT_SUGGESTIONS as suggestion cards with tech tags, type badge, GitHub link, and "Create as Draft" server action (creates `Project` row with `publishedAt: null`)
+- [x] Report detail page renders `PROJECT_CREATED` as a list of created drafts with "Edit draft →" links; legacy `PROJECT_SUGGESTIONS` reports still render suggestion cards with a "Create as Draft" server action
 - [x] Projects page (`/admin/projects`) — "Import from GitHub" button appears once agent row exists in DB
 
 ### Completed — Milestone 4.8: Inline Agent Triggers in Editors
 - [x] `src/components/admin/AgentSuggestPanel.tsx` — reusable `"use client"` component: `{ agentId, buttonLabel, renderResult, className? }`; states: idle → loading → result panel → close; error shown inline
 - [x] Blog editor (`PostForm.tsx`) — "💡 Suggest topics" button below Title field runs Blog Suggester inline, shows 5 clickable suggestion pills; clicking a pill sets title, auto-generates slug, and adds tags
+- [x] Blog editor (`PostForm.tsx`) — "Generate content" button calls `POST /api/admin/blog/generate-content` with `{ title, tags, excerpt }`, streams full markdown into the editor body (requires title to be set; requires `ANTHROPIC_API_KEY`)
+- [x] `POST /api/admin/blog/generate-content` — generates 600–1000 word blog post markdown via Claude haiku; auth-gated; `runtime = "nodejs"`
 - [x] Blog Suggester `rawData` now structured: `{ suggestions: [{ title, tags, rationale }], existingTopics: N }`
 - [x] `RunAgentButton` extended with `label?` and `redirectOnSuccess?` props
 
@@ -225,6 +235,14 @@ Curl-based pentest run locally (39 PASS / 0 FAIL / 2 WARN). Results:
 - [ ] **Nikto scan** — not run (tool not installed); run `sudo dnf install nikto && nikto -h http://localhost:3000` before VPS deploy
 - [ ] **File upload MIME validation** — manual test pending (requires authenticated session + media endpoint)
 - [ ] **LinkedIn CSV input fuzzing** — pending (requires authenticated session)
+
+### Completed — Milestone 4.11: Agent Infrastructure Bug Fixes
+- [x] `src/app/api/admin/agents/[id]/run/route.ts` — atomic concurrent-run guard: replaced non-atomic `findUnique` + status check with `prisma.agent.updateMany({ where: { status: { not: "running" } } })` — only one request can claim the lock; others get 409
+- [x] `src/lib/agents/github-project-importer.ts` — creation loop wrapped in try-catch; P2002 (unique constraint) skipped silently, other errors re-thrown; empty slug/title pre-validated before insert
+- [x] `src/app/admin/(panel)/agents/reports/[reportId]/page.tsx` — `createProjectDraft` wraps JSON.parse + prisma.create in try-catch; P2002 redirects to `?error=slug-exists`; error banner renders from `searchParams.error`
+- [x] Report page — `applySkillAdd` and `applySkillUpgrade` wrapped in try-catch (silent swallow, user can retry)
+- [x] `src/app/admin/(panel)/projects/page.tsx` — `deleteProject` now calls `revalidatePath("/admin/projects")`, `revalidatePath("/projects")`, `revalidatePath("/")` so deleted row disappears immediately
+- [x] `src/components/admin/RunAgentButton.tsx` — error response body parsed and stored in `errorMsg` state; exposed as `title` tooltip on the Failed button
 
 ### Next — Milestone 5: Deployment
 - [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL

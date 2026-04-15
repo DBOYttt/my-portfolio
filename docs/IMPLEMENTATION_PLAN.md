@@ -123,216 +123,106 @@ All items below are implemented and manually tested against a live local databas
 
 ---
 
-## Milestone 4 — AI Agents + Remaining Polish ⬜ (CURRENT)
+## Milestone 4 — AI Agents + Remaining Polish ✅
 
 **Goal:** Agents produce real output. Admin dashboard shows live data. Remaining public pages complete.
 
-### Agent completions
-- ⬜ Wire Anthropic API in `agents/github-summarizer.ts` (stub exists at `TODO(M4)`)
-- ⬜ Replace regex RSS parser in `agents/robotics-news.ts` with `rss-parser` npm package
-- ⬜ Add more feed sources to robotics agent (IEEE Spectrum, Hackaday, ROS Discourse)
-- ⬜ **Blog Topic Suggester** agent — inputs: existing titles + recent GitHub + recent news → 5 suggestions
-- ⬜ **Personal Brand Monitor** agent — search owner name via Brave/SerpAPI, deduplicate mentions
-- ⬜ **Career Opportunity Watcher** agent — Adzuna or Remotive API, LLM fit score
-- ⬜ **Skills Inference agent** — analyses blog posts, project content, and GitHub repo data to detect technologies and concepts actually in use; suggests new skills to add or proficiency upgrades for existing ones; owner reviews suggestions in `/admin/agents` before anything is written to DB (never auto-writes — always a human-approval step)
-
-### Admin agent controls
-- ⬜ `POST /api/admin/agents/[id]/run` — trigger agent on demand
-- ⬜ "Run now" button on `/admin/agents` page
-- ⬜ Agent status field (idle / running / error) + last error message in DB + UI
-
-### Public pages
-- ⬜ `/projects` — standalone filterable projects index page (filter by type: SOFTWARE / ROBOTICS / HARDWARE / RESEARCH)
-
-### Markdown renderer improvements
-- ⬜ Copy-code button on code blocks
-- ⬜ Table of contents sidebar for long posts
-
-### Infra
-- ⬜ GitHub Actions CI: lint + type-check on push
+- ✅ GitHub Summarizer — Anthropic API wired; `fetchGitHubProfile()` added; rawData includes repos + profile
+- ✅ Blog Topic Suggester (`agents/blog-suggester.ts`) — existing titles + HN API → 5 suggestions with rationale
+- ✅ Personal Brand Monitor (`agents/brand-monitor.ts`) — Brave/SerpAPI search; URL deduplication across reports
+- ✅ Career Opportunity Watcher (`agents/opportunity-watcher.ts`) — Remotive API, LLM fit score
+- ✅ `POST /api/admin/agents/[id]/run` — trigger agent on demand; status cycles idle → running → idle/error
+- ✅ `RunAgentButton.tsx` — "Run now" button with spinner, Done ✓, Failed states; `label?` + `redirectOnSuccess?` props
+- ✅ Agent status + `lastError` fields in DB and UI
+- ✅ `/projects` — standalone filterable projects index page (SOFTWARE / ROBOTICS / HARDWARE / RESEARCH badges)
+- ✅ Markdown renderer: copy-code button, auto-generated table of contents
+- ✅ `rehype-sanitize` configured with `clobberPrefix: ""` so ToC anchor IDs are not mangled
 
 ---
 
-## Milestone 4.5 — Skills Inference Agent ⬜
+## Milestone 4.5 — Skills Inference Agent ✅
 
-**Goal:** The skills page stays accurate without manual maintenance. The agent reads what the owner actually builds — blog posts, project descriptions, GitHub repos — and surfaces technologies and concepts they demonstrably use. Owner approves before anything changes.
-
-### Why this matters for a portfolio
-Skills listed on most portfolios are self-reported and often stale. This agent makes the skills section evidence-based: every item can be traced back to a real project, commit, or post — which is far more credible to a technical employer.
-
-### How it works
-
-```
-GitHub repos (languages, topics, README content, recent commits)
-  + Project records in DB (content, tech tags)
-  + Blog post content in DB
-        ↓
-Anthropic Claude extracts and scores technologies
-        ↓
-Cross-references against existing Skill rows in DB
-        ↓
-Produces a diff: suggested additions, proficiency upgrades, stale removals
-        ↓
-Writes AgentReport — owner reviews in /admin/agents
-        ↓
-Owner clicks "Apply" per suggestion → writes to Skill table
-```
-
-### Agent: `agents/skills-inference.ts`
-- **GitHub source** — fetch repos via GitHub API: primary language per repo, repo topics, README text, languages breakdown (`/repos/{owner}/{repo}/languages`)
-- **DB sources** — read all `Project.content` + `Project.techTags`, all `Post.content` and `Post.tags`
-- **LLM prompt** — ask Claude to extract a deduplicated list of technologies with evidence snippets, then score each as FAMILIAR / PROFICIENT / EXPERT based on frequency and depth of use
-- **Diff logic** — compare against existing `Skill` rows; flag: new (not in DB), upgrade (current level lower than inferred), stale (in DB but no evidence found in any source)
-- **Output** — structured JSON: `{ add: [...], upgrade: [...], stale: [...] }` with evidence snippets per item
-- Writes one `AgentReport` with the full diff as the summary (markdown table)
-
-### Admin UI additions
-- `/admin/agents` report shows the diff as a table: Skill | Current level | Suggested level | Evidence source
-- Per-row "Apply" button (inline server action) — writes the change to `Skill` table
-- "Apply all additions" bulk action
-- Stale skills are highlighted but never auto-removed — owner decides
-
-### Trigger modes
-- On demand via "Run now" button
-- Scheduled weekly (after GitHub Summarizer runs, so data is fresh)
-- Could also run after a new blog post or project is published
-
-### Schema — no changes needed
-Uses existing `Skill`, `Agent`, `AgentReport` tables. Evidence snippets live in the report JSON (`rawData`).
+- ✅ `src/lib/agents/skills-inference.ts` — fetches GitHub repo languages (top 15 repos), diffs against DB skills + project techTags + post tags, calls Claude haiku to produce structured diff JSON
+- ✅ rawData shape: `{ type: "SKILLS_DIFF", add: [...], upgrade: [...], stale: [...] }`
+- ✅ `agents/skills-inference.ts` — CLI runner; seeds agent row in DB on first run
+- ✅ Report detail page renders SKILLS_DIFF as Apply/Upgrade tables with inline server actions — never auto-writes
+- ✅ Skills page — "Sync from GitHub" button (`RunAgentButton` with `redirectOnSuccess`) appears once agent row exists
 
 ---
 
-## Milestone 4.6 — AI-Powered CV Generation ⬜
+## Milestone 4.6 — AI-Powered CV Generation ✅
 
-**Goal:** The CV at `public/cv.pdf` is always up to date. When skills, experience, or projects change in the DB, an agent re-generates a well-structured PDF automatically — no manual document editing ever again.
-
-### How it works
-
-```
-DB change (skills / experience / projects / OWNER info)
-    ↓
-CV Generator agent reads all current data from DB
-    ↓
-Anthropic Claude structures and writes the CV content
-    ↓
-PDF rendered via @react-pdf/renderer (or puppeteer)
-    ↓
-PDF written to public/cv.pdf (served by Next.js as a static file)
-    ↓
-Admin notified via agent report in /admin/agents
-```
-
-### Trigger modes
-- **On demand** — "Regenerate CV" button in admin (calls `POST /api/admin/agents/cv-generator/run`)
-- **Automatic** — agent runs after any save in `/api/admin/skills`, `/api/admin/experience`, `/api/admin/projects`
-- **Scheduled** — weekly cron job as a fallback catch-all
-
-### Agent: `agents/cv-generator.ts`
-- Reads from DB: `User` (OWNER info), all `Skill` rows grouped by category, all `Experience` rows ordered by date, all `Project` rows (featured first)
-- Sends structured data to Anthropic API with a CV-writing system prompt:
-  - Tailor tone for software engineering / robotics roles
-  - Order sections: Summary → Skills → Experience → Projects → Education
-  - Keep bullet points action-verb first ("Built", "Designed", "Led")
-  - Output: clean structured JSON (`{ summary, skills[], experience[], projects[] }`)
-- Renders the structured JSON to PDF
-
-### PDF rendering
-Use `@react-pdf/renderer` (runs in Node.js, no browser needed):
-- `src/lib/cv-template.tsx` — React PDF document component
-  - Matches portfolio design tokens: dark/light theme option, monospace font for code labels
-  - Sections: Header (name, title, contact, links), Summary, Skills (grouped), Experience (timeline), Projects (featured only, with tech tags)
-- `agents/cv-generator.ts` calls `renderToBuffer(CvDocument)` → writes `public/cv.pdf`
-
-Alternative: Puppeteer rendering a hidden `/cv/print` Next.js page to PDF (more layout control, heavier dependency).
-
-### API route
-- `POST /api/admin/agents/cv-generator/run` — triggers the agent, returns job ID
-- Auth-gated via `requireAdminSession()`
-- Writes an `AgentReport` row on completion (or failure) so the result appears in `/admin/agents`
-
-### Admin CV page: `/admin/cv`
-
-Dedicated page for CV management. **AI generation is the default and primary path.** Manual upload is an escape hatch, not a parallel workflow.
-
-```
-/admin/cv
-├── [Default view — AI Generated]
-│   ├── Status: "Generated April 8, 2026 at 17:21" | "Never generated"
-│   ├── "Regenerate from DB" button → runs cv-generator agent, overwrites cvContent + re-renders PDF
-│   ├── "Preview PDF" link → opens /cv.pdf in new tab
-│   ├── CV Section Editor — edit AI output before rendering (see below)
-│   ├── "Save & Render PDF" button → saves cvContent edits, re-renders PDF, no AI call
-│   └── ─────────────────────────────────────────────
-│       "Upload your own PDF instead" (collapsed / secondary)
-│       └── Upload field → overwrites public/cv.pdf, sets cvSource = "manual"
-│           Warning shown when active: "AI generation is paused — using uploaded PDF"
-│           "Switch back to AI" button → clears flag, next regeneration takes over
-└──
-```
-
-The manual upload option is visually de-emphasised (below the fold, secondary styling) so the AI path is the obvious default.
-
-### CV Section Editor (fixing AI hallucinations)
-
-The agent stores its structured output as JSON (`cvContent` on `User`) — not just the final PDF. This JSON is rendered into editable fields so you can correct anything Claude got wrong before committing to PDF.
-
-```
-Summary         [textarea — free text]
-Skills          [tag list per category — add/remove/edit level]
-Experience      [list of entries — each field editable inline]
-  └── Company, Role, Dates, Bullets (one per line, reorderable)
-Projects        [list — Title, Description, Tech tags, Links]
-```
-
-Flow: AI generates → `cvContent` saved to DB → editor loads it → you fix hallucinations inline → "Save & Render PDF" → PDF written, no second AI call.
-
-On the next "Regenerate from DB": `cvContent` is overwritten fresh from DB data. Manual edits to `cvContent` are intentionally ephemeral — the DB (skills, experience, projects) is the source of truth, not the editor.
-
-### Manual upload path
-
-Escape hatch for when you have a polished PDF you want to use as-is:
-- `POST /api/admin/cv/upload` — PDF only, max 5 MB, auth-gated
-- Writes to `public/cv.pdf`, sets `cvSource = "manual"` on `User`
-- While `cvSource = "manual"`: auto-regeneration on content saves is suppressed; "Regenerate" button still works if explicitly clicked
-- "Switch back to AI" clears the flag and re-enables auto-regeneration
-
-### Schema additions
-```prisma
-model User {
-  ...
-  cvGeneratedAt  DateTime?          // last successful AI generation
-  cvSource       String  @default("manual")  // "generated" | "manual"
-  cvContent      Json?              // structured CV JSON from last AI generation
-}
-```
-
-`cvContent` shape:
-```typescript
-{
-  summary: string,
-  skills: { category: string, items: { name: string, level: string }[] }[],
-  experience: { company: string, role: string, start: string, end: string, bullets: string[] }[],
-  projects: { title: string, description: string, tech: string[], url?: string }[]
-}
-```
-
-### API routes
-- `POST /api/admin/agents/cv-generator/run` — trigger AI generation
-- `POST /api/admin/cv/upload` — manual PDF upload
-- `GET  /api/admin/cv` — return current `cvContent` JSON + metadata
-- `PUT  /api/admin/cv` — save edited `cvContent` JSON (from section editor)
-- `POST /api/admin/cv/render` — re-render current `cvContent` to PDF without calling AI
-
-### Dependencies to install
-```bash
-npm install @react-pdf/renderer
-# or, if using puppeteer approach:
-npm install puppeteer
-```
+- ✅ `src/lib/cv-template.tsx` — `@react-pdf/renderer` PDF template: dark header, cyan accent, Profile/Skills/Experience/Projects/Contact sections
+- ✅ `src/lib/agents/cv-generator.ts` — reads DB, calls Claude haiku (max_tokens 1500), falls back to raw DB build, renders PDF to `public/cv.pdf`, saves `cvContent`/`cvGeneratedAt`/`cvSource` to User
+- ✅ `agents/cv-generator.ts` — CLI runner; seeds agent row in DB on first run
+- ✅ Schema additions on `User`: `cvGeneratedAt DateTime?`, `cvSource String @default("manual")`, `cvContent Json?`
+- ✅ `/admin/cv` — generated date + source badge, Open PDF link, Run now button, `CvEditor`, manual upload section
+- ✅ `CvEditor.tsx` — editable summary, read-only skills list, experience + project editors, "Save & Render PDF"
+- ✅ API routes (all `runtime = "nodejs"`, auth-gated): `POST /api/admin/cv/run`, `GET|PUT /api/admin/cv`, `POST /api/admin/cv/render`, `POST /api/admin/cv/upload`
 
 ---
 
-## Milestone 5 — Deployment ⬜
+## Milestone 4.7 — GitHub Project Importer ✅
+
+- ✅ `src/lib/agents/github-project-importer.ts` — fetches public repos, filters by githubUrl, fetches README + languages (up to 5 new repos), calls Claude haiku, auto-creates draft Project rows
+- ✅ rawData shape: `{ type: "PROJECT_CREATED", created: [...], skipped: N }`
+- ✅ `agents/github-project-importer.ts` — CLI runner
+- ✅ Report detail page renders PROJECT_CREATED as draft list with "Edit draft →" links; legacy PROJECT_SUGGESTIONS still renders "Create as Draft" action
+- ✅ Projects page — "Import from GitHub" button (`RunAgentButton` with `redirectOnSuccess`) appears once agent row exists
+
+---
+
+## Milestone 4.8 — Inline Agent Triggers in Editors ✅
+
+- ✅ `AgentSuggestPanel.tsx` — reusable client component: idle → loading → result panel → close
+- ✅ Blog editor — "💡 Suggest topics" runs Blog Suggester inline; clicking a pill sets title, slug, tags
+- ✅ Blog editor — "Generate content" calls `POST /api/admin/blog/generate-content`; streams markdown into editor
+- ✅ `POST /api/admin/blog/generate-content` — 600–1000 word post via Claude haiku; auth-gated
+
+---
+
+## Milestone 4.9 — Multi-Platform Scraping & Dashboard ✅
+
+- ✅ GitHub Summarizer extended with `fetchGitHubProfile()` — rawData includes `profile: { bio, location, blog, twitter_username, followers }`
+- ✅ `src/lib/agents/twitter-profile.ts` — Twitter API v2; returns `null` gracefully if `TWITTER_BEARER_TOKEN` not set
+- ✅ `src/lib/agents/platform-sync.ts` + `agents/platform-sync.ts` — orchestrates GitHub + Twitter; combined markdown report
+- ✅ LinkedIn: no scraping (ToS) — `POST /api/admin/linkedin/import` parses Positions.csv + Skills.csv from data export
+- ✅ Admin dashboard Platform Connections card: GitHub (green if configured), X/Twitter (grey + hint), LinkedIn (export link)
+- ✅ AgentType enum: `SKILLS_INFERENCE`, `GITHUB_PROJECT_IMPORTER`, `CV_GENERATOR`, `PLATFORM_SYNC` added
+
+---
+
+## Milestone 4.10 — Pre-Deployment Security Audit ✅
+
+Curl-based pentest (39 PASS / 0 FAIL / 2 WARN):
+
+- ✅ Auth bypass — all `/api/admin/*` routes return 401 without session
+- ✅ Admin route guard — all `/admin/*` pages return 307 to login
+- ✅ Security headers — `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` present
+- ✅ Cookie flags — `HttpOnly`, `SameSite: lax`; `Secure` auto-set on HTTPS
+- ✅ No stack trace / path disclosure in 404 or error responses
+- ✅ Sensitive files (`.env`, `schema.prisma`, `.git/config`) return 404
+- ✅ Rate limiting — contact form 429 at request 6
+- ✅ Open redirect blocked on `callbackUrl`
+- ✅ Path traversal blocked on `/api/admin/media`
+- [ ] Nikto scan — pending (`sudo dnf install nikto && nikto -h http://localhost:3000` before VPS deploy)
+- [ ] File upload MIME validation — pending (requires authenticated session)
+- [ ] LinkedIn CSV input fuzzing — pending
+
+---
+
+## Milestone 4.11 — Agent Infrastructure Bug Fixes ✅
+
+- ✅ `run/route.ts` — atomic concurrent-run guard: `prisma.agent.updateMany({ where: { status: { not: "running" } } })` replaces non-atomic read-check-update; only one request wins the lock
+- ✅ GitHub importer creation loop — try-catch around `project.create`; P2002 skipped silently; empty slug/title pre-validated
+- ✅ Report page `createProjectDraft` — try-catch for JSON.parse + prisma.create; P2002 → redirect `?error=slug-exists`; error banner rendered from `searchParams.error`
+- ✅ Report page `applySkillAdd` / `applySkillUpgrade` — wrapped in try-catch; silent swallow on error
+- ✅ `deleteProject` server action — `revalidatePath` calls added; deleted row disappears immediately
+- ✅ `RunAgentButton` — error response body parsed; exposed as `title` tooltip on Failed button
+
+---
+
+## Milestone 5 — Deployment ⬜ (CURRENT)
 
 **Goal:** Live on a real domain with HTTPS, SSL, and a real PostgreSQL instance.
 
