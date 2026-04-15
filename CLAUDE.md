@@ -244,7 +244,13 @@ Curl-based pentest run locally (39 PASS / 0 FAIL / 2 WARN). Results:
 - [x] `src/app/admin/(panel)/projects/page.tsx` — `deleteProject` now calls `revalidatePath("/admin/projects")`, `revalidatePath("/projects")`, `revalidatePath("/")` so deleted row disappears immediately
 - [x] `src/components/admin/RunAgentButton.tsx` — error response body parsed and stored in `errorMsg` state; exposed as `title` tooltip on the Failed button
 
-### Next — Milestone 5: Deployment
+### Next — Milestone 4.12: End-User Testing & Bug Fixes
+- [ ] Full walkthrough of public surface (homepage, projects, blog, contact form, CV download)
+- [ ] Full walkthrough of admin panel (all CRUD flows, agents, CV, media)
+- [ ] Fix all issues found during testing
+- [ ] Check browser console for unhandled errors across all pages
+
+### After That — Milestone 5: Deployment
 - [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
 - [ ] GitHub Actions CI: lint + type-check on push
 - [ ] Owner fills in real personal data (name, bio, photo, skills, experience, projects)

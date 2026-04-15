@@ -222,7 +222,39 @@ Curl-based pentest (39 PASS / 0 FAIL / 2 WARN):
 
 ---
 
-## Milestone 5 — Deployment ⬜ (CURRENT)
+## Milestone 4.12 — End-User Testing & Bug Fixes ⬜ (CURRENT)
+
+**Goal:** Walk through the entire app as a real user — both the public portfolio and the admin panel — find anything broken, confusing, or visually off, and fix it before deployment.
+
+### Public surface
+- ⬜ Homepage — full scroll-through on desktop and mobile; check all sections render correctly
+- ⬜ `/projects` — filter badges, project cards, slug navigation to case study pages
+- ⬜ `/projects/[slug]` — markdown renders, ToC works, code blocks have copy button
+- ⬜ `/blog` — listing page, pagination if applicable
+- ⬜ `/blog/[slug]` — markdown, ToC, code blocks
+- ⬜ Contact form — submit valid data, submit invalid data, check rate limit, verify email delivery
+- ⬜ CV download — `/cv.pdf` link resolves and serves a valid PDF
+- ⬜ OG image — check `/opengraph-image` renders correctly
+- ⬜ Sitemap + robots — `/sitemap.xml` and `/robots.txt` correct
+
+### Admin panel
+- ⬜ Login / logout flow
+- ⬜ Blog: create, edit, publish, delete a post; verify it appears/disappears on public `/blog`
+- ⬜ Projects: create, edit, publish, delete; verify `/projects` reflects changes
+- ⬜ Skills: add, delete; check public Skills section updates
+- ⬜ Experience: add, delete; check public Experience section updates
+- ⬜ Media: upload image, verify it appears in grid, delete it
+- ⬜ CV page: run CV Generator, open PDF, edit content, save & re-render
+- ⬜ Agents: run each enabled agent, verify report is created and readable
+- ⬜ Tools: add a shortcut, delete it
+
+### Bug fixing
+- ⬜ Fix all issues found during the above walkthrough
+- ⬜ Check browser console for any unhandled errors across all tested pages
+
+---
+
+## Milestone 5 — Deployment ⬜
 
 **Goal:** Live on a real domain with HTTPS, SSL, and a real PostgreSQL instance.
 
