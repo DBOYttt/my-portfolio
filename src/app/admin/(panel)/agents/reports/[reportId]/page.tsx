@@ -64,11 +64,16 @@ export default async function ReportDetailPage({
   const session = await auth();
   if (!session) redirect("/admin/login");
 
-  const report = await prisma.agentReport.findUnique({
-    where: { id: params.reportId },
-    include: { agent: true },
-  });
+  const [report, currentSkills] = await Promise.all([
+    prisma.agentReport.findUnique({
+      where: { id: params.reportId },
+      include: { agent: true },
+    }),
+    prisma.skill.findMany({ select: { name: true } }),
+  ]);
   if (!report) notFound();
+
+  const appliedSkillNames = new Set(currentSkills.map((s) => s.name.toLowerCase()));
 
   const reportId = params.reportId;
 
@@ -87,7 +92,11 @@ export default async function ReportDetailPage({
     const category = formData.get("category") as SkillCategory;
     const level = formData.get("level") as SkillLevel;
     if (!name || !category || !level) return;
-    await prisma.skill.create({ data: { name, category, level, order: 0 } });
+    await prisma.skill.upsert({
+      where: { name },
+      update: {},
+      create: { name, category, level, order: 0 },
+    });
     revalidatePath("/admin/skills");
     revalidatePath(`/admin/agents/reports/${reportId}`);
   }
@@ -194,29 +203,38 @@ export default async function ReportDetailPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {skillsDiff.add.map((s, i) => (
-                    <tr key={i} className="border-b border-[#2a2d3a] last:border-0">
-                      <td className="px-4 py-2.5 text-slate-100 font-medium">{s.name}</td>
-                      <td className="px-4 py-2.5 text-slate-400 font-mono text-xs">{s.category}</td>
-                      <td className="px-4 py-2.5 text-slate-400 font-mono text-xs">{s.level}</td>
-                      <td className="px-4 py-2.5 text-slate-500 text-xs hidden md:table-cell max-w-xs truncate">
-                        {s.evidence}
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <form action={applySkillAdd}>
-                          <input type="hidden" name="name" value={s.name} />
-                          <input type="hidden" name="category" value={s.category} />
-                          <input type="hidden" name="level" value={s.level} />
-                          <button
-                            type="submit"
-                            className="text-xs py-1 px-2.5 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors"
-                          >
-                            Apply
-                          </button>
-                        </form>
-                      </td>
-                    </tr>
-                  ))}
+                  {skillsDiff.add.map((s, i) => {
+                    const isApplied = appliedSkillNames.has(s.name.toLowerCase());
+                    return (
+                      <tr key={i} className="border-b border-[#2a2d3a] last:border-0">
+                        <td className="px-4 py-2.5 text-slate-100 font-medium">{s.name}</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-mono text-xs">{s.category}</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-mono text-xs">{s.level}</td>
+                        <td className="px-4 py-2.5 text-slate-500 text-xs hidden md:table-cell max-w-xs truncate">
+                          {s.evidence}
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          {isApplied ? (
+                            <span className="text-xs py-1 px-2.5 text-slate-500 border border-slate-700 rounded-lg cursor-default">
+                              Applied ✓
+                            </span>
+                          ) : (
+                            <form action={applySkillAdd}>
+                              <input type="hidden" name="name" value={s.name} />
+                              <input type="hidden" name="category" value={s.category} />
+                              <input type="hidden" name="level" value={s.level} />
+                              <button
+                                type="submit"
+                                className="text-xs py-1 px-2.5 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors"
+                              >
+                                Apply
+                              </button>
+                            </form>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
