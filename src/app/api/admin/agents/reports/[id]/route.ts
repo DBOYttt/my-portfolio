@@ -15,3 +15,14 @@ export async function PATCH(
   });
   return NextResponse.json(report);
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  const { error } = await requireAdminSession();
+  if (error) return error;
+
+  await prisma.agentReport.delete({ where: { id: params.id } });
+  return NextResponse.json({ ok: true });
+}
