@@ -14,17 +14,17 @@ export async function POST(
   if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
   if (!agent.enabled) return NextResponse.json({ error: "Agent is disabled" }, { status: 400 });
 
-  if (agent.status === "running") {
-    return NextResponse.json({ error: "Agent is already running" }, { status: 409 });
-  }
-
   const runner = AGENT_RUNNERS[agent.type];
   if (!runner) return NextResponse.json({ error: "No runner for this agent type" }, { status: 400 });
 
-  await prisma.agent.update({
-    where: { id: params.id },
+  // Atomic claim: only one concurrent request can win this UPDATE
+  const claimed = await prisma.agent.updateMany({
+    where: { id: params.id, status: { not: "running" } },
     data: { status: "running", lastError: null },
   });
+  if (claimed.count === 0) {
+    return NextResponse.json({ error: "Agent is already running" }, { status: 409 });
+  }
 
   try {
     const result = await runner();
