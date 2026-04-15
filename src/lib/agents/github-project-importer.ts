@@ -162,29 +162,42 @@ Rules for type:
   const client = new Anthropic({ apiKey });
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 2000,
+    max_tokens: 4096,
     messages: [{ role: "user", content: prompt }],
   });
 
   const content = msg.content[0];
   if (content.type !== "text") return [];
 
-  try {
-    const parsed = JSON.parse(content.text) as ProjectSuggestion[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    // LLM may have wrapped in markdown code fences
-    const match = content.text.match(/\[[\s\S]*\]/);
-    if (match) {
-      try {
-        const parsed = JSON.parse(match[0]) as ProjectSuggestion[];
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
+  const tryParse = (text: string): ProjectSuggestion[] | null => {
+    try {
+      const parsed = JSON.parse(text) as ProjectSuggestion[];
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+    } catch {
+      return null;
     }
-    return [];
+  };
+
+  // Try direct parse first, then strip markdown fences
+  const direct = tryParse(content.text);
+  if (direct) return direct;
+
+  const match = content.text.match(/\[[\s\S]*\]/);
+  if (match) {
+    const fromFences = tryParse(match[0]);
+    if (fromFences) return fromFences;
   }
+
+  // LLM failed — fall back to basic entries built from repo metadata
+  return repoDataList.map(({ repo }) => ({
+    title: formatRepoName(repo.name),
+    slug: toSlug(repo.name),
+    summary: repo.description ?? `A ${inferTypeFromRepo(repo).toLowerCase()} project built in ${repo.language ?? "multiple languages"}.`,
+    content: `## ${formatRepoName(repo.name)}\n\n${repo.description ?? "No description available."}\n\nThis project was imported from GitHub.`,
+    type: inferTypeFromRepo(repo),
+    techTags: repo.language ? [repo.language] : [],
+    githubUrl: repo.html_url,
+  }));
 }
 
 interface CreatedProject {
@@ -212,7 +225,7 @@ export async function runGithubProjectImporter(): Promise<AgentRunResult> {
   );
   const existingSlugs = new Set(existingProjects.map((p) => p.slug.toLowerCase()));
 
-  const newRepos = repos.filter((r) => !existingUrls.has(r.html_url)).slice(0, 10);
+  const newRepos = repos.filter((r) => !existingUrls.has(r.html_url)).slice(0, 5);
 
   const monthYear = new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
