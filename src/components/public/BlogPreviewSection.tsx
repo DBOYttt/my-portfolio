@@ -4,6 +4,7 @@ import { getBlogPosts } from "@/lib/data";
 export default async function BlogPreviewSection() {
   const allPosts = await getBlogPosts();
   const posts = allPosts.slice(0, 3);
+  if (posts.length === 0) return null;
 
   return (
     <section id="blog" className="py-24 border-t border-[#2a2d3a]">

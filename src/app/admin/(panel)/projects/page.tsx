@@ -67,6 +67,9 @@ export default async function ProjectsAdminPage() {
                 <th className="text-left px-4 py-3 text-slate-500 font-medium">
                   Type
                 </th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium">
+                  Status
+                </th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium hidden md:table-cell">
                   Order
                 </th>
@@ -93,6 +96,17 @@ export default async function ProjectsAdminPage() {
                     >
                       {project.type.charAt(0) + project.type.slice(1).toLowerCase()}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {project.publishedAt ? (
+                      <span className="text-xs px-2 py-0.5 rounded border text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
+                        Published
+                      </span>
+                    ) : (
+                      <span className="text-xs px-2 py-0.5 rounded border text-slate-400 bg-slate-500/10 border-slate-500/20">
+                        Draft
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-slate-500 font-mono hidden md:table-cell">
                     {project.order}

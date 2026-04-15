@@ -38,6 +38,7 @@ function toSlug(s: string) {
 export default function ProjectForm({ initialData, projectId }: ProjectFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!projectId);
@@ -94,8 +95,11 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
         const data = await res.json();
         throw new Error(data.error ?? "Failed to save");
       }
-      router.push("/admin/projects");
-      router.refresh();
+      setSaved(true);
+      setTimeout(() => {
+        router.push("/admin/projects");
+        router.refresh();
+      }, 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error");
     } finally {
@@ -261,8 +265,12 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
       </div>
 
       <div className="flex gap-3 pt-2">
-        <button type="submit" disabled={saving} className="btn-primary">
-          {saving ? "Saving…" : projectId ? "Update project" : "Create project"}
+        <button
+          type="submit"
+          disabled={saving || saved}
+          className={`btn-primary transition-colors ${saved ? "bg-emerald-500 border-emerald-500 hover:bg-emerald-500" : ""}`}
+        >
+          {saved ? "Saved ✓" : saving ? "Saving…" : projectId ? "Update project" : "Create project"}
         </button>
         <button
           type="button"

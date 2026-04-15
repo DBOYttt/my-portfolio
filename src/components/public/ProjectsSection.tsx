@@ -10,6 +10,7 @@ const typeColors: Record<string, string> = {
 
 export default async function ProjectsSection() {
   const projects = await getProjects();
+  if (projects.length === 0) return null;
 
   return (
     <section id="projects" className="py-24 border-t border-[#2a2d3a]">

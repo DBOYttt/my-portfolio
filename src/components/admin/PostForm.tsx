@@ -51,6 +51,7 @@ function toDatetimeLocal(value: Date | string | null): string {
 export default function PostForm({ initialData, postId }: PostFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [showSeo, setShowSeo] = useState(false);
@@ -106,8 +107,11 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
         const data = await res.json();
         throw new Error(data.error ?? "Failed to save");
       }
-      router.push("/admin/blog");
-      router.refresh();
+      setSaved(true);
+      setTimeout(() => {
+        router.push("/admin/blog");
+        router.refresh();
+      }, 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error");
     } finally {
@@ -308,8 +312,12 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
       </div>
 
       <div className="flex gap-3 pt-2">
-        <button type="submit" disabled={saving} className="btn-primary">
-          {saving ? "Saving…" : postId ? "Update post" : "Create post"}
+        <button
+          type="submit"
+          disabled={saving || saved}
+          className={`btn-primary transition-colors ${saved ? "bg-emerald-500 border-emerald-500 hover:bg-emerald-500" : ""}`}
+        >
+          {saved ? "Saved ✓" : saving ? "Saving…" : postId ? "Update post" : "Create post"}
         </button>
         <button
           type="button"

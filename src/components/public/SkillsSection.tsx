@@ -2,6 +2,7 @@ import { getSkills } from "@/lib/data";
 
 export default async function SkillsSection() {
   const skills = await getSkills();
+  if (skills.length === 0) return null;
   return (
     <section id="skills" className="py-24 border-t border-[#2a2d3a]">
       <div className="section-container">

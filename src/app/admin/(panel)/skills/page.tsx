@@ -53,6 +53,15 @@ export default async function SkillsAdminPage() {
     revalidatePath("/admin/skills");
   }
 
+  async function updateSkillLevel(formData: FormData) {
+    "use server";
+    const id = formData.get("id") as string;
+    const level = (formData.get("level") as string) || null;
+    if (!id) return;
+    await prisma.skill.update({ where: { id }, data: { level: level as never } });
+    revalidatePath("/admin/skills");
+  }
+
   return (
     <div className="max-w-3xl">
       <div className="mb-6 flex items-start justify-between gap-4">
@@ -119,15 +128,26 @@ export default async function SkillsAdminPage() {
               </div>
               <div className="divide-y divide-[#2a2d3a]">
                 {categorySkills.map((skill) => (
-                  <div key={skill.id} className="flex items-center justify-between px-4 py-2.5">
-                    <div className="flex items-center gap-3">
-                      <span className="text-slate-100 text-sm">{skill.name}</span>
-                      {skill.level && (
-                        <span className="text-xs text-slate-500 font-mono">
-                          {skill.level.toLowerCase()}
-                        </span>
-                      )}
-                    </div>
+                  <div key={skill.id} className="flex items-center justify-between px-4 py-2.5 gap-2">
+                    <span className="text-slate-100 text-sm flex-1">{skill.name}</span>
+                    <form action={updateSkillLevel} className="flex items-center gap-1">
+                      <input type="hidden" name="id" value={skill.id} />
+                      <select
+                        name="level"
+                        defaultValue={skill.level ?? ""}
+                        className="bg-[#0f1117] border border-[#2a2d3a] rounded px-1.5 py-0.5 text-xs text-slate-400 focus:outline-none focus:border-cyan-500"
+                      >
+                        <option value="">No level</option>
+                        {LEVELS.map((l) => (
+                          <option key={l} value={l}>
+                            {l.charAt(0) + l.slice(1).toLowerCase()}
+                          </option>
+                        ))}
+                      </select>
+                      <button type="submit" className="text-xs text-cyan-400 hover:text-cyan-300 px-1" title="Save level">
+                        ✓
+                      </button>
+                    </form>
                     <form action={deleteSkill}>
                       <input type="hidden" name="id" value={skill.id} />
                       <button type="submit" className="text-xs text-red-400 hover:text-red-300">

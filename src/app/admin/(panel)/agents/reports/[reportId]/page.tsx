@@ -64,16 +64,21 @@ export default async function ReportDetailPage({
   const session = await auth();
   if (!session) redirect("/admin/login");
 
-  const [report, currentSkills] = await Promise.all([
+  const [report, currentSkills, currentProjects] = await Promise.all([
     prisma.agentReport.findUnique({
       where: { id: params.reportId },
       include: { agent: true },
     }),
     prisma.skill.findMany({ select: { name: true } }),
+    prisma.project.findMany({ select: { slug: true, githubUrl: true } }),
   ]);
   if (!report) notFound();
 
   const appliedSkillNames = new Set(currentSkills.map((s) => s.name.toLowerCase()));
+  const existingProjectSlugs = new Set(currentProjects.map((p) => p.slug.toLowerCase()));
+  const existingProjectGithubUrls = new Set(
+    currentProjects.map((p) => p.githubUrl?.toLowerCase()).filter(Boolean)
+  );
 
   const reportId = params.reportId;
 
@@ -314,8 +319,12 @@ export default async function ReportDetailPage({
             Project Drafts ({projectSuggestions.suggestions.length})
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
-            {projectSuggestions.suggestions.map((s, i) => (
-              <div key={i} className="card p-4 flex flex-col gap-3">
+            {projectSuggestions.suggestions.map((s, i) => {
+              const alreadyExists =
+                existingProjectSlugs.has(s.slug.toLowerCase()) ||
+                !!(s.githubUrl && existingProjectGithubUrls.has(s.githubUrl.toLowerCase()));
+              return (
+              <div key={i} className={`card p-4 flex flex-col gap-3 ${alreadyExists ? "opacity-50" : ""}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-slate-100 font-medium text-sm truncate">{s.title}</p>
@@ -350,18 +359,25 @@ export default async function ReportDetailPage({
                   >
                     {s.githubUrl.replace("https://github.com/", "github/")}
                   </a>
-                  <form action={createProjectDraft}>
-                    <input type="hidden" name="suggestion" value={JSON.stringify(s)} />
-                    <button
-                      type="submit"
-                      className="text-xs py-1 px-2.5 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors flex-shrink-0"
-                    >
-                      Create as Draft
-                    </button>
-                  </form>
+                  {alreadyExists ? (
+                    <span className="text-xs py-1 px-2.5 text-slate-500 border border-slate-700 rounded-lg flex-shrink-0 cursor-default">
+                      Already exists
+                    </span>
+                  ) : (
+                    <form action={createProjectDraft}>
+                      <input type="hidden" name="suggestion" value={JSON.stringify(s)} />
+                      <button
+                        type="submit"
+                        className="text-xs py-1 px-2.5 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors flex-shrink-0"
+                      >
+                        Create as Draft
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

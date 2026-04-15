@@ -33,7 +33,10 @@ export async function getProjects(): Promise<ProjectSummary[]> {
   }
 
   const { prisma } = await import("./prisma");
-  const rows = await prisma.project.findMany({ orderBy: { order: "asc" } });
+  const rows = await prisma.project.findMany({
+    where: { publishedAt: { not: null } },
+    orderBy: { order: "asc" },
+  });
   return rows.map((p) => ({
     slug: p.slug,
     title: p.title,

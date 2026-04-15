@@ -2,6 +2,7 @@ import { getExperience } from "@/lib/data";
 
 export default async function ExperienceSection() {
   const experience = await getExperience();
+  if (experience.length === 0) return null;
   return (
     <section id="experience" className="py-24 border-t border-[#2a2d3a]">
       <div className="section-container">
