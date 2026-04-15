@@ -123,7 +123,8 @@ Rules:
   if (content.type !== "text") return { add: [], upgrade: [], stale: [] };
 
   try {
-    const parsed = JSON.parse(content.text) as SkillsDiff;
+    const jsonText = content.text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+    const parsed = JSON.parse(jsonText) as SkillsDiff;
     return {
       add: Array.isArray(parsed.add) ? parsed.add : [],
       upgrade: Array.isArray(parsed.upgrade) ? parsed.upgrade : [],
