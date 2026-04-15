@@ -21,12 +21,14 @@ export default function RunAgentButton({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [lastResult, setLastResult] = useState<"ok" | "error" | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const disabled = !agentEnabled || agentStatus === "running" || loading;
 
   async function handleRun() {
     setLoading(true);
     setLastResult(null);
+    setErrorMsg(null);
     try {
       const res = await fetch(`/api/admin/agents/${agentId}/run`, { method: "POST" });
       if (res.ok) {
@@ -40,9 +42,12 @@ export default function RunAgentButton({
         }
         router.refresh();
       } else {
+        const errData = await res.json().catch(() => ({})) as { error?: string };
+        setErrorMsg(errData.error ?? "Run failed");
         setLastResult("error");
       }
     } catch {
+      setErrorMsg("Network error");
       setLastResult("error");
     } finally {
       setLoading(false);
@@ -53,6 +58,7 @@ export default function RunAgentButton({
     <button
       onClick={handleRun}
       disabled={disabled}
+      title={lastResult === "error" ? (errorMsg ?? "Run failed") : undefined}
       className={`text-xs py-1.5 px-3 rounded border transition-colors ${
         lastResult === "error"
           ? "text-red-400 border-red-500/30 bg-red-500/10"

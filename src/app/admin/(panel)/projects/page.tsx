@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
@@ -25,6 +26,9 @@ export default async function ProjectsAdminPage() {
     const id = formData.get("id") as string;
     if (!id) return;
     await prisma.project.delete({ where: { id } });
+    revalidatePath("/admin/projects");
+    revalidatePath("/projects");
+    revalidatePath("/");
   }
 
   return (

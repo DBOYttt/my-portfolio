@@ -258,23 +258,30 @@ export async function runGithubProjectImporter(): Promise<AgentRunResult> {
   // Auto-create project drafts — skip any whose slug conflicts with an existing project
   const created: CreatedProject[] = [];
   for (const s of suggestions) {
+    if (!s.slug?.trim() || !s.title?.trim()) continue;
     if (existingSlugs.has(s.slug.toLowerCase()) || existingUrls.has(s.githubUrl.toLowerCase())) continue;
-    const project = await prisma.project.create({
-      data: {
-        title: s.title,
-        slug: s.slug,
-        summary: s.summary,
-        content: s.content,
-        type: s.type,
-        techTags: s.techTags,
-        githubUrl: s.githubUrl,
-        featured: false,
-        order: 0,
-        publishedAt: null,
-      },
-    });
-    created.push({ id: project.id, title: s.title, slug: s.slug, type: s.type, githubUrl: s.githubUrl });
-    existingSlugs.add(s.slug.toLowerCase());
+    try {
+      const project = await prisma.project.create({
+        data: {
+          title: s.title,
+          slug: s.slug,
+          summary: s.summary,
+          content: s.content,
+          type: s.type,
+          techTags: s.techTags,
+          githubUrl: s.githubUrl,
+          featured: false,
+          order: 0,
+          publishedAt: null,
+        },
+      });
+      created.push({ id: project.id, title: s.title, slug: s.slug, type: s.type, githubUrl: s.githubUrl });
+      existingSlugs.add(s.slug.toLowerCase());
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code;
+      if (code !== "P2002") throw e;
+      // slug or URL collision — skip this suggestion silently
+    }
   }
 
   const summary = [

@@ -73,8 +73,10 @@ const typeColors: Record<string, string> = {
 
 export default async function ReportDetailPage({
   params,
+  searchParams,
 }: {
   params: { reportId: string };
+  searchParams: { error?: string };
 }) {
   const session = await auth();
   if (!session) redirect("/admin/login");
@@ -112,13 +114,17 @@ export default async function ReportDetailPage({
     const category = formData.get("category") as SkillCategory;
     const level = formData.get("level") as SkillLevel;
     if (!name || !category || !level) return;
-    await prisma.skill.upsert({
-      where: { name },
-      update: {},
-      create: { name, category, level, order: 0 },
-    });
-    revalidatePath("/admin/skills");
-    revalidatePath(`/admin/agents/reports/${reportId}`);
+    try {
+      await prisma.skill.upsert({
+        where: { name },
+        update: {},
+        create: { name, category, level, order: 0 },
+      });
+      revalidatePath("/admin/skills");
+      revalidatePath(`/admin/agents/reports/${reportId}`);
+    } catch {
+      // silently swallow — UI unchanged, user can retry
+    }
   }
 
   async function applySkillUpgrade(formData: FormData) {
@@ -126,35 +132,51 @@ export default async function ReportDetailPage({
     const name = formData.get("name") as string;
     const level = formData.get("level") as SkillLevel;
     if (!name || !level) return;
-    const skill = await prisma.skill.findFirst({
-      where: { name: { equals: name, mode: "insensitive" } },
-    });
-    if (skill) {
-      await prisma.skill.update({ where: { id: skill.id }, data: { level } });
+    try {
+      const skill = await prisma.skill.findFirst({
+        where: { name: { equals: name, mode: "insensitive" } },
+      });
+      if (skill) {
+        await prisma.skill.update({ where: { id: skill.id }, data: { level } });
+      }
+      revalidatePath("/admin/skills");
+      revalidatePath(`/admin/agents/reports/${reportId}`);
+    } catch {
+      // silently swallow — UI unchanged, user can retry
     }
-    revalidatePath("/admin/skills");
-    revalidatePath(`/admin/agents/reports/${reportId}`);
   }
 
   async function createProjectDraft(formData: FormData) {
     "use server";
-    const suggestionRaw = formData.get("suggestion") as string;
-    const suggestion = JSON.parse(suggestionRaw) as ProjectSuggestion;
-    const project = await prisma.project.create({
-      data: {
-        title: suggestion.title,
-        slug: suggestion.slug,
-        summary: suggestion.summary,
-        content: suggestion.content,
-        type: suggestion.type,
-        techTags: suggestion.techTags,
-        githubUrl: suggestion.githubUrl,
-        featured: false,
-        order: 0,
-        publishedAt: null,
-      },
-    });
-    redirect(`/admin/projects/${project.id}`);
+    let suggestion: ProjectSuggestion;
+    try {
+      suggestion = JSON.parse(formData.get("suggestion") as string) as ProjectSuggestion;
+    } catch {
+      return;
+    }
+    try {
+      const project = await prisma.project.create({
+        data: {
+          title: suggestion.title,
+          slug: suggestion.slug,
+          summary: suggestion.summary,
+          content: suggestion.content,
+          type: suggestion.type,
+          techTags: suggestion.techTags,
+          githubUrl: suggestion.githubUrl,
+          featured: false,
+          order: 0,
+          publishedAt: null,
+        },
+      });
+      redirect(`/admin/projects/${project.id}`);
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code;
+      if (code === "P2002") {
+        redirect(`/admin/agents/reports/${reportId}?error=slug-exists`);
+      }
+      throw e;
+    }
   }
 
   const rawData = report.rawData as Record<string, unknown> | null;
@@ -179,6 +201,15 @@ export default async function ReportDetailPage({
 
   return (
     <div className="max-w-4xl">
+      {searchParams.error === "slug-exists" && (
+        <div className="mb-4 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm">
+          A project with this slug already exists — edit the slug in the{" "}
+          <a href="/admin/projects" className="underline hover:text-red-300">
+            Projects page
+          </a>{" "}
+          before trying again.
+        </div>
+      )}
       <div className="mb-6">
         <Link
           href={`/admin/agents/${report.agentId}`}
