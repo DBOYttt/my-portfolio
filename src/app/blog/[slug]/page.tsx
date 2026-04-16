@@ -28,11 +28,11 @@ export async function generateMetadata({
   const post = await getBlogPostBySlug(params.slug);
   if (!post) return { title: "Post Not Found" };
   return {
-    title: post.seoTitle ?? post.title,
-    description: post.seoDesc ?? post.excerpt,
+    title: post.seoTitle || post.title,
+    description: post.seoDesc || post.excerpt,
     openGraph: {
-      title: post.seoTitle ?? post.title,
-      description: post.seoDesc ?? post.excerpt,
+      title: post.seoTitle || post.title,
+      description: post.seoDesc || post.excerpt,
       type: "article",
     },
   };
