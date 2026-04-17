@@ -99,3 +99,41 @@ The Phase 2 full walkthrough did not emit a structured report. The following flo
 4. BUG-04 — date guard in `src/lib/cv-template.tsx`.
 5. BUG-05 — opaque background in `src/components/public/Nav.tsx`.
 6. After fixes, run a **focused** Phase 2c tester against only the un-verified admin flows listed above.
+
+---
+
+## Fix pass + re-test verification (2026-04-17)
+
+### Fixes landed
+| # | Commit | Status |
+|---|---|---|
+| BUG-01 | `e703a31 fix(blog): fall back to post.title when seoTitle is empty string` | Verified via `curl http://localhost:3000/blog/my-first-test-post` — `<title>My First Test Post \| Alex Kowalski</title>` now renders correctly (previously ` \| Alex Kowalski`). |
+| BUG-02 | `171823f fix(blog): compute readTime from word count instead of hardcoded empty string` | Verified via curl — rendered HTML contains `1 min read` on the test post (previously ` read` with no number). |
+| BUG-03 | `c13a70e fix(public): preserve Experience and Projects anchors when sections are empty` | Verified via `curl http://localhost:3000/` — both `id="experience"` and `id="projects"` present in DOM even on fresh DB. Nav anchor links now target real elements. |
+| BUG-04 | `7d69cce fix(cv,api): guard invalid experience dates to prevent 'Invalid Date' in CV PDF` | Code verified: `formatMonth` helper guards null / invalid dates; POST `/api/admin/experience` returns 400 on non-parseable date strings. Visual PDF confirmation requires a seeded experience row — deferred to post-deploy smoke test. |
+| BUG-05 | `e5ce825 fix(public): give mobile nav menu an opaque background` | CSS-only change. Nav bar goes opaque whenever `menuOpen`; menu panel has its own `bg-[#0f1117]`. Visual confirmation deferred to mobile smoke test post-deploy. |
+
+### Security + infrastructure re-verification (curl-driven)
+- **`/api/admin/*` auth guard:** `posts`, `projects`, `skills`, `experience`, `tools`, `media`, `agents` all return **401** without a session cookie. ✓
+- **`/admin/*` redirects:** all nine admin pages return **307/308** to login when logged out. ✓
+- **`robots.txt`:** contains `Disallow: /admin` and `Disallow: /api/`. ✓
+- **`sitemap.xml`:** contains homepage, `/blog`, `/projects`, and post URLs; **no `/admin` URLs**. ✓
+- **Contact rate limit:** requests 1–5 return **200**, request 6+ returns **429**. ✓
+- **Agent concurrency guard (M4.11 fix):** code still uses atomic `prisma.agent.updateMany({ where: { status: { not: "running" } } })` at `src/app/api/admin/agents/[id]/run/route.ts:21`, returns 409 on contention. ✓
+- **Type check:** `tsc --noEmit` clean. ✓
+
+### Coverage gaps carried forward to post-deploy smoke test
+These flows were not re-tested during Phase 5 because they require a live browser session and would need a third full end-user-tester run (the first two hit tool-call ceilings). They are low-risk — the underlying APIs are auth-guarded and tested, and the components are unchanged from M4.8/4.9 when they were last exercised manually.
+
+- Blog "💡 Suggest topics" inline pill click → auto-fills title/slug/tags
+- Blog "Generate content" streaming into MDEditor
+- Project create → public appears → delete → public removes
+- Skills + Experience inline add/delete (public reflection)
+- CV edit → Save & Render PDF → PDF content actually updates
+- Media library image upload/delete UI
+- Tools shortcut add/delete UI
+- Logout → redirect → re-visit `/admin` denied
+- Mobile nav visual opacity (BUG-05)
+- CV PDF experience date rendering with a real row present (BUG-04)
+
+**Recommendation:** run these manually in a real browser immediately after VPS deploy, before sharing the site with anyone. A quick 10-minute walkthrough is cheaper than a third subagent run at this stage.
