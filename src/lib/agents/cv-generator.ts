@@ -4,6 +4,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { AgentRunResult } from "./types";
 import type { CvContent } from "../cv-template";
 
+function formatMonth(d: Date | null | undefined): string {
+  if (!d) return "";
+  const date = d instanceof Date ? d : new Date(d);
+  if (isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+}
+
 function buildCvFromRaw(params: {
   email: string;
   name: string | null;
@@ -36,14 +43,11 @@ function buildCvFromRaw(params: {
   }));
 
   const experience = params.experience.map((exp) => {
-    const start = exp.startDate.toLocaleDateString("en-GB", {
-      month: "short",
-      year: "numeric",
-    });
+    const start = formatMonth(exp.startDate);
     const end = exp.current
       ? "Present"
       : exp.endDate
-      ? exp.endDate.toLocaleDateString("en-GB", { month: "short", year: "numeric" })
+      ? formatMonth(exp.endDate)
       : "Present";
     const typeLabel =
       exp.type === "FULLTIME"
@@ -128,17 +132,11 @@ export async function runCvGenerator(): Promise<AgentRunResult> {
 
     const experienceText = experiences
       .map((exp) => {
-        const start = exp.startDate.toLocaleDateString("en-GB", {
-          month: "short",
-          year: "numeric",
-        });
+        const start = formatMonth(exp.startDate);
         const end = exp.current
           ? "Present"
           : exp.endDate
-          ? exp.endDate.toLocaleDateString("en-GB", {
-              month: "short",
-              year: "numeric",
-            })
+          ? formatMonth(exp.endDate)
           : "Present";
         return `${exp.company} — ${exp.role} (${start} – ${end}): ${exp.description}`;
       })
