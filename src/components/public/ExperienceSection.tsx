@@ -2,13 +2,17 @@ import { getExperience } from "@/lib/data";
 
 export default async function ExperienceSection() {
   const experience = await getExperience();
-  if (experience.length === 0) return null;
   return (
     <section id="experience" className="py-24 border-t border-[#2a2d3a]">
       <div className="section-container">
         <h2 className="section-heading">Experience</h2>
         <div className="accent-line" />
 
+        {experience.length === 0 ? (
+          <p className="text-slate-500 font-mono text-sm">
+            Nothing here yet.
+          </p>
+        ) : (
         <div className="relative">
           <div className="absolute left-0 top-0 bottom-0 w-px bg-[#2a2d3a] ml-1.5" />
 
@@ -30,6 +34,7 @@ export default async function ExperienceSection() {
             ))}
           </div>
         </div>
+        )}
       </div>
     </section>
   );

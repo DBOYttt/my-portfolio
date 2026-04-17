@@ -10,7 +10,6 @@ const typeColors: Record<string, string> = {
 
 export default async function ProjectsSection() {
   const projects = await getProjects();
-  if (projects.length === 0) return null;
 
   return (
     <section id="projects" className="py-24 border-t border-[#2a2d3a]">
@@ -18,6 +17,12 @@ export default async function ProjectsSection() {
         <h2 className="section-heading">Projects</h2>
         <div className="accent-line" />
 
+        {projects.length === 0 ? (
+          <p className="text-slate-500 font-mono text-sm">
+            Nothing here yet.
+          </p>
+        ) : (
+        <>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
             <article key={project.slug} className="card flex flex-col group relative">
@@ -93,6 +98,8 @@ export default async function ProjectsSection() {
             </svg>
           </a>
         </div>
+        </>
+        )}
       </div>
     </section>
   );
