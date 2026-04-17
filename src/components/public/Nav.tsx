@@ -27,7 +27,7 @@ export default function Nav() {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
+        scrolled || menuOpen
           ? "bg-[#0f1117]/95 backdrop-blur border-b border-[#2a2d3a]"
           : "bg-transparent"
       }`}
@@ -82,7 +82,7 @@ export default function Nav() {
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="md:hidden border-t border-[#2a2d3a] py-4">
+          <div className="md:hidden border-t border-[#2a2d3a] py-4 bg-[#0f1117]">
             <ul className="flex flex-col gap-3">
               {navLinks.map((link) => (
                 <li key={link.href}>
