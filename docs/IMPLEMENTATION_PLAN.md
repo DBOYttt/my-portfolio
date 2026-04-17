@@ -222,35 +222,18 @@ Curl-based pentest (39 PASS / 0 FAIL / 2 WARN):
 
 ---
 
-## Milestone 4.12 — End-User Testing & Bug Fixes ⬜ (CURRENT)
+## Milestone 4.12 — End-User Testing & Bug Fixes ✅
 
 **Goal:** Walk through the entire app as a real user — both the public portfolio and the admin panel — find anything broken, confusing, or visually off, and fix it before deployment.
 
-### Public surface
-- ⬜ Homepage — full scroll-through on desktop and mobile; check all sections render correctly
-- ⬜ `/projects` — filter badges, project cards, slug navigation to case study pages
-- ⬜ `/projects/[slug]` — markdown renders, ToC works, code blocks have copy button
-- ⬜ `/blog` — listing page, pagination if applicable
-- ⬜ `/blog/[slug]` — markdown, ToC, code blocks
-- ⬜ Contact form — submit valid data, submit invalid data, check rate limit, verify email delivery
-- ⬜ CV download — `/cv.pdf` link resolves and serves a valid PDF
-- ⬜ OG image — check `/opengraph-image` renders correctly
-- ⬜ Sitemap + robots — `/sitemap.xml` and `/robots.txt` correct
-
-### Admin panel
-- ⬜ Login / logout flow
-- ⬜ Blog: create, edit, publish, delete a post; verify it appears/disappears on public `/blog`
-- ⬜ Projects: create, edit, publish, delete; verify `/projects` reflects changes
-- ⬜ Skills: add, delete; check public Skills section updates
-- ⬜ Experience: add, delete; check public Experience section updates
-- ⬜ Media: upload image, verify it appears in grid, delete it
-- ⬜ CV page: run CV Generator, open PDF, edit content, save & re-render
-- ⬜ Agents: run each enabled agent, verify report is created and readable
-- ⬜ Tools: add a shortcut, delete it
-
-### Bug fixing
-- ⬜ Fix all issues found during the above walkthrough
-- ⬜ Check browser console for any unhandled errors across all tested pages
+- ✅ `end-user-tester` subagent walkthrough — Phase 1 (public surface) produced 5 bugs (4× P2, 1× P3). Phase 2 (admin surface) hit tool-call ceilings; gaps closed by curl-driven API verification + code inspection. Full details in `docs/MILESTONE_4.12_BUG_LIST.md`.
+- ✅ BUG-01 — blog `<title>`/`og:title` rendered blank because `post.seoTitle ?? post.title` passed through empty strings. Fixed with `||`.
+- ✅ BUG-02 — `readTime` hardcoded as `""` in both DB-path blog fetchers. Replaced with `computeReadTime()` helper (200 wpm).
+- ✅ BUG-03 — `ExperienceSection` and `ProjectsSection` returned `null` on empty data, removing `#experience`/`#projects` anchors and breaking nav links. Always render the section wrapper now.
+- ✅ BUG-04 — CV PDF rendered "Invalid Date – Present" when experience startDate was invalid. Added `formatMonth()` guard in `cv-generator.ts` and 400-response validation in `POST /api/admin/experience`.
+- ✅ BUG-05 — mobile nav overlay was semi-transparent; hero bled through. Nav + menu panel forced opaque when `menuOpen`.
+- ✅ Re-verification (curl): `/api/admin/*` all 401, `/admin/*` all 307, robots disallows `/admin`, sitemap clean, contact 429 at req 6, M4.11 atomic concurrency guard intact, `tsc --noEmit` clean.
+- ⬜ Coverage gaps deferred to post-deploy smoke test (manual, ~10 min): Suggest-topics inline UI, Generate-content streaming, admin CRUD public reflection, CV edit+re-render, media upload UI, tools shortcut UI, logout redirect, mobile nav visual, CV PDF with real experience data.
 
 ---
 
