@@ -17,6 +17,13 @@ const isMock = () =>
   !process.env.DATABASE_URL ||
   process.env.DATABASE_URL.startsWith("prisma+postgres://");
 
+function computeReadTime(content: string | null | undefined): string {
+  if (!content) return "";
+  const words = content.trim().split(/\s+/).filter(Boolean).length;
+  if (words === 0) return "";
+  return `${Math.max(1, Math.round(words / 200))} min`;
+}
+
 // ─── Projects ────────────────────────────────────────────────────────────────
 
 export async function getProjects(): Promise<ProjectSummary[]> {
@@ -183,7 +190,7 @@ export async function getBlogPosts(): Promise<BlogPostSummary[]> {
     date: p.publishedAt
       ? p.publishedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
       : "",
-    readTime: "",
+    readTime: computeReadTime(p.content),
     tags: p.tags.map((t) => t.name),
   }));
 }
@@ -222,7 +229,7 @@ export async function getBlogPostBySlug(
     date: p.publishedAt
       ? p.publishedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
       : "",
-    readTime: "",
+    readTime: computeReadTime(p.content),
     tags: p.tags.map((t) => t.name),
     content: p.content,
     seoTitle: p.seoTitle,
