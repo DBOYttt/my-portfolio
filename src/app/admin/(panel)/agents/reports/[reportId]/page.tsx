@@ -64,6 +64,14 @@ interface ProjectCreatedRawData {
   skipped: number;
 }
 
+interface CvContentRawData {
+  summary: string;
+  skills: { category: string; items: string[] }[];
+  experience: { company: string; role: string; period: string; description: string; type: string }[];
+  projects: { title: string; summary: string; tech: string[] }[];
+  contact: { email: string; github?: string; website?: string };
+}
+
 const typeColors: Record<string, string> = {
   ROBOTICS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
   SOFTWARE: "text-blue-400 bg-blue-500/10 border-blue-500/20",
@@ -191,6 +199,11 @@ export default async function ReportDetailPage({
   const isProjectCreated =
     report.agent.type === "GITHUB_PROJECT_IMPORTER" && rawDataType === "PROJECT_CREATED";
 
+  const isCvContent =
+    report.agent.type === "CV_GENERATOR" &&
+    rawData !== null &&
+    typeof (rawData as Record<string, unknown>).summary === "string";
+
   const skillsDiff = isSkillsDiff ? (rawData as unknown as SkillsDiffRawData) : null;
   const projectSuggestions = isProjectSuggestions
     ? (rawData as unknown as ProjectSuggestionsRawData)
@@ -198,6 +211,7 @@ export default async function ReportDetailPage({
   const projectCreated = isProjectCreated
     ? (rawData as unknown as ProjectCreatedRawData)
     : null;
+  const cvContentData = isCvContent ? (rawData as unknown as CvContentRawData) : null;
 
   return (
     <div className="max-w-4xl">
@@ -474,6 +488,65 @@ export default async function ReportDetailPage({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* CV Content Preview */}
+      {cvContentData && (
+        <div className="mb-6 space-y-4">
+          <p className="text-slate-100 text-sm font-medium">CV Preview</p>
+          {cvContentData.summary && (
+            <div className="card p-4">
+              <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Profile</p>
+              <p className="text-sm text-slate-300 leading-relaxed">{cvContentData.summary}</p>
+            </div>
+          )}
+          {cvContentData.skills.length > 0 && (
+            <div className="card p-4">
+              <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-3">Skills</p>
+              <dl className="space-y-1.5">
+                {cvContentData.skills.map((group, i) => (
+                  <div key={i} className="flex gap-3 text-sm">
+                    <dt className="text-slate-400 w-40 flex-shrink-0 font-medium">{group.category}</dt>
+                    <dd className="text-slate-500">{group.items.join(", ")}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+          {cvContentData.experience.length > 0 && (
+            <div className="card p-4">
+              <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-3">Experience</p>
+              <div className="space-y-4">
+                {cvContentData.experience.map((exp, i) => (
+                  <div key={i}>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-200">{exp.role}</p>
+                      <span className="text-xs text-slate-500 font-mono flex-shrink-0">{exp.period}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mb-1">{exp.company} · {exp.type}</p>
+                    <p className="text-xs text-slate-500 whitespace-pre-line">{exp.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {cvContentData.projects.length > 0 && (
+            <div className="card p-4">
+              <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-3">Projects</p>
+              <div className="space-y-3">
+                {cvContentData.projects.map((proj, i) => (
+                  <div key={i}>
+                    <p className="text-sm font-semibold text-slate-200">{proj.title}</p>
+                    {proj.tech.length > 0 && (
+                      <p className="text-xs text-cyan-400 font-mono mb-1">{proj.tech.join(" · ")}</p>
+                    )}
+                    <p className="text-xs text-slate-500">{proj.summary}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
