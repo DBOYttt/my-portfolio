@@ -61,7 +61,7 @@ export default async function ProjectsAdminPage() {
           <p className="text-slate-500 font-mono text-sm">No projects yet.</p>
         </div>
       ) : (
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#2a2d3a]">
