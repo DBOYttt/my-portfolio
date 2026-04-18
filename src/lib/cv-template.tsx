@@ -13,13 +13,13 @@ export interface CvContent {
     type: string;
   }[];
   projects: { title: string; summary: string; tech: string[] }[];
-  contact: { email: string; github?: string; website?: string };
+  contact: { email: string; github?: string; website?: string; yearsOfExperience?: number };
 }
 
 const styles = StyleSheet.create({
   page: {
     fontFamily: "Helvetica",
-    fontSize: 10,
+    fontSize: 9.5,
     color: "#111111",
     backgroundColor: "#ffffff",
     paddingTop: 40,
@@ -79,9 +79,9 @@ const styles = StyleSheet.create({
   },
   // Summary
   summaryText: {
-    fontSize: 10,
+    fontSize: 9.5,
     color: "#333333",
-    lineHeight: 1.6,
+    lineHeight: 1.4,
   },
   // Skills
   skillRow: {
@@ -203,6 +203,11 @@ function CvDocument({ cvContent }: { cvContent: CvContent }) {
               {[cvContent.contact.github, cvContent.contact.website]
                 .filter(Boolean)
                 .join("  •  ")}
+            </Text>
+          )}
+          {cvContent.contact.yearsOfExperience != null && (
+            <Text style={{ fontSize: 9, color: "#64748b", fontFamily: "Helvetica", marginTop: 2 }}>
+              {cvContent.contact.yearsOfExperience}+ years of experience
             </Text>
           )}
         </View>
