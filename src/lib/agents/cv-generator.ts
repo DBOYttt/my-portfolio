@@ -28,10 +28,17 @@ function buildCvFromRaw(params: {
   github?: string;
   website?: string;
 }): CvContent {
-  // Group skills by category
+  const categoryMap: Record<string, string> = {
+    LANGUAGES: "Languages",
+    FRAMEWORKS: "Frameworks & Libraries",
+    DATABASES: "Databases",
+    TOOLS: "Tools & Platforms",
+    CONCEPTS: "Concepts",
+  };
+
   const skillMap = new Map<string, string[]>();
   for (const skill of params.skills) {
-    const cat = skill.category.charAt(0) + skill.category.slice(1).toLowerCase();
+    const cat = categoryMap[skill.category] ?? (skill.category.charAt(0) + skill.category.slice(1).toLowerCase());
     const existing = skillMap.get(cat) ?? [];
     existing.push(skill.name);
     skillMap.set(cat, existing);
@@ -78,7 +85,12 @@ function buildCvFromRaw(params: {
   }));
 
   const displayName = params.name ?? params.email.split("@")[0] ?? "Software Engineer";
-  const summary = `${displayName} is a software engineer and robotics enthusiast with experience in full-stack development, embedded systems, and automation. Proficient in building end-to-end solutions from database to UI. Passionate about open-source projects and continuous learning.`;
+  const topSkills = params.skills.slice(0, 5).map((s) => s.name).join(", ");
+  const latestRole =
+    params.experience.length > 0
+      ? `${params.experience[0].role} at ${params.experience[0].company}`
+      : "software engineering";
+  const summary = `${displayName} is a software engineer with hands-on experience in ${topSkills || "full-stack development, embedded systems, and automation"}. Currently working as ${latestRole}. Builds end-to-end solutions across backend, frontend, and infrastructure.`;
 
   return {
     summary,
@@ -90,6 +102,34 @@ function buildCvFromRaw(params: {
       github: params.github,
       website: params.website,
     },
+  };
+}
+
+function sanitizeCvContent(cv: CvContent): CvContent {
+  const replacements: [RegExp, string][] = [
+    [/\bpassionate(ly)?\b/gi, ""],
+    [/\bsynergy\b/gi, ""],
+    [/\bresults-driven\b/gi, ""],
+    [/\bdynamic\b/gi, ""],
+    [/\b(helped|was helping)\b/gi, "contributed to"],
+    [/\bworked on\b/gi, "developed"],
+    [/\bassisted( with)?\b/gi, "supported"],
+    [/\bwas involved in\b/gi, "implemented"],
+    [/\bparticipated in\b/gi, "contributed to"],
+  ];
+
+  function clean(text: string): string {
+    let result = text;
+    for (const [pattern, replacement] of replacements) {
+      result = result.replace(pattern, replacement);
+    }
+    return result.replace(/\s{2,}/g, " ").trim();
+  }
+
+  return {
+    ...cv,
+    summary: clean(cv.summary),
+    experience: cv.experience.map((exp) => ({ ...exp, description: clean(exp.description) })),
   };
 }
 
@@ -146,22 +186,34 @@ export async function runCvGenerator(): Promise<AgentRunResult> {
       .map((p) => `${p.title} [${p.techTags.join(", ")}]: ${p.summary}`)
       .join("\n");
 
-    const prompt = `You are a professional CV writer. Write a structured CV as valid JSON only (no markdown, no explanation).
+    const displayName = user.name ?? user.email.split("@")[0] ?? "Software Engineer";
 
-Data about the person:
+    const prompt = `You are a professional technical CV writer. Output ONLY valid JSON — no markdown, no explanation, no preamble.
+
+Candidate data:
+Name: ${displayName}
 Email: ${user.email}
-Name: ${user.name ?? ""}
-Skills:
+
+Skills by category:
 ${skillsText}
-Experience:
+
+Experience (most recent first):
 ${experienceText}
+
 Featured Projects:
 ${projectsText}
 
-Return this exact JSON structure:
-{"summary":"...","skills":[{"category":"...","items":["..."]}],"experience":[{"company":"...","role":"...","period":"Jan 2021 – Present","description":"...","type":"Full-time"}],"projects":[{"title":"...","summary":"...","tech":["..."]}],"contact":{"email":"...","github":"github.com/username","website":""}}
+Rules:
+- Use strong action verbs: Architected, Implemented, Shipped, Migrated, Automated, Optimised, Reduced, Built, Designed, Integrated
+- Skill categories MUST be exactly: "Languages", "Frameworks & Libraries", "Databases", "Tools & Platforms", "Concepts"
+- Experience descriptions: use bullet-point format with \\n• prefix for each bullet (2-4 bullets per role)
+- Summary: 2-3 sentences, technical tone, mention top 3 skills and current/most recent role, NO fluff
+- Banned words: passionate, synergy, results-driven, dynamic, leverage, innovative
+- Banned weak verbs: helped, worked on, assisted, was involved in, participated in
+- ATS format: no tables, no columns in descriptions
 
-Keep summary to 3 sentences. Keep experience descriptions to 2 sentences each. Use the exact data provided — do not invent information.`;
+Return this exact JSON structure (use real data only, do not invent facts):
+{"summary":"...","skills":[{"category":"Languages","items":["..."]},{"category":"Frameworks & Libraries","items":["..."]}],"experience":[{"company":"...","role":"...","period":"Jan 2021 – Present","description":"• Architected...\\n• Implemented...","type":"Full-time"}],"projects":[{"title":"...","summary":"...","tech":["..."]}],"contact":{"email":"${user.email}","github":"","website":""}}`;
 
     try {
       const client = new Anthropic({ apiKey });
@@ -183,7 +235,7 @@ Keep summary to 3 sentences. Keep experience descriptions to 2 sentences each. U
           ? (parsed.contact as Record<string, unknown>)
           : {};
 
-      cvContent = {
+      cvContent = sanitizeCvContent({
         summary: typeof parsed.summary === "string" ? parsed.summary : "",
         skills: Array.isArray(parsed.skills) ? parsed.skills : [],
         experience: Array.isArray(parsed.experience) ? parsed.experience : [],
@@ -199,7 +251,7 @@ Keep summary to 3 sentences. Keep experience descriptions to 2 sentences each. U
               ? parsedContact.website
               : websiteLink?.url ?? undefined,
         },
-      };
+      });
     } catch {
       // Fall back to raw DB data if parse fails
       cvContent = buildCvFromRaw({
