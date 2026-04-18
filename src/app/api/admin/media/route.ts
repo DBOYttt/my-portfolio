@@ -11,3 +11,12 @@ export async function GET() {
   });
   return NextResponse.json(assets);
 }
+
+export async function POST() {
+  const { error } = await requireAdminSession();
+  if (error) return error;
+  return NextResponse.json(
+    { error: "File uploads must go to /api/admin/media/upload" },
+    { status: 405, headers: { Allow: "GET" } }
+  );
+}
