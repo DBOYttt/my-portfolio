@@ -1,14 +1,29 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+function formatRelative(date: Date): string {
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 export default async function AdminDashboard() {
-  const [postCount, publishedCount, projectCount, skillCount, unreadReports] =
+  const [postCount, publishedCount, projectCount, skillCount, recentReports] =
     await Promise.all([
       prisma.post.count(),
       prisma.post.count({ where: { status: "PUBLISHED" } }),
       prisma.project.count(),
       prisma.skill.count(),
-      prisma.agentReport.count({ where: { readAt: null } }),
+      prisma.agentReport.findMany({
+        where: { readAt: null },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: { agent: { select: { name: true } } },
+      }),
     ]);
 
   const stats = [
@@ -36,19 +51,39 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Agent insights */}
-      {unreadReports > 0 && (
+      {recentReports.length > 0 && (
         <div className="card p-4 mb-8 border-cyan-500/20 bg-cyan-500/5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-100 text-sm font-medium">
-                {unreadReports} unread agent report{unreadReports !== 1 ? "s" : ""}
-              </p>
-              <p className="text-slate-500 text-xs mt-0.5">Your AI agents have new activity</p>
-            </div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-slate-100 text-sm font-medium">
+              Agent insights
+              <span className="ml-2 text-xs text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded px-1.5 py-0.5">
+                {recentReports.length} unread
+              </span>
+            </p>
             <Link href="/admin/agents" className="btn-secondary text-xs py-1.5 px-3">
-              View reports
+              View all
             </Link>
           </div>
+          <ul className="space-y-2">
+            {recentReports.map((r) => (
+              <li key={r.id}>
+                <Link
+                  href={`/admin/agents/reports/${r.id}`}
+                  className="flex items-center justify-between gap-2 py-1.5 px-2 rounded hover:bg-[#0f1117] transition-colors group"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm text-slate-200 group-hover:text-cyan-400 transition-colors truncate">
+                      {r.title}
+                    </p>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5">{r.agent.name}</p>
+                  </div>
+                  <span className="text-xs text-slate-600 flex-shrink-0 font-mono">
+                    {formatRelative(r.createdAt)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
