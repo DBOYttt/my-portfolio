@@ -253,7 +253,36 @@ Curl-based pentest run locally (39 PASS / 0 FAIL / 2 WARN). Results:
 - [x] BUG-05: `src/components/public/Nav.tsx` — nav goes opaque when `menuOpen`, mobile menu panel has `bg-[#0f1117]`
 - [x] Re-verified `/api/admin/*` 401 guards, `/admin/*` 307 redirects, `robots.txt` disallows, sitemap clean of `/admin`, contact 429 at req 6, M4.11 atomic concurrency guard, `tsc --noEmit` clean
 
-### Next — Milestone 5: Deployment
+### Next — Milestone 4.13: Post-E2E Fix Pass + CV Overhaul
+Closes out the 7 FAILs from `docs/MILESTONE_4.12_E2E_TEST_RESULTS.md`, tunes the CV generator for software-engineering hiring, and makes the CV tab a self-contained editor.
+
+**Part A — Bug fixes from E2E test:**
+- [ ] Admin panel responsive: sidebar collapses to off-canvas drawer at `< md`; every `/admin/*` page fits 414×900 without horizontal overflow (`src/app/admin/(panel)/layout.tsx`, `Sidebar.tsx`, `TopBar.tsx`).
+- [ ] `POST /api/admin/media` — either alias to `/upload` or return helpful 404/405 with pointer to correct endpoint.
+- [ ] `HEAD /uploads/<file>` — should return 200/404, currently 503. Investigate and fix.
+- [ ] Dashboard agent insights widget — show last 3–5 report titles + timestamps per recent agent, not just an aggregate unread count.
+- [ ] Brand Monitor stored error "bind message supplies 7 parameters, but prepared statement requires 0" — investigate `$queryRaw` placeholder mismatch in `src/lib/agents/brand-monitor.ts`.
+
+**Part B — CV Generation refinement (IT-industry tuned):**
+- [ ] Rewrite prompt in `src/lib/agents/cv-generator.ts`: technical voice, action-verb bullets, stack keywords in summary, IT-standard skill categories (Languages / Frameworks & Libraries / Databases / Tools & Platforms / Concepts), ATS-friendly structure (no columns/tables/images).
+- [ ] Refresh `src/lib/cv-template.tsx`: keep dark-header cyan-accent design, improve typography hierarchy, add optional "years of experience" line, single-column, ≤ 2 pages.
+- [ ] Bring `buildCvFromRaw()` fallback to parity with the LLM path — same action-verb structure, same IT-standard categories, same summary format.
+- [ ] Post-process LLM output to strip marketing fluff ("passionate", "synergy", "results-driven") and replace weak verbs ("helped", "worked on") with stronger ones.
+- [ ] CV Generator report detail page renders a human-readable preview of `cvContent`, not just raw JSON.
+
+**Part C — Full CV editor inside the CV tab:**
+- [ ] `CvEditor` gains inline experience list (edit/delete/reorder per row, description markdown, current/dates/type).
+- [ ] Inline projects list with per-row edit + "Show in CV" checkbox (= `featured`).
+- [ ] Inline skills grouped by category with add/edit/delete per group (category list matches Part B).
+- [ ] Single "Save all & Render PDF" button at the top of the editor with per-section dirty indicators.
+- [ ] Add missing API routes: `PUT /api/admin/experience/[id]`, `PUT /api/admin/projects/[id]`, `PUT /api/admin/skills/[id]` — all `requireAdminSession`.
+
+**Part D — Verification:**
+- [ ] Re-run Batch 4 CV lifecycle — A7 flips from SKIP to PASS once non-summary editing is exposed.
+- [ ] Manual mobile smoke test at 414×900 across all admin pages.
+- [ ] Eyeball a generated CV with real experience/skills/projects rows for IT-industry tone.
+
+### Upcoming — Milestone 5: Deployment
 - [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
 - [ ] GitHub Actions CI: lint + type-check on push
 - [ ] Owner fills in real personal data (name, bio, photo, skills, experience, projects)

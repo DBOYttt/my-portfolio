@@ -237,6 +237,59 @@ Curl-based pentest (39 PASS / 0 FAIL / 2 WARN):
 
 ---
 
+## Milestone 4.13 — Post-E2E Fix Pass + CV Overhaul ⬜
+
+**Goal:** Close out the findings from the Milestone 4.12 post-fix E2E test (`docs/MILESTONE_4.12_E2E_TEST_RESULTS.md`), then upgrade CV generation + editor so the PDF is tuned for software-engineering hiring and editable end-to-end inside the admin UI.
+
+### Part A — Bug fixes from E2E test results
+
+- ⬜ **Admin panel mobile layout** — every `/admin/*` page except `/admin/login` overflows horizontally on 414×900 (+60px to +400px). Collapse the sidebar to an off-canvas drawer with a hamburger toggle on viewports `< md`. Content column should fill viewport width. Touch targets ≥ 44px.
+  - Files: `src/app/admin/(panel)/layout.tsx`, `src/components/admin/Sidebar.tsx`, `src/components/admin/TopBar.tsx`.
+- ⬜ **`POST /api/admin/media` → 405** — collection root has no POST handler (uploads go to `/api/admin/media/upload`). Either implement POST at the root as an alias for upload, or explicitly return a helpful 404/405 with a `Location`/`Link` header pointing at the correct path. Decide based on REST convention.
+  - File: `src/app/api/admin/media/route.ts`.
+- ⬜ **`HEAD /uploads/<file>` → 503** — static assets should answer HEAD with 200/404, not 503. Investigate whether this is a Next.js static-serving oddity or something else (custom middleware swallowing HEAD?). Add a HEAD handler in the upload route or serve uploads through a thin route handler.
+  - Files: `src/middleware.ts`, `next.config.js` (if headers/rewrites are involved), or a new static route wrapper.
+- ⬜ **Dashboard agent-insights widget shape mismatch** — currently shows only an aggregate "29 unread agent reports" count. Expand to show the last 3–5 reports per-agent with title + relative timestamp (e.g. "GitHub Activity — April 2026 · 2h ago"), each linking to the report detail page.
+  - Files: `src/app/admin/(panel)/page.tsx`, possibly a new `AgentInsightsWidget.tsx`.
+- ⬜ **Brand Monitor stored error** — report status shows "bind message supplies 7 parameters, but prepared statement requires 0" from a prior run. Investigate whether this is from raw `$queryRaw` usage with mismatched placeholders; if so, fix the query. If it's environmental (stale error state from before `BRAND_MONITOR_API_KEY` was unset), clear the error field on successful re-run.
+  - Files: `src/lib/agents/brand-monitor.ts`, possibly the agent run-result handler.
+
+### Part B — CV Generation refinement (IT-industry tuned)
+
+- ⬜ **Prompt rewrite** — `src/lib/agents/cv-generator.ts` prompt currently says "professional CV writer" with generic instructions. Replace with an IT-specific system prompt:
+  - Voice: technical, action-verb-led bullets (e.g. "Architected", "Shipped", "Automated"), no filler.
+  - Summary: 3 sentences max, must mention stack keywords + 1 quantified outcome (if available from experience descriptions).
+  - Experience bullets: 2–3 bullets per role, start with strong verbs, include concrete tech (languages, frameworks, scale indicators) pulled from the experience description and skills list.
+  - Skills section grouping: prefer industry-standard categories — Languages, Frameworks & Libraries, Databases, Tools & Platforms, Concepts (replace whatever category labels the DB uses).
+  - Projects: lead with the tech stack in brackets, then a 1-sentence impact statement.
+  - ATS-friendly: no columns, no tables, no images, simple section headings that match common ATS section names ("Summary", "Skills", "Experience", "Projects", "Contact").
+- ⬜ **CV template refresh** — `src/lib/cv-template.tsx`. Keep the dark-header + cyan-accent design language (matches portfolio aesthetic), but improve typography hierarchy, reduce whitespace waste, add a 1-line "years of experience" indicator below the name if derivable from earliest experience row, and ensure all section headings are bold, 12pt+, detectable by ATS parsers. Keep single-column. Keep ≤ 2 pages (the template should truncate the Projects section if bytes get too large).
+- ⬜ **Fallback template parity** — `buildCvFromRaw()` in the same file currently produces a formulaic 3-sentence template. Rewrite to match the same structural quality as the LLM path — action-verb bullets pulled straight from `experience.description`, skills grouped into IT-standard categories, same "Summary" opening line format. This is the path that runs when `ANTHROPIC_API_KEY` is unset (confirmed by Batch 4 row A10).
+- ⬜ **Industry-keyword hygiene** — post-process LLM output to strip any marketing fluff ("passionate", "synergy", "results-driven", "dynamic team player") and replace weak verbs ("helped", "worked on", "involved in") with stronger alternatives. Simple regex pass, implemented in `cv-generator.ts` before `renderCvToPdf`.
+- ⬜ **Report preview** — CV Generator report detail page should render a human-readable preview of the generated `cvContent` (not just the raw JSON dump), so the owner can proof-read before downloading the PDF.
+  - File: `src/app/admin/(panel)/agents/reports/[reportId]/page.tsx`.
+
+### Part C — Full CV editor inside the CV tab
+
+Currently `CvEditor` only exposes the summary textarea and the file upload input (confirmed by Batch 4 row A7 SKIP). The owner has to edit skills on `/admin/skills` and experience on `/admin/experience`, then re-run the agent. Make the CV tab self-contained.
+
+- ⬜ **Summary editor** — keep existing textarea, add a character/word counter with a soft target (e.g. 350–600 chars).
+- ⬜ **Experience editor** — add an inline list of experience rows with per-row edit buttons. Each row exposes: role, company, startDate, endDate, current, description (markdown), type. Editing a row calls `PUT /api/admin/experience/[id]` (may need to be added if not present) and re-fetches. Reorder via drag handle or up/down buttons persists `order` field.
+- ⬜ **Projects editor** — same pattern as experience but for `Project` rows. Only `featured` projects appear in the CV, so add a "Show in CV" checkbox per row (maps to `featured`). Per-row edit: title, summary, techTags, featured.
+- ⬜ **Skills editor** — inline grouped list. Add/edit/delete per category. Same fields as `/admin/skills` but embedded in the CV tab so the owner doesn't navigate away. Category-based grouping must match the IT-standard categories from Part B.
+- ⬜ **Live preview pane** — optional stretch: show a side-by-side text preview of what will render in the PDF, updated as the owner types. If time-constrained, skip and rely on "Save & Render → Open PDF" round-trip.
+- ⬜ **Unified Save & Render** — single "Save all & Render PDF" button at the top of the editor. Saves any dirty rows across all sections, then triggers `POST /api/admin/cv/render`. Shows per-section dirty indicators so the owner knows what changed.
+- ⬜ **API surface** — add any missing routes: `PUT /api/admin/experience/[id]` (update), `PUT /api/admin/projects/[id]` (update), `PUT /api/admin/skills/[id]` (update). All behind `requireAdminSession`. Return the updated row on success.
+
+### Part D — Verification
+
+- ⬜ Re-run the Batch 4 CV lifecycle test (or the focused subset) — all 10 rows should PASS (A7 "SKIP" should become PASS once non-summary editing is exposed).
+- ⬜ Manual mobile smoke test at 414×900: sidebar drawer opens/closes, all admin pages fit within viewport, no horizontal overflow.
+- ⬜ Dashboard agent insights widget displays last 3–5 report titles per recent agent.
+- ⬜ CV PDF with a real experience row + skill + project — manually eyeball for IT-industry tone, no filler phrases, ATS-parseable structure.
+
+---
+
 ## Milestone 5 — Deployment ⬜
 
 **Goal:** Live on a real domain with HTTPS, SSL, and a real PostgreSQL instance.
