@@ -253,20 +253,30 @@ Curl-based pentest run locally (39 PASS / 0 FAIL / 2 WARN). Results:
 - [x] BUG-05: `src/components/public/Nav.tsx` — nav goes opaque when `menuOpen`, mobile menu panel has `bg-[#0f1117]`
 - [x] Re-verified `/api/admin/*` 401 guards, `/admin/*` 307 redirects, `robots.txt` disallows, sitemap clean of `/admin`, contact 429 at req 6, M4.11 atomic concurrency guard, `tsc --noEmit` clean
 
-### Next — Milestone 4.13: Post-E2E Fix Pass + CV Overhaul
-Closes out the 7 FAILs from `docs/MILESTONE_4.12_E2E_TEST_RESULTS.md`, tunes the CV generator for software-engineering hiring, and makes the CV tab a self-contained editor.
+### Completed — Milestone 4.13: Post-E2E Fix Pass + CV Overhaul
 
 **Part A — Bug fixes from E2E test:**
-- [ ] Admin panel responsive: sidebar collapses to off-canvas drawer at `< md`; every `/admin/*` page fits 414×900 without horizontal overflow (`src/app/admin/(panel)/layout.tsx`, `Sidebar.tsx`, `TopBar.tsx`).
-- [ ] `POST /api/admin/media` — either alias to `/upload` or return helpful 404/405 with pointer to correct endpoint.
-- [ ] `HEAD /uploads/<file>` — should return 200/404, currently 503. Investigate and fix.
-- [ ] Dashboard agent insights widget — show last 3–5 report titles + timestamps per recent agent, not just an aggregate unread count.
-- [ ] Brand Monitor stored error "bind message supplies 7 parameters, but prepared statement requires 0" — investigate `$queryRaw` placeholder mismatch in `src/lib/agents/brand-monitor.ts`.
+- [x] Admin panel responsive: `src/components/admin/AdminShell.tsx` (new client wrapper), `Sidebar.tsx` (off-canvas drawer with overlay at `< md`), `TopBar.tsx` (hamburger button `md:hidden`), `layout.tsx` (uses AdminShell). Verified at 500px CSS viewport via Chrome extension.
+- [x] `POST /api/admin/media` — returns 405 with JSON message pointing to `/api/admin/media/upload`.
+- [x] `HEAD /uploads/<file>` — `next.config.mjs` now has a `/uploads/:path*` header block with `Access-Control-Allow-Methods: GET, HEAD` before the catch-all rule.
+- [x] Dashboard agent insights widget — `src/app/admin/(panel)/page.tsx` uses `agentReport.findMany({ take: 5, include: agent })` + `formatRelative()` helper; renders linked list of report title + agent name + relative time.
+- [x] Brand Monitor stored error — confirmed no `$queryRaw` exists in codebase; error was a ghost from a transient old run. No code fix needed.
 
 **Part B — CV Generation refinement (IT-industry tuned):**
-- [ ] Rewrite prompt in `src/lib/agents/cv-generator.ts`: technical voice, action-verb bullets, stack keywords in summary, IT-standard skill categories (Languages / Frameworks & Libraries / Databases / Tools & Platforms / Concepts), ATS-friendly structure (no columns/tables/images).
-- [ ] Refresh `src/lib/cv-template.tsx`: keep dark-header cyan-accent design, improve typography hierarchy, add optional "years of experience" line, single-column, ≤ 2 pages.
-- [ ] Bring `buildCvFromRaw()` fallback to parity with the LLM path — same action-verb structure, same IT-standard categories, same summary format.
+- [x] `src/lib/agents/cv-generator.ts` — IT-tuned prompt with action-verb rules, 5 IT-standard skill categories, bullet-point experience format, banned words list; `sanitizeCvContent()` post-processor strips fluff; `buildCvFromRaw()` uses explicit `LANGUAGES → "Languages"` etc. mapping; dynamic summary from top skills + latest role.
+- [x] `src/lib/cv-template.tsx` — body font reduced to 9.5pt, lineHeight 1.4, `yearsOfExperience?` field added to `CvContent.contact` and rendered in header.
+- [x] `buildCvFromRaw()` fallback brought to parity: same IT-standard category map, same dynamic summary structure.
+- [x] Post-processing via `sanitizeCvContent()`: regex strips "passionate", "synergy", weak verbs ("helped" → "contributed to", "worked on" → "developed", etc.).
+- [x] CV Generator report detail page renders `cvContent` JSON as human-readable preview (Profile / Skills / Experience / Projects cards) for `CV_GENERATOR` reports.
+
+**Part C — Full CV editor inside the CV tab:**
+- [x] `CvEditor.tsx` — fetches raw DB records (experience with IDs, skills by IT-standard category, all projects) on mount via `useEffect`. Per-section dirty indicators (amber dot + "Unsaved changes" text). Experience: per-row edit (company, role, start/end date, description, type select, current checkbox) + up/down reorder + delete. Projects: "Show in CV" checkbox per row (maps to `featured`). Skills: 5 IT-standard category groups with chip delete + "Add" input per category. Single "Save all & Render PDF" button rebuilds `CvContent` from current state + saves to DB + renders PDF in one operation.
+- [x] Existing PUT routes reused: `PUT /api/admin/experience/[id]`, `PUT /api/admin/projects/[id]`, `PUT /api/admin/skills/[id]`, `DELETE /api/admin/skills/[id]`, `POST /api/admin/skills`.
+
+**Part D — Verification:**
+- [x] Chrome extension mobile test at 500px CSS viewport: hamburger visible, drawer opens/closes with overlay, no horizontal overflow on CV page, dirty indicators working, "Save all & Render PDF" present. GIF recorded.
+- [x] `tsc --noEmit` clean on all changes.
+- [x] `end-user-tester` subagent dispatched for full admin walkthrough.
 - [ ] Post-process LLM output to strip marketing fluff ("passionate", "synergy", "results-driven") and replace weak verbs ("helped", "worked on") with stronger ones.
 - [ ] CV Generator report detail page renders a human-readable preview of `cvContent`, not just raw JSON.
 
@@ -345,6 +355,7 @@ CSS classes (defined in globals.css):
 npm run dev          # Start dev server (works without DB — mock mode)
 npm run build        # Production build
 npm run lint         # ESLint via Next.js
+npx tsc --noEmit     # Type-check without emitting (run before committing)
 npm run db:generate  # Re-generate Prisma client after schema changes
 npm run db:push      # Apply schema to DB — use this locally (migrate dev unsupported with Prisma dev proxy)
 npm run db:migrate   # Apply schema with migration history — use in production only
