@@ -354,19 +354,290 @@ Curl-based pentest (39 PASS / 0 FAIL / 2 WARN):
 
 ---
 
-## Milestone 5 — Deployment ⬜
+## Milestone 5 — Homelab Deployment ⬜
 
-**Goal:** Live on a real domain with HTTPS, SSL, and a real PostgreSQL instance.
+**Target server:** `192.168.0.104` (hostname: `homelab`, Ubuntu 24.04.4 LTS)
+**Access:** SSH as `diboy` (full sudo). Docker 29.4.0 + Compose v5.1.3 pre-installed.
+**Scope:** LAN-only deployment — no public domain, HTTP on port 80.
+**Not in scope:** Let's Encrypt (requires public domain — defer to M5.5 when domain added).
 
-- ⬜ Provision VPS (Hetzner CX22 or equivalent)
-- ⬜ Docker Compose deployment (Next.js + PostgreSQL + Nginx)
-- ⬜ Nginx HTTPS with Let's Encrypt (Certbot)
-- ⬜ Set all production env vars (see `.env.example`)
-- ⬜ `npm run db:push && npm run db:seed` on first deploy
-- ⬜ Owner places `public/photo.jpg`
-- ⬜ Run CV Generator agent to produce initial `public/cv.pdf` (replaces manual placement)
-- ⬜ Cron jobs for agents (`crontab -e` on VPS)
-- ⬜ Update `OWNER` object in `src/lib/mock-data.ts` with real info
+### Server snapshot (scouted 2026-04-19)
+- 2 CPU cores · 7.6 GB RAM (5.7 GB free) · 56 GB disk (18 GB free)
+- Already running: n8n on :5678, n8n-mcp on :4000, twingate, vibe-kanban on :3000
+- Port 80 free · Port 443 free · UFW inactive
+- No repo cloned yet · No Nginx binary (Docker image used)
+
+---
+
+### Phase 1 — Nginx LAN Config
+
+The existing `nginx/portfolio.conf` requires a domain + TLS certs. Create a LAN variant
+`nginx/portfolio-lan.conf` that serves HTTP only on port 80 and `server_name _`.
+
+**`nginx/portfolio-lan.conf`:**
+```nginx
+server {
+    listen 80;
+    server_name _;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    client_max_body_size 20M;
+
+    location / {
+        proxy_pass         http://app:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection 'upgrade';
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+**`docker-compose.override.yml`** (LAN — mounts LAN config, drops port 443):
+```yaml
+services:
+  nginx:
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/portfolio-lan.conf:/etc/nginx/conf.d/default.conf:ro
+```
+
+The base `docker-compose.yml` keeps `443:443` for when a domain is added; the override drops it.
+
+- ⬜ Create `nginx/portfolio-lan.conf`
+- ⬜ Create `docker-compose.override.yml`
+
+---
+
+### Phase 2 — Dockerfile Build Fix
+
+The Dockerfile runs `npm run build` without `DATABASE_URL` set.
+`prisma.ts` throws at module load if `DATABASE_URL` is absent, but the dynamic
+`await import("./prisma")` is only reached when `isMock()` is false — so absent
+`DATABASE_URL` causes `isMock()` to return true and the build succeeds without a DB.
+
+However, `npx prisma generate` in the builder stage also needs the `DATABASE_URL`
+environment variable to be available for the Prisma CLI to pick up `prisma.config.ts`.
+Add a build ARG to satisfy it at build time:
+
+```dockerfile
+# In the builder stage, after COPY . .
+ARG DATABASE_URL=prisma+postgres://build-placeholder
+ENV DATABASE_URL=$DATABASE_URL
+RUN npx prisma generate
+RUN npm run build
+```
+
+- ⬜ Add `ARG DATABASE_URL=prisma+postgres://build-placeholder` + `ENV` to Dockerfile builder stage
+
+---
+
+### Phase 3 — Server Setup & `.env` Creation
+
+SSH into `192.168.0.104` and run:
+
+```bash
+# 1. Clone repo
+git clone git@github.com:DBOYttt/my-portfolio.git ~/my-portfolio
+cd ~/my-portfolio
+
+# 2. Create .env (production values)
+cp .env.example .env
+# Edit .env — fill in all required vars (see table below)
+nano .env
+```
+
+**Required `.env` values for LAN deployment:**
+
+| Variable | Value |
+|----------|-------|
+| `DATABASE_URL` | `postgres://portfolio:STRONG_PASS@db:5432/portfolio_db` |
+| `POSTGRES_PASSWORD` | `STRONG_PASS` (same as above) |
+| `AUTH_SECRET` | `openssl rand -base64 32` output |
+| `AUTH_URL` | `http://192.168.0.104` |
+| `ADMIN_EMAIL` | owner's email |
+| `ADMIN_PASSWORD` | strong password (min 12 chars) |
+| `ANTHROPIC_API_KEY` | from console.anthropic.com |
+| `GITHUB_USERNAME` | owner's GitHub username |
+| `GITHUB_TOKEN` | GitHub PAT with `public_repo` scope |
+| `NEXT_PUBLIC_BASE_URL` | `http://192.168.0.104` |
+| `RESEND_API_KEY` | from resend.com (optional — contact form) |
+| `CONTACT_EMAIL` | delivery address for contact form |
+
+All other variables optional — fill in as needed.
+
+- ⬜ SSH into server and clone repo
+- ⬜ Create and populate `.env`
+
+---
+
+### Phase 4 — First Deploy
+
+```bash
+cd ~/my-portfolio
+
+# 1. Build image
+docker compose build app
+
+# 2. Start DB (wait for healthy)
+docker compose up -d db
+docker compose ps   # wait until db is healthy
+
+# 3. Apply schema + seed admin user
+docker compose run --rm app npx prisma db push
+docker compose run --rm app npm run db:seed
+
+# 4. Start everything
+docker compose up -d
+
+# 5. Verify
+curl http://localhost/          # should return HTML
+curl http://localhost/admin     # should redirect to /admin/login
+docker compose ps               # all three services Up (healthy)
+```
+
+- ⬜ `docker compose build app`
+- ⬜ `docker compose up -d db` + wait for health
+- ⬜ `docker compose run --rm app npx prisma db push`
+- ⬜ `docker compose run --rm app npm run db:seed`
+- ⬜ `docker compose up -d`
+- ⬜ Verify: `curl http://localhost/` returns 200
+
+---
+
+### Phase 5 — Cron Jobs for Agents
+
+Agents run as separate Node.js processes inside the app container via cron on the host:
+
+```bash
+# On the host machine (crontab -e for user diboy)
+# Run each agent at sensible intervals
+
+# GitHub Summarizer — daily at 07:00
+0 7 * * * cd ~/my-portfolio && docker compose exec -T app npx tsx agents/github-summarizer.ts >> ~/logs/agent-github.log 2>&1
+
+# Skills Inference — daily at 07:05
+5 7 * * * cd ~/my-portfolio && docker compose exec -T app npx tsx agents/skills-inference.ts >> ~/logs/agent-skills.log 2>&1
+
+# Blog Suggester — weekly Monday 08:00
+0 8 * * 1 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/blog-suggester.ts >> ~/logs/agent-blog.log 2>&1
+
+# Opportunity Watcher — weekly Monday 08:05
+5 8 * * 1 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/opportunity-watcher.ts >> ~/logs/agent-jobs.log 2>&1
+
+# Robotics News — weekly Wednesday 08:00
+0 8 * * 3 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/robotics-news.ts >> ~/logs/agent-robotics.log 2>&1
+
+# Brand Monitor — weekly Friday 08:00
+0 8 * * 5 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/brand-monitor.ts >> ~/logs/agent-brand.log 2>&1
+
+# Platform Sync — weekly Sunday 09:00
+0 9 * * 7 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/platform-sync.ts >> ~/logs/agent-platform.log 2>&1
+
+# CV Generator — weekly Sunday 09:05 (portfolio mode)
+5 9 * * 7 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/cv-generator.ts >> ~/logs/agent-cv.log 2>&1
+```
+
+Create the log directory: `mkdir -p ~/logs`
+
+- ⬜ `mkdir -p ~/logs` on server
+- ⬜ Add all 8 agent cron entries via `crontab -e`
+
+---
+
+### Phase 6 — Owner Content Population
+
+At this point the app is live but serving placeholder data. Owner must:
+
+1. **Fill in `OWNER` object** — `src/lib/mock-data.ts` → name, bio, email, GitHub, LinkedIn URLs
+2. **Add photo** — place `public/photo.jpg` inside the running container:
+   ```bash
+   docker cp ~/photo.jpg my-portfolio-app-1:/app/public/photo.jpg
+   ```
+   Or rebuild image after placing file in repo.
+3. **Add real skills** — via admin panel `/admin/skills`
+4. **Add real experience** — via admin panel `/admin/experience`
+5. **Publish or edit projects** — 11 draft projects imported from GitHub; review + publish via `/admin/projects`
+6. **Run CV Generator** — via `/admin/cv` → "Run now" (requires `ANTHROPIC_API_KEY`)
+7. **Run GitHub Summarizer** — to populate first audit report
+8. **Commit & redeploy** after mock-data changes:
+   ```bash
+   git pull && docker compose build app && docker compose up -d app
+   ```
+
+- ⬜ Fill in `OWNER` in `src/lib/mock-data.ts` and push
+- ⬜ `git pull && docker compose build app && docker compose up -d app` on server
+- ⬜ Add skills + experience via admin panel
+- ⬜ Copy/build photo into container
+- ⬜ Review + publish projects in admin panel
+- ⬜ Run CV Generator from admin panel
+
+---
+
+### Phase 7 — Update Deploy Workflow
+
+The existing `.github/workflows/deploy.yml` stub uses SSH deploy. Update secrets in GitHub repo:
+
+| Secret | Value |
+|--------|-------|
+| `SSH_HOST` | `192.168.0.104` |
+| `SSH_USER` | `diboy` |
+| `SSH_KEY` | private key for server SSH access |
+
+The deploy step already does `git pull && docker compose pull && docker compose up -d`.
+Update it to rebuild the app image (it's built locally on the server, not pulled from a registry):
+
+```yaml
+- name: Deploy
+  run: |
+    git pull
+    docker compose build app
+    docker compose up -d
+```
+
+- ⬜ Add `SSH_HOST`, `SSH_USER`, `SSH_KEY` secrets to GitHub repo settings
+- ⬜ Update deploy workflow step to `docker compose build app && docker compose up -d`
+
+---
+
+### Phase 8 — Smoke Test
+
+```bash
+# From dev machine (192.168.0.x)
+curl -s http://192.168.0.104/ | grep "<title>"      # portfolio title
+curl -I http://192.168.0.104/admin                   # 307 → /admin/login
+curl -I http://192.168.0.104/api/contact             # 405 (not POST)
+# Open browser → http://192.168.0.104 → full walkthrough
+# Log into admin → run one agent → verify report appears
+```
+
+- ⬜ Curl smoke tests pass
+- ⬜ Browser walkthrough: all 9 public sections load with real data
+- ⬜ Admin login works (AUTH_URL set correctly)
+- ⬜ At least 1 agent run succeeds and report appears in admin
+- ⬜ CV PDF generated and downloadable
+- ⬜ Contact form sends email (if RESEND_API_KEY set)
+
+---
+
+### Future: Adding HTTPS (M5.5)
+
+When a domain is pointed at this server:
+1. Install Certbot: `sudo apt install certbot`
+2. Obtain cert: `sudo certbot certonly --standalone -d yourdomain.com`
+3. Copy certs to `nginx/certs/`: `fullchain.pem` + `privkey.pem`
+4. Switch to `nginx/portfolio.conf` (remove override): update `docker-compose.override.yml` to use the main conf and re-add 443 port
+5. Update `.env`: `AUTH_URL=https://yourdomain.com`, `NEXT_PUBLIC_BASE_URL=https://yourdomain.com`
+6. `docker compose up -d nginx`
+7. Set up cert renewal cron: `0 3 1 * * certbot renew && docker compose exec nginx nginx -s reload`
 
 ---
 
