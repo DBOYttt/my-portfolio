@@ -37,6 +37,25 @@ interface SkillsDiff {
   stale: SkillStaleSuggestion[];
 }
 
+interface GraphQLRepoNode {
+  name: string;
+  primaryLanguage: { name: string } | null;
+  languages: {
+    edges: Array<{ size: number; node: { name: string } }>;
+  };
+}
+
+interface GraphQLResponse {
+  data?: {
+    user?: {
+      repositories: {
+        nodes: GraphQLRepoNode[];
+      };
+    };
+  };
+  errors?: Array<{ message: string }>;
+}
+
 export function normaliseCategoryEnum(raw: string): string {
   const map: Record<string, string> = {
     LANGUAGE: "LANGUAGES",
@@ -72,7 +91,53 @@ async function fetchRepos(): Promise<GitHubRepo[]> {
   return res.json() as Promise<GitHubRepo[]>;
 }
 
-async function fetchRepoLanguages(repoName: string): Promise<Record<string, number>> {
+async function fetchLanguagesViaGraphQL(first: number): Promise<Record<string, number>> {
+  if (!GITHUB_TOKEN) {
+    throw new Error("No GITHUB_TOKEN for GraphQL");
+  }
+  const query = `
+    query($login: String!, $first: Int!) {
+      user(login: $login) {
+        repositories(first: $first, ownerAffiliations: OWNER, privacy: PUBLIC) {
+          nodes {
+            name
+            primaryLanguage { name }
+            languages(first: 10) {
+              edges { size node { name } }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const res = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": "portfolio-agent/1.0",
+      Authorization: `bearer ${GITHUB_TOKEN}`,
+    },
+    body: JSON.stringify({ query, variables: { login: GITHUB_USERNAME, first } }),
+  });
+  if (!res.ok) {
+    throw new Error(`GitHub GraphQL error: ${res.status}`);
+  }
+  const json = (await res.json()) as GraphQLResponse;
+  if (json.errors && json.errors.length > 0) {
+    throw new Error(`GitHub GraphQL errors: ${json.errors.map((e) => e.message).join(", ")}`);
+  }
+  const nodes = json.data?.user?.repositories?.nodes ?? [];
+  const aggregated: Record<string, number> = {};
+  for (const node of nodes) {
+    for (const edge of node.languages.edges) {
+      const langName = edge.node.name;
+      aggregated[langName] = (aggregated[langName] ?? 0) + edge.size;
+    }
+  }
+  return aggregated;
+}
+
+async function fetchRepoLanguagesRest(repoName: string): Promise<Record<string, number>> {
   const res = await fetch(
     `https://api.github.com/repos/${GITHUB_USERNAME}/${repoName}/languages`,
     { headers: makeHeaders() }
@@ -165,14 +230,22 @@ export async function runSkillsInference(): Promise<AgentRunResult> {
   const repos = await fetchRepos();
   const topRepos = repos.slice(0, 30);
 
-  // Aggregate language bytes and topics across all repos
-  const aggregatedLanguages: Record<string, number> = {};
+  // SI-D: Try GraphQL first (single request for all language data), fall back to REST per-repo
+  let aggregatedLanguages: Record<string, number>;
+  try {
+    aggregatedLanguages = await fetchLanguagesViaGraphQL(30);
+  } catch {
+    aggregatedLanguages = {};
+    for (const repo of topRepos) {
+      const langs = await fetchRepoLanguagesRest(repo.name);
+      for (const [lang, bytes] of Object.entries(langs)) {
+        aggregatedLanguages[lang] = (aggregatedLanguages[lang] ?? 0) + bytes;
+      }
+    }
+  }
+
   const allTopics: string[] = [];
   for (const repo of topRepos) {
-    const langs = await fetchRepoLanguages(repo.name);
-    for (const [lang, bytes] of Object.entries(langs)) {
-      aggregatedLanguages[lang] = (aggregatedLanguages[lang] ?? 0) + bytes;
-    }
     if (repo.topics) allTopics.push(...repo.topics);
   }
   const uniqueTopics = [...new Set(allTopics)];

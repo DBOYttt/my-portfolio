@@ -10,6 +10,11 @@ import type {
   GitHubAuditRawData,
   ActivityLevel,
 } from "@/lib/agents/github-summarizer";
+import type {
+  GoogleAlertItem,
+  GithubRepoStat,
+  DevToMention,
+} from "@/lib/agents/brand-monitor";
 
 interface SkillAddSuggestion {
   name: string;
@@ -91,6 +96,41 @@ interface CvTargetedRawData {
   atsKeywordGap: { present: string[]; absent: string[] };
 }
 
+interface BrandMonitorRawData {
+  githubDelta: GithubRepoStat[];
+  googleAlerts: GoogleAlertItem[];
+  devToMentions: DevToMention[];
+}
+
+interface OpportunityJob {
+  title: string;
+  company: string;
+  url: string;
+  location: string;
+  source: string;
+  description?: string;
+  score?: number;
+  rationale?: string;
+}
+
+interface OWSourceResult {
+  name: string;
+  jobCount: number;
+  error?: string;
+}
+
+interface OpportunityWatcherRawData {
+  sources?: OWSourceResult[];
+  newJobCount?: number;
+  totalMatchCount?: number;
+  seenCount?: number;
+  keywords?: string[];
+  jobs?: OpportunityJob[];
+  // legacy flat shape
+  matched?: number;
+  total?: number;
+}
+
 function ActivityBadge({ level }: { level: ActivityLevel }) {
   if (level === "active") {
     return (
@@ -152,15 +192,40 @@ export default async function ReportDetailPage({
   const session = await auth();
   if (!session) redirect("/admin/login");
 
-  const [report, currentSkills, currentProjects] = await Promise.all([
+  const [report, currentSkills, currentProjects, latestOWReport] = await Promise.all([
     prisma.agentReport.findUnique({
       where: { id: params.reportId },
       include: { agent: true },
     }),
     prisma.skill.findMany({ select: { name: true } }),
     prisma.project.findMany({ select: { slug: true, githubUrl: true } }),
+    // SI-C: fetch latest OW report to cross-reference job listings
+    prisma.agentReport.findFirst({
+      where: { agent: { type: "OPPORTUNITY_WATCHER" } },
+      orderBy: { createdAt: "desc" },
+      select: { rawData: true },
+    }),
   ]);
   if (!report) notFound();
+
+  // SI-C: build a map of skill name (lower) → count of OW job listings mentioning it
+  const owJobListingText = (() => {
+    if (!latestOWReport?.rawData) return "";
+    const owRaw = latestOWReport.rawData as Record<string, unknown>;
+    const jobs = Array.isArray(owRaw.jobs) ? (owRaw.jobs as Array<{ title?: string; description?: string; rationale?: string }>) : [];
+    return jobs
+      .map((j) => `${j.title ?? ""} ${j.description ?? ""} ${j.rationale ?? ""}`)
+      .join(" ")
+      .toLowerCase();
+  })();
+
+  function countJobMentions(skillName: string): number {
+    if (!owJobListingText) return 0;
+    const lower = skillName.toLowerCase();
+    // count non-overlapping occurrences
+    const regex = new RegExp(lower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+    return (owJobListingText.match(regex) ?? []).length;
+  }
 
   const appliedSkillNames = new Set(currentSkills.map((s) => s.name.toLowerCase()));
   const existingProjectSlugs = new Set(currentProjects.map((p) => p.slug.toLowerCase()));
@@ -190,6 +255,33 @@ export default async function ReportDetailPage({
         where: { name },
         update: {},
         create: { name, category, level, order: 0 },
+      });
+      revalidatePath("/admin/skills");
+      revalidatePath(`/admin/agents/reports/${reportId}`);
+    } catch {
+      // silently swallow — UI unchanged, user can retry
+    }
+  }
+
+  async function applyAllSkillAdditions(formData: FormData) {
+    "use server";
+    const itemsJson = formData.get("items") as string;
+    if (!itemsJson) return;
+    let items: Array<{ name: string; category: string; level?: string }>;
+    try {
+      items = JSON.parse(itemsJson) as Array<{ name: string; category: string; level?: string }>;
+    } catch {
+      return;
+    }
+    try {
+      await prisma.skill.createMany({
+        data: items.map((i) => ({
+          name: i.name,
+          category: i.category as SkillCategory,
+          level: (i.level ?? "INTERMEDIATE") as SkillLevel,
+          order: 0,
+        })),
+        skipDuplicates: true,
       });
       revalidatePath("/admin/skills");
       revalidatePath(`/admin/agents/reports/${reportId}`);
@@ -274,6 +366,15 @@ export default async function ReportDetailPage({
   const isGitHubAudit =
     report.agent.type === "GITHUB_SUMMARIZER" && rawDataType === "GITHUB_AUDIT";
 
+  const isBrandMonitor =
+    report.agent.type === "BRAND_MONITOR" &&
+    rawData !== null &&
+    ("githubDelta" in (rawData as Record<string, unknown>) ||
+      "googleAlerts" in (rawData as Record<string, unknown>) ||
+      "devToMentions" in (rawData as Record<string, unknown>));
+
+  const isOpportunityWatcher = report.agent.type === "OPPORTUNITY_WATCHER";
+
   const skillsDiff = isSkillsDiff ? (rawData as unknown as SkillsDiffRawData) : null;
   const projectSuggestions = isProjectSuggestions
     ? (rawData as unknown as ProjectSuggestionsRawData)
@@ -284,6 +385,8 @@ export default async function ReportDetailPage({
   const cvContentData = isCvContent ? (rawData as unknown as CvContentRawData) : null;
   const cvTargetedData = isCvTargeted ? (rawData as unknown as CvTargetedRawData) : null;
   const githubAudit = isGitHubAudit ? (rawData as unknown as GitHubAuditRawData) : null;
+  const brandMonitorData = isBrandMonitor ? (rawData as unknown as BrandMonitorRawData) : null;
+  const owData = isOpportunityWatcher ? (rawData as unknown as OpportunityWatcherRawData) : null;
 
   return (
     <div className="max-w-4xl">
@@ -330,10 +433,32 @@ export default async function ReportDetailPage({
         <div className="space-y-6 mb-6">
           {skillsDiff.add.length > 0 && (
             <div className="card overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#2a2d3a]">
+              <div className="px-4 py-3 border-b border-[#2a2d3a] flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-slate-100 text-sm font-medium">
                   Skills to Add ({skillsDiff.add.length})
                 </p>
+                {/* SI-B: Batch apply button */}
+                {skillsDiff.add.some((s) => !appliedSkillNames.has(s.name.toLowerCase())) && (
+                  <form action={applyAllSkillAdditions}>
+                    <input
+                      type="hidden"
+                      name="items"
+                      value={JSON.stringify(
+                        skillsDiff.add
+                          .filter((s) => !appliedSkillNames.has(s.name.toLowerCase()))
+                          .map((s) => ({ name: s.name, category: s.category, level: s.level }))
+                      )}
+                    />
+                    <button
+                      type="submit"
+                      className="text-xs py-1.5 px-3 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors"
+                    >
+                      Apply all{" "}
+                      {skillsDiff.add.filter((s) => !appliedSkillNames.has(s.name.toLowerCase())).length}{" "}
+                      additions
+                    </button>
+                  </form>
+                )}
               </div>
               <table className="w-full text-sm">
                 <thead>
@@ -348,9 +473,18 @@ export default async function ReportDetailPage({
                 <tbody>
                   {skillsDiff.add.map((s, i) => {
                     const isApplied = appliedSkillNames.has(s.name.toLowerCase());
+                    // SI-C: job market relevance count
+                    const jobMentions = countJobMentions(s.name);
                     return (
                       <tr key={i} className="border-b border-[#2a2d3a] last:border-0">
-                        <td className="px-4 py-2.5 text-slate-100 font-medium">{s.name}</td>
+                        <td className="px-4 py-2.5">
+                          <span className="text-slate-100 font-medium">{s.name}</span>
+                          {jobMentions > 0 && (
+                            <span className="ml-2 text-xs px-1.5 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 font-mono">
+                              {jobMentions} job{jobMentions !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-2.5 text-slate-400 font-mono text-xs">{s.category}</td>
                         <td className="px-4 py-2.5 text-slate-400 font-mono text-xs">{s.level}</td>
                         <td className="px-4 py-2.5 text-slate-500 text-xs hidden md:table-cell max-w-xs truncate">
@@ -999,6 +1133,251 @@ export default async function ReportDetailPage({
                 </table>
               </div>
             </details>
+          )}
+        </div>
+      )}
+
+      {/* Opportunity Watcher UI */}
+      {owData && (
+        <div className="space-y-4 mb-6">
+          {/* Stats header */}
+          <div className="flex flex-wrap gap-3">
+            {typeof owData.newJobCount === "number" && (
+              <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
+                {owData.newJobCount} new job{owData.newJobCount !== 1 ? "s" : ""}
+              </span>
+            )}
+            {typeof owData.seenCount === "number" && owData.seenCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-slate-600/50 bg-slate-700/20 text-slate-400">
+                {owData.seenCount} already seen
+              </span>
+            )}
+            {typeof owData.totalMatchCount === "number" && (
+              <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-[#2a2d3a] text-slate-500">
+                {owData.totalMatchCount} total matched
+              </span>
+            )}
+          </div>
+
+          {/* Source breakdown */}
+          {owData.sources && owData.sources.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {owData.sources.map((src, i) => (
+                <span
+                  key={i}
+                  className={`text-xs px-2 py-1 rounded border font-mono ${
+                    src.error
+                      ? "border-red-500/20 bg-red-500/5 text-red-400"
+                      : "border-[#2a2d3a] text-slate-400"
+                  }`}
+                  title={src.error}
+                >
+                  {src.name}: {src.jobCount} jobs{src.error ? " (error)" : ""}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Job listings with scores */}
+          {owData.jobs && owData.jobs.length > 0 && (
+            <div className="card overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#2a2d3a]">
+                <p className="text-slate-100 text-sm font-medium">
+                  Matched Jobs ({owData.jobs.length})
+                </p>
+              </div>
+              <ul className="divide-y divide-[#2a2d3a]">
+                {owData.jobs.map((job, i) => {
+                  const score = job.score ?? 0;
+                  const isStrongMatch = score >= 8;
+                  return (
+                    <li key={i} className="px-4 py-3 flex flex-col gap-1">
+                      <div className="flex items-start gap-3 flex-wrap">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <a
+                              href={job.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-slate-100 font-medium text-sm hover:text-cyan-400 transition-colors"
+                            >
+                              {job.title}
+                            </a>
+                            {isStrongMatch && (
+                              <span className="text-xs px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                                Strong match
+                              </span>
+                            )}
+                            {score > 0 && (
+                              <span
+                                className={`text-xs px-1.5 py-0.5 rounded border font-mono ${
+                                  score >= 8
+                                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                                    : score >= 6
+                                    ? "border-amber-500/20 bg-amber-500/10 text-amber-400"
+                                    : "border-slate-600/40 bg-slate-700/20 text-slate-400"
+                                }`}
+                              >
+                                {score}/10
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-400 text-xs mt-0.5">
+                            {job.company || job.source} · {job.location}
+                            <span className="ml-2 text-slate-600 font-mono">{job.source}</span>
+                          </p>
+                        </div>
+                      </div>
+                      {job.rationale && (
+                        <p className="text-slate-500 text-xs italic">{job.rationale}</p>
+                      )}
+                      {job.description && !job.rationale && (
+                        <p className="text-slate-600 text-xs line-clamp-2">{job.description}</p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {/* Keywords used */}
+          {owData.keywords && owData.keywords.length > 0 && (
+            <div className="flex flex-wrap gap-1 items-center">
+              <span className="text-slate-500 text-xs font-mono mr-1">keywords:</span>
+              {owData.keywords.map((kw) => (
+                <span key={kw} className="tag text-xs">{kw}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Brand Monitor UI */}
+      {brandMonitorData && (
+        <div className="space-y-4 mb-6">
+          {brandMonitorData.githubDelta.length > 0 && (
+            <div className="card overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#2a2d3a]">
+                <p className="text-slate-100 text-sm font-medium">GitHub Star / Fork Delta</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[#2a2d3a]">
+                      <th className="text-left px-4 py-2 text-slate-500 font-medium">Repo</th>
+                      <th className="text-left px-4 py-2 text-slate-500 font-medium">Stars</th>
+                      <th className="text-left px-4 py-2 text-slate-500 font-medium">Stars Delta</th>
+                      <th className="text-left px-4 py-2 text-slate-500 font-medium">Forks</th>
+                      <th className="text-left px-4 py-2 text-slate-500 font-medium">Forks Delta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {brandMonitorData.githubDelta.map((r, i) => (
+                      <tr key={i} className="border-b border-[#2a2d3a] last:border-0">
+                        <td className="px-4 py-2.5 font-mono text-xs text-slate-300">{r.repo}</td>
+                        <td className="px-4 py-2.5 text-slate-400 text-xs">{r.stars}</td>
+                        <td className="px-4 py-2.5 text-xs font-mono">
+                          {r.starDelta > 0 ? (
+                            <span className="text-emerald-400">+{r.starDelta}</span>
+                          ) : r.starDelta < 0 ? (
+                            <span className="text-red-400">{r.starDelta}</span>
+                          ) : (
+                            <span className="text-slate-600">0</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-400 text-xs">{r.forks}</td>
+                        <td className="px-4 py-2.5 text-xs font-mono">
+                          {r.forkDelta > 0 ? (
+                            <span className="text-emerald-400">+{r.forkDelta}</span>
+                          ) : r.forkDelta < 0 ? (
+                            <span className="text-red-400">{r.forkDelta}</span>
+                          ) : (
+                            <span className="text-slate-600">0</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {brandMonitorData.googleAlerts.length > 0 && (
+            <div className="card overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#2a2d3a]">
+                <p className="text-slate-100 text-sm font-medium">
+                  Google Alerts ({brandMonitorData.googleAlerts.length})
+                </p>
+              </div>
+              <ul className="divide-y divide-[#2a2d3a]">
+                {brandMonitorData.googleAlerts.map((a, i) => (
+                  <li key={i} className="flex items-start justify-between px-4 py-2.5 gap-3">
+                    <div className="flex-1 min-w-0">
+                      <a
+                        href={a.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-slate-100 text-sm hover:text-cyan-400 transition-colors"
+                      >
+                        {a.title}
+                      </a>
+                      {a.pubDate && (
+                        <p className="text-slate-600 text-xs font-mono mt-0.5">{a.pubDate}</p>
+                      )}
+                    </div>
+                    {a.sentiment && (
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${
+                          a.sentiment === "positive"
+                            ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                            : a.sentiment === "negative"
+                              ? "text-red-400 bg-red-500/10 border-red-500/20"
+                              : "text-slate-400 bg-slate-700/20 border-slate-600/40"
+                        }`}
+                      >
+                        {a.sentiment}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {brandMonitorData.devToMentions.length > 0 && (
+            <div className="card overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#2a2d3a]">
+                <p className="text-slate-100 text-sm font-medium">
+                  Dev.to Mentions ({brandMonitorData.devToMentions.length})
+                </p>
+              </div>
+              <ul className="divide-y divide-[#2a2d3a]">
+                {brandMonitorData.devToMentions.map((m, i) => (
+                  <li key={i} className="px-4 py-2.5">
+                    <a
+                      href={m.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-slate-100 text-sm hover:text-cyan-400 transition-colors truncate block"
+                    >
+                      {m.title}
+                    </a>
+                    <p className="text-slate-500 text-xs mt-0.5">
+                      {m.author}
+                      {m.publishedAt && (
+                        <span className="ml-2 font-mono">
+                          {new Date(m.publishedAt).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                      )}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       )}
