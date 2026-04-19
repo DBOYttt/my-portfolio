@@ -139,9 +139,9 @@ async function getData() {
 
 ---
 
-## Current State (post-Milestone 4.13)
+## Current State (post-Milestone 4.14)
 
-All public sections, admin CRUD (blog, projects, skills, experience, tools, media), nine AI agents, CV generation + editor, responsive admin shell, and security audit are complete. `tsc --noEmit` is clean. Next up is Milestone 5 (VPS deployment + CI).
+All public sections, admin CRUD (blog, projects, skills, experience, tools, media), nine AI agents with full usefulness overhaul (35 improvements), CV generation + editor (JD targeting, ATS gap, two-variant output), responsive admin shell, security audit, and automated test suite (79 Vitest tests) are complete. `npm test`, `tsc --noEmit`, `npm run lint`, and `npm run build` are all clean. Next up is Milestone 5 (VPS deployment).
 
 ### Key architectural facts worth knowing
 - Admin route groups: `(auth)/` — login page only, no shell. `(panel)/` — all authenticated pages; `layout.tsx` calls `auth()` and redirects if no session.
@@ -149,6 +149,9 @@ All public sections, admin CRUD (blog, projects, skills, experience, tools, medi
 - Agent run API: `POST /api/admin/agents/[id]/run` uses an atomic `updateMany` lock — only one run at a time; concurrent callers get 409.
 - Skills Inference results are **never auto-applied** — owner must approve each diff on the report detail page.
 - CV PDF is written to `public/cv.pdf`; `cvSource` field on `User` tracks `"ai"` vs `"manual"`.
+- `Agent.config Json?` stores per-agent persistent state (seenUrls, keywords, repoSnapshot, etc.). Runners return `_updatedConfig` in `AgentRunResult`; the run API persists it after success.
+- Build without a real DB: `DATABASE_URL="prisma+postgres://ci" npm run build` — forces `isMock()` true so all pages use mock data. Used in CI.
+- Test suite: `npm test` runs 79 Vitest tests across 8 files (unit, integration, structural scan). `npm run test:watch` for TDD.
 
 ### Pending — owner actions before going live
 - [ ] Add `public/photo.jpg`
@@ -158,7 +161,6 @@ All public sections, admin CRUD (blog, projects, skills, experience, tools, medi
 
 ### Upcoming — Milestone 5: Deployment
 - [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
-- [ ] GitHub Actions CI: lint + type-check on push
 - [ ] Owner fills in real personal data (name, bio, photo, skills, experience, projects)
 
 See `docs/IMPLEMENTATION_PLAN.md` for the full phased breakdown.
@@ -215,13 +217,15 @@ CSS classes (defined in globals.css):
 
 ## Running the Project
 
-There is **no test suite** — verification is done via `tsc --noEmit`, `npm run lint`, and the `end-user-tester` subagent for browser walkthroughs.
+Run the full verification suite before committing: `npm test && npm run lint && npx tsc --noEmit`. For browser walkthroughs use the `end-user-tester` subagent.
 
 ```bash
 npm run dev          # Start dev server (works without DB — mock mode)
 npm run build        # Production build
 npm run lint         # ESLint via Next.js
 npx tsc --noEmit     # Type-check without emitting (run before committing)
+npm test             # Vitest — 79 tests across 8 files (unit, integration, structural)
+npm run test:watch   # Vitest watch mode for TDD
 npm run db:generate  # Re-generate Prisma client after schema changes
 npm run db:push      # Apply schema to DB — use this locally (migrate dev unsupported with Prisma dev proxy)
 npm run db:migrate   # Apply schema with migration history — use in production only

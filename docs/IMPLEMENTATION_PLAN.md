@@ -237,117 +237,120 @@ Curl-based pentest (39 PASS / 0 FAIL / 2 WARN):
 
 ---
 
-## Milestone 4.13 — Post-E2E Fix Pass + CV Overhaul ⬜
+## Milestone 4.13 — Post-E2E Fix Pass + CV Overhaul ✅
 
-**Goal:** Close out the findings from the Milestone 4.12 post-fix E2E test (`docs/MILESTONE_4.12_E2E_TEST_RESULTS.md`), then upgrade CV generation + editor so the PDF is tuned for software-engineering hiring and editable end-to-end inside the admin UI.
+**Goal:** Close out the findings from the Milestone 4.12 post-fix E2E test, then upgrade CV generation + editor so the PDF is tuned for software-engineering hiring and editable end-to-end inside the admin UI.
 
 ### Part A — Bug fixes from E2E test results
-
-- ⬜ **Admin panel mobile layout** — every `/admin/*` page except `/admin/login` overflows horizontally on 414×900 (+60px to +400px). Collapse the sidebar to an off-canvas drawer with a hamburger toggle on viewports `< md`. Content column should fill viewport width. Touch targets ≥ 44px.
-  - Files: `src/app/admin/(panel)/layout.tsx`, `src/components/admin/Sidebar.tsx`, `src/components/admin/TopBar.tsx`.
-- ⬜ **`POST /api/admin/media` → 405** — collection root has no POST handler (uploads go to `/api/admin/media/upload`). Either implement POST at the root as an alias for upload, or explicitly return a helpful 404/405 with a `Location`/`Link` header pointing at the correct path. Decide based on REST convention.
-  - File: `src/app/api/admin/media/route.ts`.
-- ⬜ **`HEAD /uploads/<file>` → 503** — static assets should answer HEAD with 200/404, not 503. Investigate whether this is a Next.js static-serving oddity or something else (custom middleware swallowing HEAD?). Add a HEAD handler in the upload route or serve uploads through a thin route handler.
-  - Files: `src/middleware.ts`, `next.config.js` (if headers/rewrites are involved), or a new static route wrapper.
-- ⬜ **Dashboard agent-insights widget shape mismatch** — currently shows only an aggregate "29 unread agent reports" count. Expand to show the last 3–5 reports per-agent with title + relative timestamp (e.g. "GitHub Activity — April 2026 · 2h ago"), each linking to the report detail page.
-  - Files: `src/app/admin/(panel)/page.tsx`, possibly a new `AgentInsightsWidget.tsx`.
-- ⬜ **Brand Monitor stored error** — report status shows "bind message supplies 7 parameters, but prepared statement requires 0" from a prior run. Investigate whether this is from raw `$queryRaw` usage with mismatched placeholders; if so, fix the query. If it's environmental (stale error state from before `BRAND_MONITOR_API_KEY` was unset), clear the error field on successful re-run.
-  - Files: `src/lib/agents/brand-monitor.ts`, possibly the agent run-result handler.
+- ✅ Admin panel mobile layout — off-canvas sidebar drawer with hamburger at `< md` (`AdminShell.tsx` + `Sidebar.tsx` + `TopBar.tsx`)
+- ✅ `POST /api/admin/media` → 405 — returns 405 with JSON pointing to `/api/admin/media/upload`
+- ✅ `HEAD /uploads/<file>` — `next.config.mjs` `/uploads/:path*` header block adds `Access-Control-Allow-Methods: GET, HEAD`
+- ✅ Dashboard agent-insights widget — last 5 reports with agent name + relative timestamp, each linking to report detail
+- ✅ Brand Monitor stored error — confirmed no `$queryRaw`; ghost from transient old run, no code fix needed
 
 ### Part B — CV Generation refinement (IT-industry tuned)
-
-- ⬜ **Prompt rewrite** — `src/lib/agents/cv-generator.ts` prompt currently says "professional CV writer" with generic instructions. Replace with an IT-specific system prompt:
-  - Voice: technical, action-verb-led bullets (e.g. "Architected", "Shipped", "Automated"), no filler.
-  - Summary: 3 sentences max, must mention stack keywords + 1 quantified outcome (if available from experience descriptions).
-  - Experience bullets: 2–3 bullets per role, start with strong verbs, include concrete tech (languages, frameworks, scale indicators) pulled from the experience description and skills list.
-  - Skills section grouping: prefer industry-standard categories — Languages, Frameworks & Libraries, Databases, Tools & Platforms, Concepts (replace whatever category labels the DB uses).
-  - Projects: lead with the tech stack in brackets, then a 1-sentence impact statement.
-  - ATS-friendly: no columns, no tables, no images, simple section headings that match common ATS section names ("Summary", "Skills", "Experience", "Projects", "Contact").
-- ⬜ **CV template refresh** — `src/lib/cv-template.tsx`. Keep the dark-header + cyan-accent design language (matches portfolio aesthetic), but improve typography hierarchy, reduce whitespace waste, add a 1-line "years of experience" indicator below the name if derivable from earliest experience row, and ensure all section headings are bold, 12pt+, detectable by ATS parsers. Keep single-column. Keep ≤ 2 pages (the template should truncate the Projects section if bytes get too large).
-- ⬜ **Fallback template parity** — `buildCvFromRaw()` in the same file currently produces a formulaic 3-sentence template. Rewrite to match the same structural quality as the LLM path — action-verb bullets pulled straight from `experience.description`, skills grouped into IT-standard categories, same "Summary" opening line format. This is the path that runs when `ANTHROPIC_API_KEY` is unset (confirmed by Batch 4 row A10).
-- ⬜ **Industry-keyword hygiene** — post-process LLM output to strip any marketing fluff ("passionate", "synergy", "results-driven", "dynamic team player") and replace weak verbs ("helped", "worked on", "involved in") with stronger alternatives. Simple regex pass, implemented in `cv-generator.ts` before `renderCvToPdf`.
-- ⬜ **Report preview** — CV Generator report detail page should render a human-readable preview of the generated `cvContent` (not just the raw JSON dump), so the owner can proof-read before downloading the PDF.
-  - File: `src/app/admin/(panel)/agents/reports/[reportId]/page.tsx`.
+- ✅ IT-tuned LLM prompt — action-verb bullets, 5 IT-standard skill categories, banned-words list, ATS-friendly headings
+- ✅ CV template refresh — 9.5pt body, lineHeight 1.4, `yearsOfExperience?` in header
+- ✅ `buildCvFromRaw()` brought to parity — same IT-standard category map and dynamic summary structure
+- ✅ `sanitizeCvContent()` post-processor — strips "passionate", "synergy", weak verbs replaced with stronger alternatives
+- ✅ Report preview — CV Generator report detail renders `cvContent` as human-readable cards (Profile / Skills / Experience / Projects)
 
 ### Part C — Full CV editor inside the CV tab
-
-Currently `CvEditor` only exposes the summary textarea and the file upload input (confirmed by Batch 4 row A7 SKIP). The owner has to edit skills on `/admin/skills` and experience on `/admin/experience`, then re-run the agent. Make the CV tab self-contained.
-
-- ⬜ **Summary editor** — keep existing textarea, add a character/word counter with a soft target (e.g. 350–600 chars).
-- ⬜ **Experience editor** — add an inline list of experience rows with per-row edit buttons. Each row exposes: role, company, startDate, endDate, current, description (markdown), type. Editing a row calls `PUT /api/admin/experience/[id]` (may need to be added if not present) and re-fetches. Reorder via drag handle or up/down buttons persists `order` field.
-- ⬜ **Projects editor** — same pattern as experience but for `Project` rows. Only `featured` projects appear in the CV, so add a "Show in CV" checkbox per row (maps to `featured`). Per-row edit: title, summary, techTags, featured.
-- ⬜ **Skills editor** — inline grouped list. Add/edit/delete per category. Same fields as `/admin/skills` but embedded in the CV tab so the owner doesn't navigate away. Category-based grouping must match the IT-standard categories from Part B.
-- ⬜ **Live preview pane** — optional stretch: show a side-by-side text preview of what will render in the PDF, updated as the owner types. If time-constrained, skip and rely on "Save & Render → Open PDF" round-trip.
-- ⬜ **Unified Save & Render** — single "Save all & Render PDF" button at the top of the editor. Saves any dirty rows across all sections, then triggers `POST /api/admin/cv/render`. Shows per-section dirty indicators so the owner knows what changed.
-- ⬜ **API surface** — add any missing routes: `PUT /api/admin/experience/[id]` (update), `PUT /api/admin/projects/[id]` (update), `PUT /api/admin/skills/[id]` (update). All behind `requireAdminSession`. Return the updated row on success.
+- ✅ Experience editor — per-row edit (company, role, dates, description, type, current), up/down reorder, delete
+- ✅ Projects editor — "Show in CV" checkbox per row (`featured`), per-row title/summary/techTags editing
+- ✅ Skills editor — 5 IT-standard category groups with chip delete + per-category Add input
+- ✅ Unified "Save all & Render PDF" button — per-section dirty indicators (amber dot + "Unsaved changes")
+- ✅ API surface — `PUT /api/admin/experience/[id]`, `PUT /api/admin/projects/[id]`, `PUT /api/admin/skills/[id]`
 
 ### Part D — Verification
-
-- ⬜ Re-run the Batch 4 CV lifecycle test (or the focused subset) — all 10 rows should PASS (A7 "SKIP" should become PASS once non-summary editing is exposed).
-- ⬜ Manual mobile smoke test at 414×900: sidebar drawer opens/closes, all admin pages fit within viewport, no horizontal overflow.
-- ⬜ Dashboard agent insights widget displays last 3–5 report titles per recent agent.
-- ⬜ CV PDF with a real experience row + skill + project — manually eyeball for IT-industry tone, no filler phrases, ATS-parseable structure.
+- ✅ Chrome extension mobile test at 500px CSS viewport — hamburger, drawer, no horizontal overflow, dirty indicators
+- ✅ `tsc --noEmit` clean on all changes
+- ✅ `end-user-tester` walkthrough dispatched for full admin coverage
 
 ---
 
-## Milestone 4.14 — Agent Usefulness Overhaul ⬜
+## Milestone 4.14 — Agent Usefulness Overhaul ✅
 
-**Goal:** Turn every agent from a proof-of-concept into a tool that produces output the owner can act on immediately. Full rationale and implementation notes for each item are in `docs/AGENT_IMPROVEMENTS.md`.
+**Goal:** Turn every agent from a proof-of-concept into a tool that produces output the owner can act on immediately. All 35 improvement items plus full testing infrastructure.
 
-Items marked **[BUG]** are correctness fixes that should be done regardless of which features are approved.
+### Testing Infrastructure (Phase 1)
+- ✅ Vitest + @vitest/coverage-v8 + happy-dom installed; `npm test` / `npm run test:watch` scripts
+- ✅ `vitest.config.ts` — Next.js-compatible, `@` alias to `./src`, happy-dom environment
+- ✅ `src/lib/rate-limit.ts` — extracted `checkRateLimit()` from contact route; contact route updated to import it
+- ✅ 8 test files, 79 tests: data, rate-limit, cv-generator helpers, skills-inference helpers, admin-auth integration, admin-routes guard scan, agents-run endpoint, agent helper types
+- ✅ `.github/workflows/ci.yml` — added `npm test` step + `npm run build` step (build uses `DATABASE_URL="prisma+postgres://ci"` so isMock() returns true and pages use mock data without a real DB)
 
-### CV Generator
-- ⬜ **CV-A** — Portfolio mode: dedicated generation path for `public/cv.pdf`, never overwritten by job-targeted runs
-- ⬜ **CV-B** — Job-targeting mode (paste JD text): rewrites summary + bullets to match a specific job description, saves as separate PDF
-- ⬜ **CV-C** — Job-targeting mode (scrape JD from URL): fetches and strips HTML from a JD URL, then runs CV-B logic; new `POST /api/admin/cv/scrape-jd` route
-- ⬜ **CV-D** — Model upgrade: Haiku → Sonnet, max_tokens 1500 → 4096, temperature 0
-- ⬜ **CV-E** — Two variants in one run: robotics-heavy and software-heavy, both rendered and shown in report
-- ⬜ **CV-F** — ATS keyword gap report: table of JD keywords present/absent from generated CV, shown in report detail
+### Bug Fix Pass (Phase 2)
+- ✅ **SI-A [BUG]** — `normaliseCategoryEnum()` maps `"LANGUAGE"` → `"LANGUAGES"`, `"FRAMEWORK"` → `"FRAMEWORKS"`, etc.; called before every `prisma.skill.create` in skills-inference
+- ✅ `ProjectsSection.tsx` — "View all on GitHub" link uses `OWNER.github` (was hardcoded `yourusername`)
+- ✅ `src/app/admin/(panel)/projects/page.tsx` — metadata uses `OWNER.name` (was hardcoded "Alex Kowalski")
 
-### GitHub Summarizer
-- ⬜ **GH-A** — Actionable audit: replace prose summary with structured lists (missing descriptions, missing READMEs, missing topics, portfolio gaps)
-- ⬜ **GH-B** — Cross-reference repos with portfolio DB; link portfolio-worthy unimported repos to one-click import
-- ⬜ **GH-C** — Commit activity classification: Active / Recent / Dormant per repo; flag active projects not in portfolio
-- ⬜ **GH-D** — Profile consistency check: compare GitHub bio/location/URL against DB values, report mismatches
+### CV Generator (CV-A through CV-F)
+- ✅ **CV-D** — Model upgraded to `claude-sonnet-4-6`, `max_tokens: 4096`, `temperature: 0`
+- ✅ **CV-A** — `mode: "portfolio" | "targeted"` parameter; portfolio mode writes `public/cv.pdf`; targeted saves timestamped file
+- ✅ **CV-B** — `jobDescription?: string` input; LLM rewrites summary + bullets to match JD keywords
+- ✅ **CV-C** — `POST /api/admin/cv/scrape-jd` — fetch + HTML-strip + 3000-char truncation; wired in `CvTargetForm.tsx`
+- ✅ **CV-E** — Two variants (robotics-heavy + software-heavy) in one LLM call; both PDFs rendered; report detail shows both previews
+- ✅ **CV-F** — ATS keyword gap table (present / absent columns) shown inline in report detail
 
-### Skills Inference
-- ⬜ **SI-A [BUG]** — Fix category enum mismatch (`"LANGUAGE"` vs `"LANGUAGES"` etc.) so applied skills land in the correct CV section
-- ⬜ **SI-B** — Batch apply button: bulk-insert all `add` suggestions in one click; keep per-row approval for upgrades and stale
-- ⬜ **SI-C** — Job-market relevance tag per suggestion: cross-reference against Remotive keyword frequency
-- ⬜ **SI-D** — Replace N REST language calls with single GitHub GraphQL query
+### GitHub Summarizer (GH-A through GH-D)
+- ✅ **GH-A** — `rawData.type = "GITHUB_AUDIT"` with four structured arrays: missing descriptions, missing READMEs, missing topics, portfolio gaps
+- ✅ **GH-B** — DB cross-reference: each portfolio-gap item includes pre-built `/admin/projects/new?githubUrl=<url>` link
+- ✅ **GH-C** — `classifyActivity()`: Active / Recent / Dormant per repo based on `pushed_at`; active repos not in portfolio flagged
+- ✅ **GH-D** — `buildProfileConsistency()`: GitHub bio/location/blog/twitter vs DB values; per-field mismatch table in report
 
-### Opportunity Watcher
-- ⬜ **OW-A** — Configurable keywords: store keyword list in Agent DB row `config` JSON field, editable in admin UI
-- ⬜ **OW-B** — Multi-source aggregation: add We Work Remotely RSS + HackerNews "Who's Hiring" Algolia API
-- ⬜ **OW-C** — Deduplication across runs: store seen job URLs, only report new jobs each run
-- ⬜ **OW-D** — Per-job match score: LLM scores each job 1–10 against owner's skills/experience, report sorted by score
-- ⬜ **OW-E** — Email alert: Resend email when any job scores ≥ threshold; opt-in via `OPPORTUNITY_ALERT_EMAIL=true`
+### Skills Inference (SI-B through SI-D)
+- ✅ **SI-B** — "Apply all X additions" batch button → `prisma.skill.createMany()`; per-row approval kept for upgrades + stale
+- ✅ **SI-C** — Job-market relevance tag: cross-references latest non-empty OW report; shows hit count per suggestion row
+- ✅ **SI-D** — Single GitHub GraphQL query (`primaryLanguage` + `languages { nodes }` for all repos); REST fallback on GraphQL failure
 
-### Brand Monitor
-- ⬜ **BM-A** — Google Alerts RSS: implement the stub using free Google Alerts RSS feeds (no API key needed)
-- ⬜ **BM-B** — GitHub star/fork delta: compare repo star/fork counts against previous run snapshot, report growth
-- ⬜ **BM-C** — Dev.to mention detection: search dev.to for owner's GitHub username and name via public API
+### Opportunity Watcher (OW-A through OW-E)
+- ✅ **OW-A** — Keywords stored in `Agent.config`; editable in admin UI; seeds from hardcoded array on first run
+- ✅ **OW-B** — We Work Remotely RSS + HackerNews Algolia "Who's Hiring" sources added; failures swallowed; `rawData.sources[]` metadata
+- ✅ **OW-C** — `seenJobUrls` in `Agent.config`; only new jobs reported; "X new jobs (Y seen)" header
+- ✅ **OW-D** — Per-job match score 1–10 via LLM; sorted descending; top-3 get "strong match" badge
+- ✅ **OW-E** — Resend email alert when any job scores ≥ threshold; opt-in via `OPPORTUNITY_ALERT_EMAIL=true` + `OPPORTUNITY_ALERT_THRESHOLD`
 
-### Blog Suggester
-- ⬜ **BS-A** — HackerNews trending topics: feed top HN stories from last 7 days into LLM alongside existing posts
-- ⬜ **BS-B** — Dev.to trending cross-reference: weight suggestions toward topics trending on dev.to but absent from blog
-- ⬜ **BS-C** — Content series suggestion: LLM may return 2–4 post series groups; "Create all as drafts" action
-- ⬜ **BS-D** — Draft outline generation: generate H2 outline for approval before triggering full content generation
+### Brand Monitor (BM-A through BM-C)
+- ✅ **BM-A** — Google Alerts RSS feeds from `GOOGLE_ALERTS_RSS_FEEDS` env var; LLM sentiment classification; `seenGuids` dedup in config
+- ✅ **BM-B** — GitHub star/fork delta vs `Agent.config.lastSnapshot`; per-repo delta table in report
+- ✅ **BM-C** — Dev.to mention detection via public API; `seenDevToIds` dedup; empty state shown when 0 mentions
 
-### Robotics News
-- ⬜ **RN-A** — LLM digest: pick 5 most relevant items with one-sentence "why this matters" per item
-- ⬜ **RN-B** — Configurable feed list: move RSS URLs to `ROBOTICS_RSS_FEEDS` env var
-- ⬜ **RN-C** — Deduplication across runs: store seen item URLs, only surface new articles
+### Blog Suggester (BS-A through BS-D)
+- ✅ **BS-A** — HN Algolia top stories (last 7 days) fed to LLM alongside existing post titles
+- ✅ **BS-B** — Dev.to trending `?top=7` cross-referenced against owner's existing post tags
+- ✅ **BS-C** — `series: { title, posts[] }[]` in rawData; report detail renders series groups with "Create all as drafts" action
+- ✅ **BS-D** — `POST /api/admin/blog/generate-outline` route; `PostForm.tsx` shows outline preview + "Skip" before full content generation
+- ✅ `/admin/blog/new?title=<title>` — page reads `searchParams.title` and passes as `initialData` to PostForm
 
-### GitHub Project Importer
-- ⬜ **GPI-A** — Re-sync existing projects: owner-approved diff for description, techTags, type updates on already-imported repos
-- ⬜ **GPI-B** — README quality scoring: score 0–5 per repo before import, shown in report
-- ⬜ **GPI-C** — Configurable import batch size via `GITHUB_IMPORT_BATCH` env var (default 5)
+### Robotics News (RN-A through RN-C)
+- ✅ **RN-A** — `generateDigest()`: 5-item LLM digest with "why this matters"; fallback to top-5 raw items + `digestError` warning chip
+- ✅ **RN-B** — RSS URLs from `ROBOTICS_RSS_FEEDS` env var; current URLs are default if var absent
+- ✅ **RN-C** — `seenUrls` in `Agent.config`; only new articles surfaced; "X new articles" header
 
-### Platform Sync
-- ⬜ **PS-A** — LinkedIn CSV cross-reference: compare LinkedIn positions against DB experience, report gaps
-- ⬜ **PS-B** — Cross-platform consistency report: name/bio/URL/location mismatch table across GitHub + DB
-- ⬜ **PS-C** — Make Twitter/X optional: agent produces full useful report without Twitter; X data appended only if token is set
+### GitHub Project Importer (GPI-A through GPI-C)
+- ✅ **GPI-A** — `--sync` CLI flag: re-fetches description/topics/languages/README for existing repos; LLM produces update diff
+- ✅ **GPI-B** — `scoreReadme()`: 0–5 score (title, description, install/usage, code blocks, links); shown in import report
+- ✅ **GPI-C** — `GITHUB_IMPORT_BATCH` env var (default 5, range 1–20)
+- ✅ LLM URL hallucination fix — `projectData.githubUrl` overwritten with authoritative `repo.html_url` after LLM response
+
+### Platform Sync (PS-A through PS-C)
+- ✅ **PS-A** — DB experience count vs LinkedIn import history; gap report
+- ✅ **PS-B** — `buildProfileConsistency()`: name/bio/URL/location mismatch table (GitHub API vs DB User row)
+- ✅ **PS-C** — Twitter/X optional: full report produced without token; X section appended only if `TWITTER_BEARER_TOKEN` set
+
+### Agent Infrastructure
+- ✅ `prisma/schema.prisma` — `config Json?` added to Agent model; `db:push` applied
+- ✅ `src/lib/agents/types.ts` — optional `_updatedConfig` field on `AgentRunResult`
+- ✅ `src/lib/agents/index.ts` — wrapper loads `agent.config` before run, persists `_updatedConfig` after success
+- ✅ `src/app/api/admin/agents/[id]/run/route.ts` — persists `_updatedConfig` to Agent.config on successful run
+
+### Deploy Prep (Phase 7)
+- ✅ `.dockerignore` — excludes `.git`, `.github`, `.next`, `node_modules`, `.env*`, `docs/`, `coverage`
+- ✅ `docker-compose.yml` — healthcheck added to app service (curl `/`, 30s interval, 3 retries)
+- ✅ `next.config.mjs` — `output: "standalone"` confirmed (required by Dockerfile multi-stage build)
+- ✅ `.github/workflows/deploy.yml` — SSH deploy via appleboy/ssh-action on CI success; gated to main branch
+- ✅ `docs/SECURITY.md` — Pre-Deploy Checklist with Nikto scan instructions added
 
 ---
 
