@@ -4,7 +4,8 @@
  * Business logic lives in src/lib/agents/github-project-importer.ts
  * Requires GITHUB_USERNAME and optionally ANTHROPIC_API_KEY in environment.
  *
- * Run manually: npx tsx agents/github-project-importer.ts
+ * Run manually:  npx tsx agents/github-project-importer.ts
+ * Re-sync mode:  npx tsx agents/github-project-importer.ts --sync
  * Schedule via cron: 0 10 * * 1 (every Monday at 10am)
  */
 
@@ -12,7 +13,10 @@ import { prisma } from "../src/lib/prisma";
 import { runGithubProjectImporter } from "../src/lib/agents/github-project-importer";
 
 async function run() {
-  console.log("[github-project-importer] Starting...");
+  // GPI-A: support --sync flag for re-sync mode
+  const syncMode = process.argv.includes("--sync");
+
+  console.log(`[github-project-importer] Starting... (mode: ${syncMode ? "sync" : "import"})`);
 
   const agent = await prisma.agent.upsert({
     where: { id: "agent-github-project-importer" },
@@ -29,7 +33,7 @@ async function run() {
     },
   });
 
-  const result = await runGithubProjectImporter();
+  const result = await runGithubProjectImporter(syncMode);
 
   await prisma.agentReport.create({
     data: {

@@ -16,6 +16,10 @@ import type {
   DevToMention,
 } from "@/lib/agents/brand-monitor";
 import type {
+  ProjectSyncUpdate,
+  ProjectSyncDiffRawData,
+} from "@/lib/agents/github-project-importer";
+import type {
   BlogSuggestion,
   BlogSeries,
 } from "@/lib/agents/blog-suggester";
@@ -73,6 +77,8 @@ interface CreatedProject {
   slug: string;
   type: string;
   githubUrl: string;
+  readmeScore?: number;
+  readmeNote?: string | null;
 }
 
 interface ProjectCreatedRawData {
@@ -363,6 +369,34 @@ export default async function ReportDetailPage({
     }
   }
 
+  async function applyProjectSyncUpdate(formData: FormData) {
+    "use server";
+    const slug = formData.get("slug") as string;
+    const field = formData.get("field") as string;
+    const suggestedValue = formData.get("suggestedValue") as string;
+    if (!slug || !field || !suggestedValue) return;
+    try {
+      const project = await prisma.project.findUnique({ where: { slug } });
+      if (!project) return;
+      if (field === "summary") {
+        await prisma.project.update({ where: { id: project.id }, data: { summary: suggestedValue } });
+      } else if (field === "type") {
+        await prisma.project.update({
+          where: { id: project.id },
+          data: { type: suggestedValue as "SOFTWARE" | "ROBOTICS" | "HARDWARE" | "RESEARCH" },
+        });
+      } else if (field === "techTags") {
+        let tags: string[] = [];
+        try { tags = JSON.parse(suggestedValue) as string[]; } catch { /* leave empty */ }
+        await prisma.project.update({ where: { id: project.id }, data: { techTags: tags } });
+      }
+      revalidatePath("/admin/projects");
+      revalidatePath(`/admin/agents/reports/${reportId}`);
+    } catch {
+      // silently swallow — user can retry
+    }
+  }
+
   async function createSeriesDrafts(formData: FormData) {
     "use server";
     const postsJson = formData.get("posts") as string;
@@ -445,6 +479,9 @@ export default async function ReportDetailPage({
   const isProjectCreated =
     report.agent.type === "GITHUB_PROJECT_IMPORTER" && rawDataType === "PROJECT_CREATED";
 
+  const isProjectSyncDiff =
+    report.agent.type === "GITHUB_PROJECT_IMPORTER" && rawDataType === "PROJECT_SYNC_DIFF";
+
   const isCvContent =
     report.agent.type === "CV_GENERATOR" &&
     rawData !== null &&
@@ -480,6 +517,9 @@ export default async function ReportDetailPage({
     : null;
   const projectCreated = isProjectCreated
     ? (rawData as unknown as ProjectCreatedRawData)
+    : null;
+  const projectSyncDiff = isProjectSyncDiff
+    ? (rawData as unknown as ProjectSyncDiffRawData)
     : null;
   const cvContentData = isCvContent ? (rawData as unknown as CvContentRawData) : null;
   const cvTargetedData = isCvTargeted ? (rawData as unknown as CvTargetedRawData) : null;
@@ -689,6 +729,67 @@ export default async function ReportDetailPage({
         </div>
       )}
 
+      {/* Project Sync Diff UI (GPI-A) */}
+      {projectSyncDiff && (
+        <div className="mb-6">
+          <p className="text-slate-100 text-sm font-medium mb-3">
+            Project Sync Suggestions ({projectSyncDiff.updates.length})
+          </p>
+          {projectSyncDiff.updates.length === 0 ? (
+            <div className="card p-4">
+              <p className="text-slate-500 text-sm">All portfolio entries appear up-to-date.</p>
+            </div>
+          ) : (
+            <div className="card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[#2a2d3a]">
+                      <th className="text-left px-4 py-2 text-slate-500 font-medium">Project</th>
+                      <th className="text-left px-4 py-2 text-slate-500 font-medium">Field</th>
+                      <th className="text-left px-4 py-2 text-slate-500 font-medium hidden md:table-cell">Current</th>
+                      <th className="text-left px-4 py-2 text-slate-500 font-medium">Suggested</th>
+                      <th className="text-left px-4 py-2 text-slate-500 font-medium hidden lg:table-cell">Reason</th>
+                      <th className="text-right px-4 py-2 text-slate-500 font-medium">Apply</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projectSyncDiff.updates.map((u: ProjectSyncUpdate, i: number) => (
+                      <tr key={i} className="border-b border-[#2a2d3a] last:border-0">
+                        <td className="px-4 py-2.5 font-mono text-xs text-slate-300">{u.slug}</td>
+                        <td className="px-4 py-2.5 font-mono text-xs text-slate-400">{u.field}</td>
+                        <td className="px-4 py-2.5 text-xs text-slate-500 max-w-[140px] truncate hidden md:table-cell">
+                          {u.currentValue}
+                        </td>
+                        <td className="px-4 py-2.5 text-xs text-cyan-400 max-w-[160px] truncate">
+                          {u.suggestedValue}
+                        </td>
+                        <td className="px-4 py-2.5 text-xs text-slate-500 max-w-[200px] truncate hidden lg:table-cell">
+                          {u.reason}
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          <form action={applyProjectSyncUpdate}>
+                            <input type="hidden" name="slug" value={u.slug} />
+                            <input type="hidden" name="field" value={u.field} />
+                            <input type="hidden" name="suggestedValue" value={u.suggestedValue} />
+                            <button
+                              type="submit"
+                              className="text-xs py-1 px-2.5 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors"
+                            >
+                              Apply
+                            </button>
+                          </form>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Project Suggestions UI */}
       {projectSuggestions && projectSuggestions.suggestions.length > 0 && (
         <div className="mb-6">
@@ -773,29 +874,48 @@ export default async function ReportDetailPage({
             <div className="card overflow-hidden">
               <ul className="divide-y divide-[#2a2d3a]">
                 {projectCreated.created.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between px-4 py-2.5 gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className={`text-xs px-2 py-0.5 rounded border flex-shrink-0 ${typeColors[p.type] ?? typeColors.SOFTWARE}`}>
-                        {p.type.charAt(0) + p.type.slice(1).toLowerCase()}
-                      </span>
-                      <span className="text-slate-100 text-sm font-medium truncate">{p.title}</span>
+                  <li key={p.id} className="flex flex-col gap-1 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`text-xs px-2 py-0.5 rounded border flex-shrink-0 ${typeColors[p.type] ?? typeColors.SOFTWARE}`}>
+                          {p.type.charAt(0) + p.type.slice(1).toLowerCase()}
+                        </span>
+                        {typeof p.readmeScore === "number" && (
+                          <span
+                            className={`text-xs px-1.5 py-0.5 rounded border font-mono flex-shrink-0 ${
+                              p.readmeScore <= 2
+                                ? "border-red-500/20 bg-red-500/10 text-red-400"
+                                : p.readmeScore === 3
+                                ? "border-amber-500/20 bg-amber-500/10 text-amber-400"
+                                : "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                            }`}
+                            title={`README score: ${p.readmeScore}/5`}
+                          >
+                            README {p.readmeScore}/5
+                          </span>
+                        )}
+                        <span className="text-slate-100 text-sm font-medium truncate">{p.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <a
+                          href={p.githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors hidden md:block"
+                        >
+                          {p.githubUrl.replace("https://github.com/", "github/")}
+                        </a>
+                        <Link
+                          href={`/admin/projects/${p.id}`}
+                          className="text-xs py-1 px-2.5 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors"
+                        >
+                          Edit draft →
+                        </Link>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <a
-                        href={p.githubUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors hidden md:block"
-                      >
-                        {p.githubUrl.replace("https://github.com/", "github/")}
-                      </a>
-                      <Link
-                        href={`/admin/projects/${p.id}`}
-                        className="text-xs py-1 px-2.5 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors"
-                      >
-                        Edit draft →
-                      </Link>
-                    </div>
+                    {p.readmeNote && (
+                      <p className="text-xs text-amber-400 ml-0.5">{p.readmeNote}</p>
+                    )}
                   </li>
                 ))}
               </ul>
