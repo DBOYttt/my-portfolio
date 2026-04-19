@@ -189,3 +189,16 @@ The audit log is append-only. No delete route. View in admin settings (Milestone
 - Agent `rawData` JSON is stored in the DB but never exposed publicly — admin-only
 - No analytics cookies by default. Umami (Milestone 5) is cookie-free.
 - If you add newsletter signup, GDPR compliance is required (explicit opt-in, unsubscribe link, data deletion)
+
+---
+
+## Pre-Deploy Checklist
+
+Before first VPS deploy:
+- [ ] Run Nikto scan: `sudo dnf install nikto && nikto -h http://localhost:3000`
+- [ ] Test file upload MIME validation (requires authenticated session + `/api/admin/media/upload`)
+- [ ] Test LinkedIn CSV import fuzzing (requires authenticated session)
+- [ ] Confirm `OPPORTUNITY_ALERT_EMAIL` and `OPPORTUNITY_ALERT_THRESHOLD` set in production `.env`
+- [ ] Set `GOOGLE_ALERTS_RSS_FEEDS` if using Brand Monitor Google Alerts feature
+- [ ] Set `ROBOTICS_RSS_FEEDS` to override default feeds if desired
+- [ ] Set `GITHUB_IMPORT_BATCH` if importing more than 5 repos on first run
