@@ -35,3 +35,10 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+          AUTH_SECRET: "ci-test-secret-not-real"
+          NEXTAUTH_SECRET: "ci-test-secret-not-real"
