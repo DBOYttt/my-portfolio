@@ -37,6 +37,19 @@ interface SkillsDiff {
   stale: SkillStaleSuggestion[];
 }
 
+export function normaliseCategoryEnum(raw: string): string {
+  const map: Record<string, string> = {
+    LANGUAGE: "LANGUAGES",
+    FRAMEWORK: "FRAMEWORKS",
+    DATABASE: "DATABASES",
+    TOOL: "TOOLS",
+    ROBOTICS: "CONCEPTS",
+    EMBEDDED: "CONCEPTS",
+    OTHER: "TOOLS",
+  };
+  return map[raw] ?? "TOOLS";
+}
+
 function makeHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
@@ -227,7 +240,7 @@ export async function runSkillsInference(): Promise<AgentRunResult> {
     sources,
     rawData: {
       type: "SKILLS_DIFF",
-      add: diff.add,
+      add: diff.add.map((s) => ({ ...s, category: normaliseCategoryEnum(s.category) })),
       upgrade: diff.upgrade,
       stale: diff.stale,
     },

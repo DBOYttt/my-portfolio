@@ -1,33 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { checkRateLimit } from "@/lib/rate-limit";
 
-// Simple in-memory rate limiter (use Upstash Redis in production)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const windowMs = 60 * 60 * 1000; // 1 hour
-  const maxRequests = 5;
-
-  const entry = rateLimitMap.get(ip);
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-
-  if (entry.count >= maxRequests) return false;
-
-  entry.count++;
-  return true;
-}
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 export async function POST(request: NextRequest) {
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     "unknown";
 
-  if (!checkRateLimit(ip)) {
+  if (!checkRateLimit(ip, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS)) {
     return NextResponse.json(
       { error: "Rate limit exceeded. Try again later." },
       { status: 429 }

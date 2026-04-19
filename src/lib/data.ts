@@ -13,11 +13,11 @@ import type {
   SkillGroup,
 } from "../types";
 
-const isMock = () =>
+export const isMock = () =>
   !process.env.DATABASE_URL ||
   process.env.DATABASE_URL.startsWith("prisma+postgres://");
 
-function computeReadTime(content: string | null | undefined): string {
+export function computeReadTime(content: string | null | undefined): string {
   if (!content) return "";
   const words = content.trim().split(/\s+/).filter(Boolean).length;
   if (words === 0) return "";

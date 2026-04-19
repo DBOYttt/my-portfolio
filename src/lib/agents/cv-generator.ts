@@ -4,11 +4,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { AgentRunResult } from "./types";
 import type { CvContent } from "../cv-template";
 
-function formatMonth(d: Date | null | undefined): string {
+export function formatMonth(d: Date | string | null | undefined): string {
   if (!d) return "";
   const date = d instanceof Date ? d : new Date(d);
   if (isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+  return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 }
 
 function buildCvFromRaw(params: {
@@ -105,7 +105,7 @@ function buildCvFromRaw(params: {
   };
 }
 
-function sanitizeCvContent(cv: CvContent): CvContent {
+export function sanitizeCvContent(cv: CvContent): CvContent {
   const replacements: [RegExp, string][] = [
     [/\bpassionate(ly)?\b/gi, ""],
     [/\bsynergy\b/gi, ""],
