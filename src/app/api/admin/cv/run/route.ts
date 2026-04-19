@@ -3,15 +3,35 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
-import { runCvGenerator } from "@/lib/agents/cv-generator";
+import { runCvGenerator, runCvGeneratorTargeted } from "@/lib/agents/cv-generator";
 
-export async function POST() {
+export async function POST(req: Request) {
   const { error } = await requireAdminSession();
   if (error) return error;
 
+  let body: { mode?: string; jobDescription?: string } = {};
+  try {
+    body = (await req.json()) as { mode?: string; jobDescription?: string };
+  } catch {
+    // body is optional — default to portfolio mode
+  }
+
+  const mode = body.mode === "targeted" ? "targeted" : "portfolio";
+  const jobDescription = typeof body.jobDescription === "string" ? body.jobDescription.trim() : "";
+
+  if (mode === "targeted" && !jobDescription) {
+    return NextResponse.json(
+      { error: "jobDescription is required for targeted mode" },
+      { status: 400 },
+    );
+  }
+
   const agent = await prisma.agent.findUnique({ where: { id: "agent-cv-generator" } });
   if (!agent) {
-    return NextResponse.json({ error: "CV Generator agent not found. Run agents/cv-generator.ts first." }, { status: 404 });
+    return NextResponse.json(
+      { error: "CV Generator agent not found. Run agents/cv-generator.ts first." },
+      { status: 404 },
+    );
   }
 
   await prisma.agent.update({
@@ -20,9 +40,12 @@ export async function POST() {
   });
 
   try {
-    const result = await runCvGenerator();
+    const result =
+      mode === "targeted"
+        ? await runCvGeneratorTargeted(jobDescription)
+        : await runCvGenerator();
 
-    await prisma.agentReport.create({
+    const report = await prisma.agentReport.create({
       data: {
         agentId: agent.id,
         title: result.title,
@@ -37,7 +60,7 @@ export async function POST() {
       data: { status: "idle", lastRunAt: new Date() },
     });
 
-    return NextResponse.json({ ok: true, title: result.title });
+    return NextResponse.json({ ok: true, title: result.title, rawData: result.rawData, reportId: report.id });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await prisma.agent.update({

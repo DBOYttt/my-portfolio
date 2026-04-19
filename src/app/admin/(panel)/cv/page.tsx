@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import RunAgentButton from "@/components/admin/RunAgentButton";
 import CvEditor from "@/components/admin/CvEditor";
+import CvTargetForm from "@/components/admin/CvTargetForm";
 import type { CvContent } from "@/lib/cv-template";
 
 export const metadata: Metadata = {
@@ -89,6 +90,11 @@ export default async function CvAdminPage() {
 
       {/* CV Editor */}
       <CvEditor initialContent={cvContent} />
+
+      {/* Targeted CV generation */}
+      <div className="mt-6">
+        <CvTargetForm />
+      </div>
     </div>
   );
 }

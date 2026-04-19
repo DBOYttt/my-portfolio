@@ -76,6 +76,21 @@ interface CvContentRawData {
   contact: { email: string; github?: string; website?: string };
 }
 
+interface CvTargetedVariant {
+  summary: string;
+  skills: { category: string; items: string[] }[];
+  experience: { company: string; role: string; period: string; description: string; type: string }[];
+  projects: { title: string; summary: string; tech: string[] }[];
+  contact: { email: string; github?: string; website?: string };
+}
+
+interface CvTargetedRawData {
+  type: "CV_TARGETED";
+  variants: { robotics: CvTargetedVariant; software: CvTargetedVariant };
+  targetedPdfPaths: { robotics: string; software: string };
+  atsKeywordGap: { present: string[]; absent: string[] };
+}
+
 function ActivityBadge({ level }: { level: ActivityLevel }) {
   if (level === "active") {
     return (
@@ -250,7 +265,11 @@ export default async function ReportDetailPage({
   const isCvContent =
     report.agent.type === "CV_GENERATOR" &&
     rawData !== null &&
+    rawDataType !== "CV_TARGETED" &&
     typeof (rawData as Record<string, unknown>).summary === "string";
+
+  const isCvTargeted =
+    report.agent.type === "CV_GENERATOR" && rawDataType === "CV_TARGETED";
 
   const isGitHubAudit =
     report.agent.type === "GITHUB_SUMMARIZER" && rawDataType === "GITHUB_AUDIT";
@@ -263,6 +282,7 @@ export default async function ReportDetailPage({
     ? (rawData as unknown as ProjectCreatedRawData)
     : null;
   const cvContentData = isCvContent ? (rawData as unknown as CvContentRawData) : null;
+  const cvTargetedData = isCvTargeted ? (rawData as unknown as CvTargetedRawData) : null;
   const githubAudit = isGitHubAudit ? (rawData as unknown as GitHubAuditRawData) : null;
 
   return (
@@ -601,6 +621,156 @@ export default async function ReportDetailPage({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* CV Targeted Report (CV-B/C/E/F) */}
+      {cvTargetedData && (
+        <div className="mb-6 space-y-4">
+          <p className="text-slate-100 text-sm font-medium">Targeted CV Report</p>
+
+          {/* PDF download links */}
+          <div className="card p-4 flex flex-wrap gap-3 items-center">
+            <a
+              href={cvTargetedData.targetedPdfPaths.robotics}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary text-xs py-1.5 px-3"
+            >
+              Robotics-heavy PDF
+            </a>
+            <a
+              href={cvTargetedData.targetedPdfPaths.software}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary text-xs py-1.5 px-3"
+            >
+              Software-heavy PDF
+            </a>
+          </div>
+
+          {/* ATS Keyword Gap */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="card p-4">
+              <p className="text-xs text-emerald-400 font-medium uppercase tracking-widest mb-3">
+                Present in CV ({cvTargetedData.atsKeywordGap.present.length})
+              </p>
+              <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
+                {cvTargetedData.atsKeywordGap.present.map((kw) => (
+                  <span
+                    key={kw}
+                    className="text-xs px-1.5 py-0.5 rounded border text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="card p-4">
+              <p className="text-xs text-amber-400 font-medium uppercase tracking-widest mb-3">
+                Missing from CV ({cvTargetedData.atsKeywordGap.absent.length})
+              </p>
+              <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
+                {cvTargetedData.atsKeywordGap.absent.map((kw) => (
+                  <span
+                    key={kw}
+                    className="text-xs px-1.5 py-0.5 rounded border text-amber-400 bg-amber-500/10 border-amber-500/20"
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Variant previews */}
+          <details className="card overflow-hidden">
+            <summary className="px-4 py-3 cursor-pointer select-none border-b border-[#2a2d3a] text-sm text-slate-300 font-medium">
+              Robotics-heavy variant — full preview
+            </summary>
+            <div className="p-4 space-y-4">
+              {cvTargetedData.variants.robotics.summary && (
+                <div>
+                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-1">Profile</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">{cvTargetedData.variants.robotics.summary}</p>
+                </div>
+              )}
+              {cvTargetedData.variants.robotics.skills.length > 0 && (
+                <div>
+                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Skills</p>
+                  <dl className="space-y-1">
+                    {cvTargetedData.variants.robotics.skills.map((group, i) => (
+                      <div key={i} className="flex gap-3 text-xs">
+                        <dt className="text-slate-400 w-36 flex-shrink-0 font-medium">{group.category}</dt>
+                        <dd className="text-slate-500">{group.items.join(", ")}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              )}
+              {cvTargetedData.variants.robotics.experience.length > 0 && (
+                <div>
+                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Experience</p>
+                  <div className="space-y-3">
+                    {cvTargetedData.variants.robotics.experience.map((exp, i) => (
+                      <div key={i}>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="text-xs font-semibold text-slate-200">{exp.role}</p>
+                          <span className="text-xs text-slate-500 font-mono flex-shrink-0">{exp.period}</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mb-1">{exp.company} · {exp.type}</p>
+                        <p className="text-xs text-slate-500 whitespace-pre-line">{exp.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </details>
+
+          <details className="card overflow-hidden">
+            <summary className="px-4 py-3 cursor-pointer select-none border-b border-[#2a2d3a] text-sm text-slate-300 font-medium">
+              Software-heavy variant — full preview
+            </summary>
+            <div className="p-4 space-y-4">
+              {cvTargetedData.variants.software.summary && (
+                <div>
+                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-1">Profile</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">{cvTargetedData.variants.software.summary}</p>
+                </div>
+              )}
+              {cvTargetedData.variants.software.skills.length > 0 && (
+                <div>
+                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Skills</p>
+                  <dl className="space-y-1">
+                    {cvTargetedData.variants.software.skills.map((group, i) => (
+                      <div key={i} className="flex gap-3 text-xs">
+                        <dt className="text-slate-400 w-36 flex-shrink-0 font-medium">{group.category}</dt>
+                        <dd className="text-slate-500">{group.items.join(", ")}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              )}
+              {cvTargetedData.variants.software.experience.length > 0 && (
+                <div>
+                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Experience</p>
+                  <div className="space-y-3">
+                    {cvTargetedData.variants.software.experience.map((exp, i) => (
+                      <div key={i}>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="text-xs font-semibold text-slate-200">{exp.role}</p>
+                          <span className="text-xs text-slate-500 font-mono flex-shrink-0">{exp.period}</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mb-1">{exp.company} · {exp.type}</p>
+                        <p className="text-xs text-slate-500 whitespace-pre-line">{exp.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </details>
         </div>
       )}
 
