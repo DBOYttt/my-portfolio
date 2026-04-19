@@ -104,6 +104,8 @@ my-portfolio/
     └── portfolio.conf         ← Nginx reverse proxy config
 ```
 
+> **Agent registry:** `src/lib/agents/index.ts` exports `AGENT_RUNNERS` — a map from `AgentType` enum value to runner function. Every new agent runner must be registered here for the admin "Run now" button to work. `src/lib/agents/types.ts` defines the `AgentRunResult` interface all runners must return.
+
 ---
 
 ## Content Architecture — Critical Rule
@@ -277,20 +279,6 @@ Curl-based pentest run locally (39 PASS / 0 FAIL / 2 WARN). Results:
 - [x] Chrome extension mobile test at 500px CSS viewport: hamburger visible, drawer opens/closes with overlay, no horizontal overflow on CV page, dirty indicators working, "Save all & Render PDF" present. GIF recorded.
 - [x] `tsc --noEmit` clean on all changes.
 - [x] `end-user-tester` subagent dispatched for full admin walkthrough.
-- [ ] Post-process LLM output to strip marketing fluff ("passionate", "synergy", "results-driven") and replace weak verbs ("helped", "worked on") with stronger ones.
-- [ ] CV Generator report detail page renders a human-readable preview of `cvContent`, not just raw JSON.
-
-**Part C — Full CV editor inside the CV tab:**
-- [ ] `CvEditor` gains inline experience list (edit/delete/reorder per row, description markdown, current/dates/type).
-- [ ] Inline projects list with per-row edit + "Show in CV" checkbox (= `featured`).
-- [ ] Inline skills grouped by category with add/edit/delete per group (category list matches Part B).
-- [ ] Single "Save all & Render PDF" button at the top of the editor with per-section dirty indicators.
-- [ ] Add missing API routes: `PUT /api/admin/experience/[id]`, `PUT /api/admin/projects/[id]`, `PUT /api/admin/skills/[id]` — all `requireAdminSession`.
-
-**Part D — Verification:**
-- [ ] Re-run Batch 4 CV lifecycle — A7 flips from SKIP to PASS once non-summary editing is exposed.
-- [ ] Manual mobile smoke test at 414×900 across all admin pages.
-- [ ] Eyeball a generated CV with real experience/skills/projects rows for IT-industry tone.
 
 ### Upcoming — Milestone 5: Deployment
 - [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
@@ -350,6 +338,8 @@ CSS classes (defined in globals.css):
 ---
 
 ## Running the Project
+
+There is **no test suite** — verification is done via `tsc --noEmit`, `npm run lint`, and the `end-user-tester` subagent for browser walkthroughs.
 
 ```bash
 npm run dev          # Start dev server (works without DB — mock mode)

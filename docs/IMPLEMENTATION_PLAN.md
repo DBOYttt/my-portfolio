@@ -290,6 +290,67 @@ Currently `CvEditor` only exposes the summary textarea and the file upload input
 
 ---
 
+## Milestone 4.14 — Agent Usefulness Overhaul ⬜
+
+**Goal:** Turn every agent from a proof-of-concept into a tool that produces output the owner can act on immediately. Full rationale and implementation notes for each item are in `docs/AGENT_IMPROVEMENTS.md`.
+
+Items marked **[BUG]** are correctness fixes that should be done regardless of which features are approved.
+
+### CV Generator
+- ⬜ **CV-A** — Portfolio mode: dedicated generation path for `public/cv.pdf`, never overwritten by job-targeted runs
+- ⬜ **CV-B** — Job-targeting mode (paste JD text): rewrites summary + bullets to match a specific job description, saves as separate PDF
+- ⬜ **CV-C** — Job-targeting mode (scrape JD from URL): fetches and strips HTML from a JD URL, then runs CV-B logic; new `POST /api/admin/cv/scrape-jd` route
+- ⬜ **CV-D** — Model upgrade: Haiku → Sonnet, max_tokens 1500 → 4096, temperature 0
+- ⬜ **CV-E** — Two variants in one run: robotics-heavy and software-heavy, both rendered and shown in report
+- ⬜ **CV-F** — ATS keyword gap report: table of JD keywords present/absent from generated CV, shown in report detail
+
+### GitHub Summarizer
+- ⬜ **GH-A** — Actionable audit: replace prose summary with structured lists (missing descriptions, missing READMEs, missing topics, portfolio gaps)
+- ⬜ **GH-B** — Cross-reference repos with portfolio DB; link portfolio-worthy unimported repos to one-click import
+- ⬜ **GH-C** — Commit activity classification: Active / Recent / Dormant per repo; flag active projects not in portfolio
+- ⬜ **GH-D** — Profile consistency check: compare GitHub bio/location/URL against DB values, report mismatches
+
+### Skills Inference
+- ⬜ **SI-A [BUG]** — Fix category enum mismatch (`"LANGUAGE"` vs `"LANGUAGES"` etc.) so applied skills land in the correct CV section
+- ⬜ **SI-B** — Batch apply button: bulk-insert all `add` suggestions in one click; keep per-row approval for upgrades and stale
+- ⬜ **SI-C** — Job-market relevance tag per suggestion: cross-reference against Remotive keyword frequency
+- ⬜ **SI-D** — Replace N REST language calls with single GitHub GraphQL query
+
+### Opportunity Watcher
+- ⬜ **OW-A** — Configurable keywords: store keyword list in Agent DB row `config` JSON field, editable in admin UI
+- ⬜ **OW-B** — Multi-source aggregation: add We Work Remotely RSS + HackerNews "Who's Hiring" Algolia API
+- ⬜ **OW-C** — Deduplication across runs: store seen job URLs, only report new jobs each run
+- ⬜ **OW-D** — Per-job match score: LLM scores each job 1–10 against owner's skills/experience, report sorted by score
+- ⬜ **OW-E** — Email alert: Resend email when any job scores ≥ threshold; opt-in via `OPPORTUNITY_ALERT_EMAIL=true`
+
+### Brand Monitor
+- ⬜ **BM-A** — Google Alerts RSS: implement the stub using free Google Alerts RSS feeds (no API key needed)
+- ⬜ **BM-B** — GitHub star/fork delta: compare repo star/fork counts against previous run snapshot, report growth
+- ⬜ **BM-C** — Dev.to mention detection: search dev.to for owner's GitHub username and name via public API
+
+### Blog Suggester
+- ⬜ **BS-A** — HackerNews trending topics: feed top HN stories from last 7 days into LLM alongside existing posts
+- ⬜ **BS-B** — Dev.to trending cross-reference: weight suggestions toward topics trending on dev.to but absent from blog
+- ⬜ **BS-C** — Content series suggestion: LLM may return 2–4 post series groups; "Create all as drafts" action
+- ⬜ **BS-D** — Draft outline generation: generate H2 outline for approval before triggering full content generation
+
+### Robotics News
+- ⬜ **RN-A** — LLM digest: pick 5 most relevant items with one-sentence "why this matters" per item
+- ⬜ **RN-B** — Configurable feed list: move RSS URLs to `ROBOTICS_RSS_FEEDS` env var
+- ⬜ **RN-C** — Deduplication across runs: store seen item URLs, only surface new articles
+
+### GitHub Project Importer
+- ⬜ **GPI-A** — Re-sync existing projects: owner-approved diff for description, techTags, type updates on already-imported repos
+- ⬜ **GPI-B** — README quality scoring: score 0–5 per repo before import, shown in report
+- ⬜ **GPI-C** — Configurable import batch size via `GITHUB_IMPORT_BATCH` env var (default 5)
+
+### Platform Sync
+- ⬜ **PS-A** — LinkedIn CSV cross-reference: compare LinkedIn positions against DB experience, report gaps
+- ⬜ **PS-B** — Cross-platform consistency report: name/bio/URL/location mismatch table across GitHub + DB
+- ⬜ **PS-C** — Make Twitter/X optional: agent produces full useful report without Twitter; X data appended only if token is set
+
+---
+
 ## Milestone 5 — Deployment ⬜
 
 **Goal:** Live on a real domain with HTTPS, SSL, and a real PostgreSQL instance.
