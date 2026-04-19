@@ -202,26 +202,33 @@ export default async function ReportDetailPage({
   const session = await auth();
   if (!session) redirect("/admin/login");
 
-  const [report, currentSkills, currentProjects, latestOWReport] = await Promise.all([
+  const [report, currentSkills, currentProjects, recentOWReports] = await Promise.all([
     prisma.agentReport.findUnique({
       where: { id: params.reportId },
       include: { agent: true },
     }),
     prisma.skill.findMany({ select: { name: true } }),
     prisma.project.findMany({ select: { slug: true, githubUrl: true } }),
-    // SI-C: fetch latest OW report to cross-reference job listings
-    prisma.agentReport.findFirst({
+    // SI-C: fetch recent OW reports, pick the first one that actually has jobs
+    prisma.agentReport.findMany({
       where: { agent: { type: "OPPORTUNITY_WATCHER" } },
       orderBy: { createdAt: "desc" },
+      take: 10,
       select: { rawData: true },
     }),
   ]);
   if (!report) notFound();
 
   // SI-C: build a map of skill name (lower) → count of OW job listings mentioning it
+  // Use the most recent OW report that actually contains jobs (dedup runs return empty arrays)
   const owJobListingText = (() => {
-    if (!latestOWReport?.rawData) return "";
-    const owRaw = latestOWReport.rawData as Record<string, unknown>;
+    const owReportWithJobs = recentOWReports.find((r) => {
+      if (!r.rawData) return false;
+      const d = r.rawData as Record<string, unknown>;
+      return Array.isArray(d.jobs) && (d.jobs as unknown[]).length > 0;
+    });
+    if (!owReportWithJobs?.rawData) return "";
+    const owRaw = owReportWithJobs.rawData as Record<string, unknown>;
     const jobs = Array.isArray(owRaw.jobs) ? (owRaw.jobs as Array<{ title?: string; description?: string; rationale?: string }>) : [];
     return jobs
       .map((j) => `${j.title ?? ""} ${j.description ?? ""} ${j.rationale ?? ""}`)
@@ -288,7 +295,7 @@ export default async function ReportDetailPage({
         data: items.map((i) => ({
           name: i.name,
           category: i.category as SkillCategory,
-          level: (i.level ?? "INTERMEDIATE") as SkillLevel,
+          level: (i.level ?? "FAMILIAR") as SkillLevel,
           order: 0,
         })),
         skipDuplicates: true,
@@ -1520,13 +1527,15 @@ export default async function ReportDetailPage({
               </ul>
             </div>
           )}
-          {brandMonitorData.devToMentions.length > 0 && (
-            <div className="card overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#2a2d3a]">
-                <p className="text-slate-100 text-sm font-medium">
-                  Dev.to Mentions ({brandMonitorData.devToMentions.length})
-                </p>
-              </div>
+          <div className="card overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#2a2d3a]">
+              <p className="text-slate-100 text-sm font-medium">
+                Dev.to Mentions ({brandMonitorData.devToMentions.length})
+              </p>
+            </div>
+            {brandMonitorData.devToMentions.length === 0 ? (
+              <p className="px-4 py-3 text-sm text-slate-500">No Dev.to mentions found.</p>
+            ) : (
               <ul className="divide-y divide-[#2a2d3a]">
                 {brandMonitorData.devToMentions.map((m, i) => (
                   <li key={i} className="px-4 py-2.5">
@@ -1553,8 +1562,8 @@ export default async function ReportDetailPage({
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
