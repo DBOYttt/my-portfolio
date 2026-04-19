@@ -4,10 +4,11 @@ import Nav from "@/components/public/Nav";
 import Footer from "@/components/public/Footer";
 import ProjectFilterTabs from "@/components/public/ProjectFilterTabs";
 import { getProjects } from "@/lib/data";
+import { OWNER } from "@/lib/mock-data";
 
 export const metadata: Metadata = {
   title: "Projects",
-  description: "Software, robotics, hardware, and research projects by Alex Kowalski.",
+  description: `Software, robotics, hardware, and research projects by ${OWNER.name}.`,
 };
 
 const typeColors: Record<string, string> = {

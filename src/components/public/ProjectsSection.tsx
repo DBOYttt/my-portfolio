@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getProjects } from "@/lib/data";
+import { OWNER } from "@/lib/mock-data";
 
 const typeColors: Record<string, string> = {
   ROBOTICS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
@@ -87,7 +88,7 @@ export default async function ProjectsSection() {
 
         <div className="mt-8 text-center">
           <a
-            href="https://github.com/yourusername"
+            href={OWNER.github}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-secondary text-sm"
