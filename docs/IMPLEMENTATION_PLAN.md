@@ -369,6 +369,35 @@ Curl-based pentest (39 PASS / 0 FAIL / 2 WARN):
 
 ---
 
+### Phase 0 — Owner Portfolio Data (run before deploying)
+
+Before the app is deployed, fill in real personal data so the built image serves your content, not placeholders.
+
+**How:** Run the `/setup-portfolio` Claude Code skill in this repo. It asks for each piece of data interactively, then rewrites `src/lib/mock-data.ts` and commits.
+
+```bash
+# In Claude Code (this repo):
+/setup-portfolio
+```
+
+The skill walks through six sections one at a time:
+1. **Personal info** — name, tagline, bio, email, GitHub, LinkedIn, location
+2. **Skills** — languages, frameworks, robotics/embedded, tools, optional extra categories
+3. **Work experience** — reverse-chronological, up to 5 entries
+4. **Robotics / highlight cards** — up to 4 cards (or replace with software specialisms)
+5. **Mock projects** — optional; 11 real GitHub projects already in DB
+6. **Confirmation + write** — shows summary, asks for approval, then rewrites file and commits
+
+The skill does **not** modify `BLOG_POSTS` (manage posts via admin panel).
+
+After the skill commits, the content is in git and will be baked into the Docker image on first deploy.
+
+- ⬜ Run `/setup-portfolio` and confirm all sections are accurate
+- ⬜ Place `public/photo.jpg` in the repo (portrait photo, recommended ≥ 400×400px)
+- ⬜ Push both changes before running Phase 4
+
+---
+
 ### Phase 1 — Nginx LAN Config
 
 The existing `nginx/portfolio.conf` requires a domain + TLS certs. Create a LAN variant
@@ -557,7 +586,7 @@ Create the log directory: `mkdir -p ~/logs`
 
 At this point the app is live but serving placeholder data. Owner must:
 
-1. **Fill in `OWNER` object** — `src/lib/mock-data.ts` → name, bio, email, GitHub, LinkedIn URLs
+1. **Fill in `OWNER` object** — if not done in Phase 0, run `/setup-portfolio` now (Claude Code skill) or edit `src/lib/mock-data.ts` directly. Rebuild + redeploy after.
 2. **Add photo** — place `public/photo.jpg` inside the running container:
    ```bash
    docker cp ~/photo.jpg my-portfolio-app-1:/app/public/photo.jpg
