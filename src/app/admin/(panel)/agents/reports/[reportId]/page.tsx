@@ -15,6 +15,10 @@ import type {
   GithubRepoStat,
   DevToMention,
 } from "@/lib/agents/brand-monitor";
+import type {
+  BlogSuggestion,
+  BlogSeries,
+} from "@/lib/agents/blog-suggester";
 
 interface SkillAddSuggestion {
   name: string;
@@ -100,6 +104,12 @@ interface BrandMonitorRawData {
   githubDelta: GithubRepoStat[];
   googleAlerts: GoogleAlertItem[];
   devToMentions: DevToMention[];
+}
+
+interface BlogSuggesterRawData {
+  suggestions: BlogSuggestion[];
+  series?: BlogSeries[];
+  existingTopics: number;
 }
 
 interface OpportunityJob {
@@ -342,6 +352,76 @@ export default async function ReportDetailPage({
     }
   }
 
+  async function createSeriesDrafts(formData: FormData) {
+    "use server";
+    const postsJson = formData.get("posts") as string;
+    let posts: { title: string; tags: string[] }[];
+    try {
+      posts = JSON.parse(postsJson) as { title: string; tags: string[] }[];
+    } catch {
+      return;
+    }
+    try {
+      const toSlug = (s: string) =>
+        s
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "");
+
+      const tagNames = Array.from(new Set(posts.flatMap((p) => p.tags)));
+      const existingTags = await prisma.tag.findMany({
+        where: { name: { in: tagNames } },
+        select: { id: true, name: true },
+      });
+      const tagMap = new Map(existingTags.map((t) => [t.name, t.id]));
+      const newTagNames = tagNames.filter((n) => !tagMap.has(n));
+      if (newTagNames.length > 0) {
+        await prisma.tag.createMany({
+          data: newTagNames.map((n) => ({ name: n, slug: toSlug(n) })),
+          skipDuplicates: true,
+        });
+        const created = await prisma.tag.findMany({
+          where: { name: { in: newTagNames } },
+          select: { id: true, name: true },
+        });
+        for (const t of created) tagMap.set(t.name, t.id);
+      }
+
+      for (const post of posts) {
+        const baseSlug = toSlug(post.title);
+        let slug = baseSlug;
+        let attempt = 0;
+        while (true) {
+          const existing = await prisma.post.findUnique({ where: { slug } });
+          if (!existing) break;
+          attempt++;
+          slug = `${baseSlug}-${attempt}`;
+        }
+        await prisma.post.create({
+          data: {
+            title: post.title,
+            slug,
+            content: "",
+            status: "DRAFT",
+            tags: {
+              connect: post.tags
+                .map((n) => tagMap.get(n))
+                .filter((id): id is string => !!id)
+                .map((id) => ({ id })),
+            },
+          },
+        });
+      }
+      revalidatePath("/admin/blog");
+      redirect("/admin/blog");
+    } catch (e: unknown) {
+      const isRedirect =
+        e instanceof Error && e.message === "NEXT_REDIRECT";
+      if (!isRedirect) return;
+      throw e;
+    }
+  }
+
   const rawData = report.rawData as Record<string, unknown> | null;
   const rawDataType = rawData && typeof rawData === "object" ? rawData.type : null;
 
@@ -375,6 +455,11 @@ export default async function ReportDetailPage({
 
   const isOpportunityWatcher = report.agent.type === "OPPORTUNITY_WATCHER";
 
+  const isBlogSuggester =
+    report.agent.type === "BLOG_SUGGESTER" &&
+    rawData !== null &&
+    Array.isArray((rawData as Record<string, unknown>).suggestions);
+
   const skillsDiff = isSkillsDiff ? (rawData as unknown as SkillsDiffRawData) : null;
   const projectSuggestions = isProjectSuggestions
     ? (rawData as unknown as ProjectSuggestionsRawData)
@@ -387,6 +472,9 @@ export default async function ReportDetailPage({
   const githubAudit = isGitHubAudit ? (rawData as unknown as GitHubAuditRawData) : null;
   const brandMonitorData = isBrandMonitor ? (rawData as unknown as BrandMonitorRawData) : null;
   const owData = isOpportunityWatcher ? (rawData as unknown as OpportunityWatcherRawData) : null;
+  const blogSuggesterData = isBlogSuggester
+    ? (rawData as unknown as BlogSuggesterRawData)
+    : null;
 
   return (
     <div className="max-w-4xl">
@@ -1247,6 +1335,94 @@ export default async function ReportDetailPage({
               <span className="text-slate-500 text-xs font-mono mr-1">keywords:</span>
               {owData.keywords.map((kw) => (
                 <span key={kw} className="tag text-xs">{kw}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Blog Suggester UI */}
+      {blogSuggesterData && (
+        <div className="space-y-4 mb-6">
+          {/* Standalone suggestions */}
+          {blogSuggesterData.suggestions.length > 0 && (
+            <div className="card overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#2a2d3a]">
+                <p className="text-slate-100 text-sm font-medium">
+                  Suggested Topics ({blogSuggesterData.suggestions.length})
+                </p>
+              </div>
+              <div className="divide-y divide-[#2a2d3a]">
+                {blogSuggesterData.suggestions.map((s, i) => (
+                  <div key={i} className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-slate-100 text-sm font-medium">{s.title}</p>
+                      <Link
+                        href={`/admin/blog/new?title=${encodeURIComponent(s.title)}`}
+                        className="text-xs py-1 px-2.5 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors flex-shrink-0"
+                      >
+                        Draft →
+                      </Link>
+                    </div>
+                    <p className="text-slate-500 text-xs mt-0.5">{s.rationale}</p>
+                    {s.tags.length > 0 && (
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {s.tags.map((tag) => (
+                          <span key={tag} className="tag text-xs">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Content Series */}
+          {blogSuggesterData.series && blogSuggesterData.series.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-slate-100 text-sm font-medium">Content Series</p>
+              {blogSuggesterData.series.map((series, si) => (
+                <div key={si} className="card overflow-hidden">
+                  <div className="px-4 py-3 border-b border-[#2a2d3a] flex items-center justify-between gap-3">
+                    <p className="text-slate-100 text-sm font-semibold">{series.seriesTitle}</p>
+                    <form action={createSeriesDrafts}>
+                      <input
+                        type="hidden"
+                        name="posts"
+                        value={JSON.stringify(
+                          series.posts.map((p) => ({ title: p.title, tags: p.tags }))
+                        )}
+                      />
+                      <button
+                        type="submit"
+                        className="text-xs py-1 px-2.5 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors flex-shrink-0"
+                      >
+                        Create {series.posts.length} drafts
+                      </button>
+                    </form>
+                  </div>
+                  <ol className="divide-y divide-[#2a2d3a]">
+                    {series.posts.map((post, pi) => (
+                      <li key={pi} className="px-4 py-2.5 flex items-start gap-3">
+                        <span className="text-slate-600 text-xs font-mono w-5 flex-shrink-0 mt-0.5">
+                          {pi + 1}.
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-slate-100 text-sm">{post.title}</p>
+                          <p className="text-slate-500 text-xs mt-0.5">{post.rationale}</p>
+                          {post.tags.length > 0 && (
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                              {post.tags.map((tag) => (
+                                <span key={tag} className="tag text-xs">{tag}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               ))}
             </div>
           )}
