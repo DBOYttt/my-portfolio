@@ -579,7 +579,7 @@ export default async function ReportDetailPage({
             <div className="card p-4">
               <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-3">Skills</p>
               <dl className="space-y-1.5">
-                {cvContentData.skills.map((group, i) => (
+                {cvContentData.skills.filter((group: { items: unknown[] }) => group.items.length > 0).map((group, i) => (
                   <div key={i} className="flex gap-3 text-sm">
                     <dt className="text-slate-400 w-40 flex-shrink-0 font-medium">{group.category}</dt>
                     <dd className="text-slate-500">{group.items.join(", ")}</dd>
@@ -695,11 +695,11 @@ export default async function ReportDetailPage({
                   <p className="text-xs text-slate-400 leading-relaxed">{cvTargetedData.variants.robotics.summary}</p>
                 </div>
               )}
-              {cvTargetedData.variants.robotics.skills.length > 0 && (
+              {cvTargetedData.variants.robotics.skills.filter((group: { items: unknown[] }) => group.items.length > 0).length > 0 && (
                 <div>
                   <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Skills</p>
                   <dl className="space-y-1">
-                    {cvTargetedData.variants.robotics.skills.map((group, i) => (
+                    {cvTargetedData.variants.robotics.skills.filter((group: { items: unknown[] }) => group.items.length > 0).map((group, i) => (
                       <div key={i} className="flex gap-3 text-xs">
                         <dt className="text-slate-400 w-36 flex-shrink-0 font-medium">{group.category}</dt>
                         <dd className="text-slate-500">{group.items.join(", ")}</dd>
@@ -739,11 +739,11 @@ export default async function ReportDetailPage({
                   <p className="text-xs text-slate-400 leading-relaxed">{cvTargetedData.variants.software.summary}</p>
                 </div>
               )}
-              {cvTargetedData.variants.software.skills.length > 0 && (
+              {cvTargetedData.variants.software.skills.filter((group: { items: unknown[] }) => group.items.length > 0).length > 0 && (
                 <div>
                   <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Skills</p>
                   <dl className="space-y-1">
-                    {cvTargetedData.variants.software.skills.map((group, i) => (
+                    {cvTargetedData.variants.software.skills.filter((group: { items: unknown[] }) => group.items.length > 0).map((group, i) => (
                       <div key={i} className="flex gap-3 text-xs">
                         <dt className="text-slate-400 w-36 flex-shrink-0 font-medium">{group.category}</dt>
                         <dd className="text-slate-500">{group.items.join(", ")}</dd>

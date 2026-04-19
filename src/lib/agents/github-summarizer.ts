@@ -271,7 +271,7 @@ async function generateAuditSummary(
     .slice(0, 15)
     .map(
       (r) =>
-        `- ${r.name} (${activitySummary}⭐${r.stargazers_count}, ${classifyActivity(r.pushed_at)}): ${r.description ?? "no description"}`
+        `- ${r.name} (${classifyActivity(r.pushed_at)}, ⭐${r.stargazers_count}): ${r.description ?? "no description"}`
     )
     .join("\n");
 
