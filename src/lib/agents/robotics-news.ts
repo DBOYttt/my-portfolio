@@ -44,6 +44,7 @@ export interface DigestItem {
 export interface RoboticsDigestRawData {
   type: "ROBOTICS_DIGEST";
   digest: DigestItem[];
+  digestError: string | null;
   rawItems: { title: string; url: string; source: string }[];
   newItemCount: number;
   seenCount: number;
@@ -86,10 +87,26 @@ async function fetchRSSFeed(feed: { name: string; url: string }): Promise<FeedIt
   }
 }
 
+interface DigestResult {
+  digest: DigestItem[];
+  digestError: string | null;
+}
+
+function fallbackDigest(items: FeedItem[]): DigestItem[] {
+  return items.slice(0, 5).map((item) => ({ title: item.title, url: item.link, why: "" }));
+}
+
 // RN-A: LLM digest — pick 5 most relevant items with "why this matters"
-async function generateDigest(items: FeedItem[]): Promise<DigestItem[]> {
+async function generateDigest(items: FeedItem[]): Promise<DigestResult> {
+  if (items.length === 0) return { digest: [], digestError: null };
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || items.length === 0) return [];
+  if (!apiKey) {
+    return {
+      digest: fallbackDigest(items),
+      digestError: "LLM digest unavailable — showing top items",
+    };
+  }
 
   const itemList = items
     .map((item, i) => `${i + 1}. "${item.title}" — ${item.link} (source: ${item.source})`)
@@ -115,7 +132,12 @@ Return ONLY a JSON object, no explanation or markdown:
     });
 
     const content = msg.content[0];
-    if (content.type !== "text") return [];
+    if (content.type !== "text") {
+      return {
+        digest: fallbackDigest(items),
+        digestError: "LLM digest unavailable — showing top items",
+      };
+    }
 
     const tryParse = (text: string): DigestItem[] | null => {
       try {
@@ -129,17 +151,24 @@ Return ONLY a JSON object, no explanation or markdown:
     };
 
     const direct = tryParse(content.text);
-    if (direct) return direct;
+    if (direct) return { digest: direct, digestError: null };
 
     const match = content.text.match(/\{[\s\S]*\}/);
     if (match) {
       const fromFences = tryParse(match[0]);
-      if (fromFences) return fromFences;
+      if (fromFences) return { digest: fromFences, digestError: null };
     }
 
-    return [];
-  } catch {
-    return [];
+    return {
+      digest: fallbackDigest(items),
+      digestError: "LLM digest unavailable — showing top items",
+    };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "LLM digest unavailable — showing top items";
+    return {
+      digest: fallbackDigest(items),
+      digestError: msg,
+    };
   }
 }
 
@@ -163,8 +192,8 @@ export async function runRoboticsNews(agentConfig?: Record<string, unknown>): Pr
   const newItems = allItems.filter((item) => !seenSet.has(item.link));
   const newItemCount = newItems.length;
 
-  // RN-A: Generate LLM digest from new items (fall back to empty if no API key)
-  const digest = await generateDigest(newItems.slice(0, 15));
+  // RN-A: Generate LLM digest from new items (fall back to top 5 raw if LLM unavailable)
+  const { digest, digestError } = await generateDigest(newItems.slice(0, 15));
 
   // RN-C: Update seenUrls — append new URLs and cap at 1000 entries
   const updatedSeenUrls = [
@@ -204,6 +233,7 @@ export async function runRoboticsNews(agentConfig?: Record<string, unknown>): Pr
   const rawData: RoboticsDigestRawData = {
     type: "ROBOTICS_DIGEST",
     digest,
+    digestError,
     rawItems,
     newItemCount,
     seenCount,

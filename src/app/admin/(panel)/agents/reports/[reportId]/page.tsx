@@ -1846,10 +1846,15 @@ export default async function ReportDetailPage({
           {/* Digest — curated top 5 with "why" */}
           {roboticsDigestData.digest.length > 0 && (
             <div className="card overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#2a2d3a]">
+              <div className="px-4 py-3 border-b border-[#2a2d3a] flex flex-wrap items-center gap-3">
                 <p className="text-slate-100 text-sm font-medium">
                   Curated Digest ({roboticsDigestData.digest.length})
                 </p>
+                {roboticsDigestData.digestError && (
+                  <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400">
+                    ⚠ {roboticsDigestData.digestError}
+                  </span>
+                )}
               </div>
               <ol className="divide-y divide-[#2a2d3a]">
                 {roboticsDigestData.digest.map((item: DigestItem, i: number) => (

@@ -431,16 +431,21 @@ export async function runGithubProjectImporter(syncMode = false): Promise<AgentR
 
   const suggestions = await suggestWithLLM(repoDataList);
 
+  // Always overwrite githubUrl with the authoritative URL from the GitHub API — never trust LLM
+  for (let i = 0; i < suggestions.length; i++) {
+    const authoritative = repoDataList[i]?.repo.html_url;
+    if (authoritative) suggestions[i].githubUrl = authoritative;
+  }
+
   // Auto-create project drafts — skip any whose slug conflicts with an existing project
   const created: CreatedProject[] = [];
-  for (const s of suggestions) {
+  for (let si = 0; si < suggestions.length; si++) {
+    const s = suggestions[si];
     if (!s.slug?.trim() || !s.title?.trim()) continue;
     if (existingSlugs.has(s.slug.toLowerCase()) || existingUrls.has(s.githubUrl.toLowerCase())) continue;
 
-    // GPI-B: score the README for this repo
-    const repoData = repoDataList.find(
-      (rd) => rd.repo.html_url.toLowerCase() === s.githubUrl.toLowerCase()
-    );
+    // GPI-B: score the README for this repo using the matching repoData by index
+    const repoData = repoDataList[si];
     const { score: readmeScore, note: readmeNote } = scoreReadme(repoData?.readme ?? "");
 
     try {

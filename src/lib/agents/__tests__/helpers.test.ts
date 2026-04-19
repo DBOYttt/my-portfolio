@@ -170,6 +170,7 @@ describe('RoboticsDigestRawData — exported interface shape', () => {
       digest: [
         { title: 'Article 1', url: 'https://example.com/1', why: 'Important.' },
       ],
+      digestError: null,
       rawItems: [{ title: 'Article 1', url: 'https://example.com/1', source: 'IEEE Spectrum' }],
       newItemCount: 1,
       seenCount: 5,
@@ -185,6 +186,7 @@ describe('RoboticsDigestRawData — exported interface shape', () => {
     const raw: RoboticsDigestRawData = {
       type: 'ROBOTICS_DIGEST',
       digest: [],
+      digestError: null,
       rawItems: [],
       newItemCount: 0,
       seenCount: 10,
