@@ -37,9 +37,14 @@ export async function POST(
         rawData: result.rawData as object,
       },
     });
+    // Persist updated config (e.g. seenUrls for deduplication) if the runner returned one
+    const agentUpdateData: Record<string, unknown> = { status: "idle", lastRunAt: new Date() };
+    if (result._updatedConfig) {
+      agentUpdateData.config = result._updatedConfig;
+    }
     await prisma.agent.update({
       where: { id: params.id },
-      data: { status: "idle", lastRunAt: new Date() },
+      data: agentUpdateData,
     });
     return NextResponse.json({ ok: true, title: result.title, rawData: result.rawData, reportId: report.id });
   } catch (e) {

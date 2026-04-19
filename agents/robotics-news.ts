@@ -32,7 +32,13 @@ async function run() {
     },
   });
 
-  const result = await runRoboticsNews();
+  // RN-C: Load seenUrls from agent.config
+  const agentConfig =
+    agent.config && typeof agent.config === "object"
+      ? (agent.config as Record<string, unknown>)
+      : {};
+
+  const result = await runRoboticsNews(agentConfig);
 
   await prisma.agentReport.create({
     data: {
@@ -43,6 +49,14 @@ async function run() {
       rawData: result.rawData as object,
     },
   });
+
+  // RN-C: Persist updated seenUrls back to agent.config
+  if (result._updatedConfig) {
+    await prisma.agent.update({
+      where: { id: agent.id },
+      data: { config: result._updatedConfig },
+    });
+  }
 
   console.log("[robotics-news] Report saved:", result.title);
   await prisma.$disconnect();

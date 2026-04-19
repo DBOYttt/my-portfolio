@@ -19,6 +19,10 @@ import type {
   BlogSuggestion,
   BlogSeries,
 } from "@/lib/agents/blog-suggester";
+import type {
+  DigestItem,
+  RoboticsDigestRawData,
+} from "@/lib/agents/robotics-news";
 
 interface SkillAddSuggestion {
   name: string;
@@ -467,6 +471,9 @@ export default async function ReportDetailPage({
     rawData !== null &&
     Array.isArray((rawData as Record<string, unknown>).suggestions);
 
+  const isRoboticsDigest =
+    report.agent.type === "ROBOTICS_NEWS" && rawDataType === "ROBOTICS_DIGEST";
+
   const skillsDiff = isSkillsDiff ? (rawData as unknown as SkillsDiffRawData) : null;
   const projectSuggestions = isProjectSuggestions
     ? (rawData as unknown as ProjectSuggestionsRawData)
@@ -481,6 +488,9 @@ export default async function ReportDetailPage({
   const owData = isOpportunityWatcher ? (rawData as unknown as OpportunityWatcherRawData) : null;
   const blogSuggesterData = isBlogSuggester
     ? (rawData as unknown as BlogSuggesterRawData)
+    : null;
+  const roboticsDigestData = isRoboticsDigest
+    ? (rawData as unknown as RoboticsDigestRawData)
     : null;
 
   return (
@@ -1564,6 +1574,81 @@ export default async function ReportDetailPage({
               </ul>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Robotics Digest UI */}
+      {roboticsDigestData && (
+        <div className="space-y-4 mb-6">
+          {/* Header chips */}
+          <div className="flex flex-wrap gap-3">
+            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
+              {roboticsDigestData.newItemCount} new article{roboticsDigestData.newItemCount !== 1 ? "s" : ""}
+            </span>
+            {roboticsDigestData.seenCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-slate-600/50 bg-slate-700/20 text-slate-400">
+                {roboticsDigestData.seenCount} already seen
+              </span>
+            )}
+          </div>
+
+          {/* Digest — curated top 5 with "why" */}
+          {roboticsDigestData.digest.length > 0 && (
+            <div className="card overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#2a2d3a]">
+                <p className="text-slate-100 text-sm font-medium">
+                  Curated Digest ({roboticsDigestData.digest.length})
+                </p>
+              </div>
+              <ol className="divide-y divide-[#2a2d3a]">
+                {roboticsDigestData.digest.map((item: DigestItem, i: number) => (
+                  <li key={i} className="px-4 py-3 flex items-start gap-3">
+                    <span className="text-slate-600 text-xs font-mono w-5 flex-shrink-0 mt-0.5">
+                      {i + 1}.
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-slate-100 text-sm font-medium hover:text-cyan-400 transition-colors"
+                      >
+                        {item.title}
+                      </a>
+                      <p className="text-slate-500 text-xs mt-0.5 italic">{item.why}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {/* Raw items — collapsed full list */}
+          {roboticsDigestData.rawItems.length > 0 && (
+            <details className="card overflow-hidden">
+              <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none border-b border-[#2a2d3a]">
+                <p className="text-slate-400 text-sm">
+                  All new articles ({roboticsDigestData.rawItems.length})
+                </p>
+                <span className="text-slate-600 text-xs font-mono">toggle</span>
+              </summary>
+              <ul className="divide-y divide-[#2a2d3a]">
+                {roboticsDigestData.rawItems.map((item, i) => (
+                  <li key={i} className="flex items-center justify-between px-4 py-2.5 gap-3">
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-slate-300 text-xs hover:text-cyan-400 transition-colors truncate"
+                    >
+                      {item.title}
+                    </a>
+                    <span className="text-slate-600 text-xs font-mono flex-shrink-0">{item.source}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       )}
 
