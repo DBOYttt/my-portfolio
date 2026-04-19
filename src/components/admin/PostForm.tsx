@@ -19,6 +19,11 @@ interface PostFormData {
   tags: string[];
 }
 
+interface OutlineSection {
+  heading: string;
+  description: string;
+}
+
 interface PostFormProps {
   initialData?: {
     title: string;
@@ -57,6 +62,9 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
   const [showSeo, setShowSeo] = useState(false);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!initialData);
   const [generatingContent, setGeneratingContent] = useState(false);
+  const [generatingOutline, setGeneratingOutline] = useState(false);
+  const [outline, setOutline] = useState<OutlineSection[] | null>(null);
+  const [showOutlinePrompt, setShowOutlinePrompt] = useState(false);
 
   const [form, setForm] = useState<PostFormData>({
     title: initialData?.title ?? "",
@@ -91,9 +99,37 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
     set("tags", form.tags.filter((t) => t !== tag));
   }
 
+  async function generateOutline() {
+    if (!form.title.trim()) return;
+    setGeneratingOutline(true);
+    setError("");
+    setOutline(null);
+    try {
+      const res = await fetch("/api/admin/blog/generate-outline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: form.title, tags: form.tags }),
+      });
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        setError(data.error ?? "Failed to generate outline");
+        return;
+      }
+      const data = await res.json() as { outline: OutlineSection[] };
+      setOutline(data.outline);
+      setShowOutlinePrompt(false);
+    } catch {
+      setError("Failed to generate outline");
+    } finally {
+      setGeneratingOutline(false);
+    }
+  }
+
   async function generateContent() {
     if (!form.title.trim()) return;
     setGeneratingContent(true);
+    setOutline(null);
+    setShowOutlinePrompt(false);
     setError("");
     try {
       const res = await fetch("/api/admin/blog/generate-content", {
@@ -102,12 +138,12 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
         body: JSON.stringify({ title: form.title, tags: form.tags, excerpt: form.excerpt }),
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json() as { error?: string };
         setError(data.error ?? "Failed to generate content");
         return;
       }
-      const data = await res.json();
-      set("content", data.content as string);
+      const data = await res.json() as { content: string };
+      set("content", data.content);
     } catch {
       setError("Failed to generate content");
     } finally {
@@ -182,6 +218,8 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
                           const newTags = s.tags.filter((t) => !existing.has(t.toLowerCase()));
                           return [...form.tags, ...newTags];
                         })());
+                        setOutline(null);
+                        setShowOutlinePrompt(true);
                       }}
                       className="text-left p-3 rounded-lg border border-[#2a2d3a] hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-colors"
                     >
@@ -231,12 +269,80 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
           <button
             type="button"
             onClick={generateContent}
-            disabled={generatingContent || !form.title.trim()}
+            disabled={generatingContent || generatingOutline || !form.title.trim()}
             className="text-xs text-slate-500 hover:text-cyan-400 font-mono disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {generatingContent ? "Generating…" : "✍ Generate draft"}
           </button>
         </div>
+
+        {/* BS-D: Outline prompt shown after suggestion pill click */}
+        {showOutlinePrompt && !outline && (
+          <div className="mb-3 flex items-center gap-2 p-3 rounded-lg border border-cyan-500/20 bg-cyan-500/5">
+            <p className="text-slate-400 text-xs flex-1">
+              Generate an outline first to review structure before writing the full post.
+            </p>
+            <button
+              type="button"
+              onClick={generateOutline}
+              disabled={generatingOutline || !form.title.trim()}
+              className="btn-secondary text-xs px-2 py-1 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {generatingOutline ? "Outlining…" : "Generate outline"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowOutlinePrompt(false);
+                generateContent();
+              }}
+              disabled={generatingContent || !form.title.trim()}
+              className="text-xs text-slate-500 hover:text-slate-300 flex-shrink-0 disabled:opacity-40"
+            >
+              Skip
+            </button>
+          </div>
+        )}
+
+        {/* BS-D: Outline preview card */}
+        {outline && outline.length > 0 && (
+          <div className="mb-3 rounded-lg border border-[#2a2d3a] bg-[#1a1d27] overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#2a2d3a]">
+              <p className="text-slate-300 text-xs font-medium">Outline preview</p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={generateContent}
+                  disabled={generatingContent || !form.title.trim()}
+                  className="text-xs text-cyan-400 hover:text-cyan-300 font-mono disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {generatingContent ? "Generating…" : "Looks good, generate full post"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOutline(null)}
+                  className="text-xs text-slate-600 hover:text-slate-400"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+            <ol className="divide-y divide-[#2a2d3a]">
+              {outline.map((section, i) => (
+                <li key={i} className="flex items-start gap-3 px-4 py-2.5">
+                  <span className="text-slate-600 text-xs font-mono w-5 flex-shrink-0 mt-0.5">
+                    {i + 1}.
+                  </span>
+                  <div>
+                    <p className="text-slate-200 text-sm font-medium">{section.heading}</p>
+                    <p className="text-slate-500 text-xs mt-0.5">{section.description}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
         <div data-color-mode="dark">
           <MDEditor
             value={form.content}
