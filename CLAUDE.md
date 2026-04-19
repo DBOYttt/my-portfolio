@@ -39,6 +39,7 @@ Built to help the owner get hired. Every decision should serve that goal first.
 - Admin routes (`/admin/*`, `/api/admin/*`) must always be protected by session checks.
 - Contact form API must always have rate limiting applied.
 - New API routes default to auth-required unless they are explicitly public.
+- API routes that use Prisma, `@react-pdf/renderer`, or `bcryptjs` must declare `export const runtime = "nodejs"` — these packages are incompatible with the Edge runtime.
 
 ---
 
@@ -106,6 +107,13 @@ my-portfolio/
 
 > **Agent registry:** `src/lib/agents/index.ts` exports `AGENT_RUNNERS` — a map from `AgentType` enum value to runner function. Every new agent runner must be registered here for the admin "Run now" button to work. `src/lib/agents/types.ts` defines the `AgentRunResult` interface all runners must return.
 
+### Adding a new agent (all steps required)
+1. Add the new value to the `AgentType` enum in `prisma/schema.prisma` → `npm run db:push` → `npm run db:generate`
+2. Create `src/lib/agents/your-agent.ts` — export `runYourAgent(): Promise<AgentRunResult>`
+3. Register in `src/lib/agents/index.ts` → `AGENT_RUNNERS`
+4. Create `agents/your-agent.ts` CLI runner (seeds the DB agent row on first run)
+5. Import `{ prisma }` from `src/lib/prisma` — never `new PrismaClient()` (PrismaPg adapter is only in the singleton)
+
 ---
 
 ## Content Architecture — Critical Rule
@@ -121,164 +129,32 @@ When the admin panel + database are active (Milestone 3+), components will fetch
 
 **Mock mode** is active when `DATABASE_URL` is absent or starts with `prisma+postgres://`. The `isMock()` helper in `src/lib/data.ts` centralises this check; all fetchers use it. The homepage (`src/app/page.tsx`) checks `!process.env.DATABASE_URL` to conditionally render `<MockModeBanner />`.
 
+Canonical data-fetching pattern for RSC (all fetchers in `src/lib/data.ts` follow this):
+```typescript
+async function getData() {
+  if (!process.env.DATABASE_URL) return MOCK_DATA; // from mock-data.ts
+  return prisma.yourModel.findMany({ ... });
+}
+```
+
 ---
 
-## Current Implementation State
+## Current State (post-Milestone 4.13)
 
-### Completed — Milestone 1
-- [x] Next.js 14 scaffold, Prisma schema, DB models, auth middleware
-- [x] Public sections: Nav, Hero, About, Skills, Experience, Projects, Robotics, Blog preview, Contact, Footer
-- [x] Zero-config mockup mode (no DB/env required)
-- [x] Contact form API with rate limiting
-- [x] AI agent scripts: GitHub Summarizer, Robotics News Curator
-- [x] Docker Compose + Nginx production config
+All public sections, admin CRUD (blog, projects, skills, experience, tools, media), nine AI agents, CV generation + editor, responsive admin shell, and security audit are complete. `tsc --noEmit` is clean. Next up is Milestone 5 (VPS deployment + CI).
 
-### Completed — Milestone 2
-- [x] `src/types/index.ts` — shared TypeScript interfaces (ProjectSummary, ProjectDetail, ExperienceItem, SkillGroup, BlogPostSummary, BlogPostDetail)
-- [x] `src/lib/data.ts` — central async data fetchers; DB-first with mock fallback for all sections
-- [x] All public sections wired to `data.ts` (Projects, Experience, Skills, BlogPreview, Blog page)
-- [x] `/projects/[slug]` — full case study detail page with `generateMetadata` + `generateStaticParams`
-- [x] `/blog/[slug]` — blog post detail page with JSON-LD Article schema
-- [x] Contact form: Resend email delivery + honeypot spam trap
-- [x] `AboutSection.tsx` — renders `public/photo.jpg` when present, SVG placeholder otherwise
-- [x] `sitemap.ts` — dynamic, includes all projects + blog posts, excludes `/admin`
-- [x] `robots.ts` — `Disallow: /admin` and `/api/`
-- [x] JSON-LD Person schema on homepage
-- [x] `opengraph-image.tsx` — dynamic OG image via `next/og` served at `/opengraph-image`
-- [x] `metadataBase` + OWNER-driven root metadata in `layout.tsx`
+### Key architectural facts worth knowing
+- Admin route groups: `(auth)/` — login page only, no shell. `(panel)/` — all authenticated pages; `layout.tsx` calls `auth()` and redirects if no session.
+- `src/middleware.ts` is Edge-only and checks only for cookie *presence* — not validity. Real auth is enforced server-side by `auth()` in `(panel)/layout.tsx` and `requireAdminSession()` in every `/api/admin/*` route.
+- Agent run API: `POST /api/admin/agents/[id]/run` uses an atomic `updateMany` lock — only one run at a time; concurrent callers get 409.
+- Skills Inference results are **never auto-applied** — owner must approve each diff on the report detail page.
+- CV PDF is written to `public/cv.pdf`; `cvSource` field on `User` tracks `"ai"` vs `"manual"`.
 
-### Still Needed — Owner actions before going live
-- [ ] Owner provides `public/photo.jpg` (About section conditional render is wired, file missing)
-- [ ] Owner fills in real personal info in `src/lib/mock-data.ts` (`OWNER` object — name, title, bio, social links)
-- [ ] GitHub Actions CI: lint + type-check on push
-- [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
-
-### Completed — Milestone 3
-- [x] `src/auth.ts` — Auth.js v5 Credentials provider, **JWT strategy** (`strategy: "jwt"`, 24h maxAge). Database sessions are unsupported with Credentials in Auth.js v5.
-- [x] `src/middleware.ts` — lightweight **Edge-compatible cookie-presence check** (cannot use `export { auth as middleware }` — Prisma and bcryptjs are Node.js-only, incompatible with the Edge runtime). Real session validity is enforced server-side by `auth()` in `(panel)/layout.tsx`.
-- [x] `/admin/login` — server-action login form (`LoginForm.tsx` client component with `useFormStatus`)
-- [x] Admin route groups: `(auth)/login` (no sidebar), `(panel)/*` (sidebar shell)
-- [x] Admin shell: `(panel)/layout.tsx`, `Sidebar.tsx` (`usePathname` active links), `TopBar.tsx` (logout server action)
-- [x] Admin dashboard: stats (posts/projects/skills), agent insights widget, quick actions
-- [x] `src/lib/admin-auth.ts` — `requireAdminSession()` guard for all `/api/admin/*` routes
-- [x] Blog CRUD: list, create, edit pages + `PostForm.tsx` (MDEditor, tag chips, SEO, scheduling)
-- [x] Project CRUD: list, create, edit pages + `ProjectForm.tsx` (MDEditor, tech tags, type, featured)
-- [x] Skills editor: grouped by category, inline server-action add/delete
-- [x] Experience editor: inline server-action add/delete with full date/type support
-- [x] Agents dashboard: agent list with unread badges, report list, full report detail with `MarkdownRenderer`
-- [x] Tools shortcuts manager: grid view, inline add/delete server actions
-- [x] Media library: `public/uploads/` upload, image grid, delete, `MediaUploader` client component
-- [x] `src/lib/markdown.ts` + `MarkdownRenderer.tsx` — unified pipeline (remark + rehype + highlight + sanitize)
-- [x] `/blog/[slug]` and `/projects/[slug]` — content rendered via `MarkdownRenderer`
-
-### Completed — Milestone 4
-- [x] `/projects` — standalone filterable projects index page (filter by SOFTWARE / ROBOTICS / HARDWARE / RESEARCH type badges)
-- [x] Markdown-renderer improvements: table of contents (auto-generated from headings), copy-code button
-- [x] `rehype-sanitize` configured with `clobberPrefix: ""` so ToC anchor IDs are not mangled
-- [x] Milestone 4 AI agents: Blog Suggester, Brand Monitor, Opportunity Watcher — all with CLI runners in `agents/`
-- [x] Admin "Run now" button (`RunAgentButton.tsx`) → `POST /api/admin/agents/[id]/run` — status cycles idle → running → idle/error with badges
-- [x] Agent run API response includes `{ ok, title, rawData, reportId }` — enables contextual redirect and inline UI
-- [x] All CLI runners (`agents/*.ts`) use shared `prisma` singleton from `src/lib/prisma` (not `new PrismaClient()`) — required for PrismaPg adapter compatibility
-
-### Completed — Milestone 4.5: Skills Inference Agent
-- [x] `src/lib/agents/skills-inference.ts` — fetches GitHub repo languages (top 15 repos), diffs against DB skills + project techTags + post tags, calls Claude haiku to produce structured diff JSON
-- [x] rawData shape: `{ type: "SKILLS_DIFF", add: [...], upgrade: [...], stale: [...] }`
-- [x] `agents/skills-inference.ts` — CLI runner; seeds agent row in DB on first run
-- [x] Report detail page (`/admin/agents/reports/[reportId]`) renders SKILLS_DIFF as Apply/Upgrade tables with inline server actions — **never auto-writes; always owner-approved**
-- [x] Skills page (`/admin/skills`) — "Sync from GitHub" button (`RunAgentButton` with `redirectOnSuccess`) appears once agent row exists in DB
-
-### Completed — Milestone 4.6: AI-Powered CV Generation
-- [x] `src/lib/cv-template.tsx` — `@react-pdf/renderer` PDF template: dark header, cyan accent line, sections for Profile/Skills/Experience/Projects/Contact; exported as `renderCvToPdf(cvContent): Promise<Buffer>`
-- [x] `src/lib/agents/cv-generator.ts` — reads DB (User, Skill, Experience, Project), calls Claude haiku (max_tokens 1500) to write structured CV JSON, falls back to raw DB build if no API key or parse fails, renders PDF to `public/cv.pdf`, saves `cvContent`/`cvGeneratedAt`/`cvSource` to User
-- [x] `agents/cv-generator.ts` — CLI runner; seeds agent row in DB on first run
-- [x] Schema additions on `User`: `cvGeneratedAt DateTime?`, `cvSource String @default("manual")`, `cvContent Json?`
-- [x] `/admin/cv` — Server Component page: generated date + source badge, Open PDF link, Run now button, `CvEditor`, manual upload section
-- [x] `src/components/admin/CvEditor.tsx` — client component: editable summary textarea, skills read-only list (edit via Skills page), experience + projects editors, "Save & Render PDF" → PUT /api/admin/cv then POST /api/admin/cv/render
-- [x] API routes (all `runtime = "nodejs"`, all behind `requireAdminSession`): `POST /api/admin/cv/run`, `GET|PUT /api/admin/cv`, `POST /api/admin/cv/render`, `POST /api/admin/cv/upload`
-
-### Completed — Milestone 4.7: GitHub Project Importer
-- [x] `src/lib/agents/github-project-importer.ts` — fetches public repos, filters out ones already in DB by githubUrl, fetches README + languages for new repos (up to 5), calls Claude haiku to generate project entries, then **auto-creates draft `Project` rows** (no owner approval required at import time)
-- [x] rawData shape: `{ type: "PROJECT_CREATED", created: [...], skipped: N }` — `PROJECT_SUGGESTIONS` is the legacy shape still rendered for old reports
-- [x] `agents/github-project-importer.ts` — CLI runner
-- [x] Report detail page renders `PROJECT_CREATED` as a list of created drafts with "Edit draft →" links; legacy `PROJECT_SUGGESTIONS` reports still render suggestion cards with a "Create as Draft" server action
-- [x] Projects page (`/admin/projects`) — "Import from GitHub" button appears once agent row exists in DB
-
-### Completed — Milestone 4.8: Inline Agent Triggers in Editors
-- [x] `src/components/admin/AgentSuggestPanel.tsx` — reusable `"use client"` component: `{ agentId, buttonLabel, renderResult, className? }`; states: idle → loading → result panel → close; error shown inline
-- [x] Blog editor (`PostForm.tsx`) — "💡 Suggest topics" button below Title field runs Blog Suggester inline, shows 5 clickable suggestion pills; clicking a pill sets title, auto-generates slug, and adds tags
-- [x] Blog editor (`PostForm.tsx`) — "Generate content" button calls `POST /api/admin/blog/generate-content` with `{ title, tags, excerpt }`, streams full markdown into the editor body (requires title to be set; requires `ANTHROPIC_API_KEY`)
-- [x] `POST /api/admin/blog/generate-content` — generates 600–1000 word blog post markdown via Claude haiku; auth-gated; `runtime = "nodejs"`
-- [x] Blog Suggester `rawData` now structured: `{ suggestions: [{ title, tags, rationale }], existingTopics: N }`
-- [x] `RunAgentButton` extended with `label?` and `redirectOnSuccess?` props
-
-### Completed — Milestone 4.9: Multi-Platform Scraping & Dashboard
-- [x] `src/lib/agents/github-summarizer.ts` — extended with `fetchGitHubProfile()` (`GET /users/{username}`); rawData now includes `{ repos: [...], profile: { bio, location, blog, twitter_username, followers } }`
-- [x] `src/lib/agents/twitter-profile.ts` — Twitter API v2 user + tweets fetch; returns `null` gracefully if `TWITTER_BEARER_TOKEN` not set
-- [x] `src/lib/agents/platform-sync.ts` — orchestrates GitHub profile + Twitter fetch; produces combined markdown report
-- [x] `agents/platform-sync.ts` — CLI runner
-- [x] LinkedIn: no auto-scraping (ToS violation, no free API) — `POST /api/admin/linkedin/import` parses Positions.csv + Skills.csv from LinkedIn data export and returns preview
-- [x] Admin dashboard Platform Connections card: GitHub (green if `GITHUB_USERNAME` set), X/Twitter (grey + hint if unconfigured), LinkedIn (Export data link)
-- [x] New `AgentType` enum values: `SKILLS_INFERENCE`, `GITHUB_PROJECT_IMPORTER`, `CV_GENERATOR`, `PLATFORM_SYNC`
-
-### Completed — Milestone 4.10: Pre-Deployment Security Audit
-Curl-based pentest run locally (39 PASS / 0 FAIL / 2 WARN). Results:
-
-- [x] **Auth bypass (API)** — all 9 `/api/admin/*` routes return 401 without session (GET + POST)
-- [x] **Admin route guard** — all 7 `/admin/*` pages return 307 redirect to login without session
-- [x] **Security headers** — `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` present on all responses
-- [x] **Cookie flags** — Auth.js sets `HttpOnly: true`, `SameSite: lax` by default; `Secure` added automatically on HTTPS (confirmed in `@auth/core` source)
-- [x] **Information disclosure** — 404 and API error responses do not leak stack traces, Prisma paths, or filesystem paths
-- [x] **Sensitive files** — `.env`, `.env.local`, `package.json`, `tsconfig.json`, `prisma/schema.prisma`, `.git/config` all return 404
-- [x] **Rate limiting** — contact form returns 429 at request 6 (threshold working)
-- [x] **XSS payloads** — `<script>`, `<img onerror>`, `javascript:`, `<iframe>` all blocked at API layer (401 — auth required)
-- [x] **Open redirect** — `callbackUrl` param does not redirect to `evil.com`, `//evil.com`, or encoded variants
-- [x] **Path traversal** — `..%2F`, `%2e%2e%2f`, `....//` patterns blocked on `/api/admin/media`
-- [x] **File exposure** — no static files from project root are served through Next.js public dir
-- [ ] **Nikto scan** — not run (tool not installed); run `sudo dnf install nikto && nikto -h http://localhost:3000` before VPS deploy
-- [ ] **File upload MIME validation** — manual test pending (requires authenticated session + media endpoint)
-- [ ] **LinkedIn CSV input fuzzing** — pending (requires authenticated session)
-
-### Completed — Milestone 4.11: Agent Infrastructure Bug Fixes
-- [x] `src/app/api/admin/agents/[id]/run/route.ts` — atomic concurrent-run guard: replaced non-atomic `findUnique` + status check with `prisma.agent.updateMany({ where: { status: { not: "running" } } })` — only one request can claim the lock; others get 409
-- [x] `src/lib/agents/github-project-importer.ts` — creation loop wrapped in try-catch; P2002 (unique constraint) skipped silently, other errors re-thrown; empty slug/title pre-validated before insert
-- [x] `src/app/admin/(panel)/agents/reports/[reportId]/page.tsx` — `createProjectDraft` wraps JSON.parse + prisma.create in try-catch; P2002 redirects to `?error=slug-exists`; error banner renders from `searchParams.error`
-- [x] Report page — `applySkillAdd` and `applySkillUpgrade` wrapped in try-catch (silent swallow, user can retry)
-- [x] `src/app/admin/(panel)/projects/page.tsx` — `deleteProject` now calls `revalidatePath("/admin/projects")`, `revalidatePath("/projects")`, `revalidatePath("/")` so deleted row disappears immediately
-- [x] `src/components/admin/RunAgentButton.tsx` — error response body parsed and stored in `errorMsg` state; exposed as `title` tooltip on the Failed button
-
-### Completed — Milestone 4.12: End-User Testing & Bug Fixes
-- [x] `end-user-tester` subagent walkthroughs of public surface + admin panel, findings consolidated in `docs/MILESTONE_4.12_BUG_LIST.md`
-- [x] BUG-01: `src/app/blog/[slug]/page.tsx` — `seoTitle || post.title` (empty-string safe)
-- [x] BUG-02: `src/lib/data.ts` — `computeReadTime()` helper replaces hardcoded `""` in both blog fetchers
-- [x] BUG-03: `ExperienceSection` / `ProjectsSection` always render `<section id="...">` wrapper so nav anchors stay valid on empty DB
-- [x] BUG-04: `src/lib/agents/cv-generator.ts` — `formatMonth()` guards invalid/null dates; POST `/api/admin/experience` returns 400 on unparseable date strings
-- [x] BUG-05: `src/components/public/Nav.tsx` — nav goes opaque when `menuOpen`, mobile menu panel has `bg-[#0f1117]`
-- [x] Re-verified `/api/admin/*` 401 guards, `/admin/*` 307 redirects, `robots.txt` disallows, sitemap clean of `/admin`, contact 429 at req 6, M4.11 atomic concurrency guard, `tsc --noEmit` clean
-
-### Completed — Milestone 4.13: Post-E2E Fix Pass + CV Overhaul
-
-**Part A — Bug fixes from E2E test:**
-- [x] Admin panel responsive: `src/components/admin/AdminShell.tsx` (new client wrapper), `Sidebar.tsx` (off-canvas drawer with overlay at `< md`), `TopBar.tsx` (hamburger button `md:hidden`), `layout.tsx` (uses AdminShell). Verified at 500px CSS viewport via Chrome extension.
-- [x] `POST /api/admin/media` — returns 405 with JSON message pointing to `/api/admin/media/upload`.
-- [x] `HEAD /uploads/<file>` — `next.config.mjs` now has a `/uploads/:path*` header block with `Access-Control-Allow-Methods: GET, HEAD` before the catch-all rule.
-- [x] Dashboard agent insights widget — `src/app/admin/(panel)/page.tsx` uses `agentReport.findMany({ take: 5, include: agent })` + `formatRelative()` helper; renders linked list of report title + agent name + relative time.
-- [x] Brand Monitor stored error — confirmed no `$queryRaw` exists in codebase; error was a ghost from a transient old run. No code fix needed.
-
-**Part B — CV Generation refinement (IT-industry tuned):**
-- [x] `src/lib/agents/cv-generator.ts` — IT-tuned prompt with action-verb rules, 5 IT-standard skill categories, bullet-point experience format, banned words list; `sanitizeCvContent()` post-processor strips fluff; `buildCvFromRaw()` uses explicit `LANGUAGES → "Languages"` etc. mapping; dynamic summary from top skills + latest role.
-- [x] `src/lib/cv-template.tsx` — body font reduced to 9.5pt, lineHeight 1.4, `yearsOfExperience?` field added to `CvContent.contact` and rendered in header.
-- [x] `buildCvFromRaw()` fallback brought to parity: same IT-standard category map, same dynamic summary structure.
-- [x] Post-processing via `sanitizeCvContent()`: regex strips "passionate", "synergy", weak verbs ("helped" → "contributed to", "worked on" → "developed", etc.).
-- [x] CV Generator report detail page renders `cvContent` JSON as human-readable preview (Profile / Skills / Experience / Projects cards) for `CV_GENERATOR` reports.
-
-**Part C — Full CV editor inside the CV tab:**
-- [x] `CvEditor.tsx` — fetches raw DB records (experience with IDs, skills by IT-standard category, all projects) on mount via `useEffect`. Per-section dirty indicators (amber dot + "Unsaved changes" text). Experience: per-row edit (company, role, start/end date, description, type select, current checkbox) + up/down reorder + delete. Projects: "Show in CV" checkbox per row (maps to `featured`). Skills: 5 IT-standard category groups with chip delete + "Add" input per category. Single "Save all & Render PDF" button rebuilds `CvContent` from current state + saves to DB + renders PDF in one operation.
-- [x] Existing PUT routes reused: `PUT /api/admin/experience/[id]`, `PUT /api/admin/projects/[id]`, `PUT /api/admin/skills/[id]`, `DELETE /api/admin/skills/[id]`, `POST /api/admin/skills`.
-
-**Part D — Verification:**
-- [x] Chrome extension mobile test at 500px CSS viewport: hamburger visible, drawer opens/closes with overlay, no horizontal overflow on CV page, dirty indicators working, "Save all & Render PDF" present. GIF recorded.
-- [x] `tsc --noEmit` clean on all changes.
-- [x] `end-user-tester` subagent dispatched for full admin walkthrough.
+### Pending — owner actions before going live
+- [ ] Add `public/photo.jpg`
+- [ ] Fill in real personal info in `src/lib/mock-data.ts` (`OWNER` object)
+- [ ] Run Nikto scan: `sudo dnf install nikto && nikto -h http://localhost:3000`
+- [ ] Verify file upload MIME validation and LinkedIn CSV fuzzing (requires authenticated session)
 
 ### Upcoming — Milestone 5: Deployment
 - [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
