@@ -14,7 +14,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma client
+# DATABASE_URL is required by prisma generate (PgPg adapter) and next build (mock mode).
+# The placeholder value keeps isMock()=true so no real DB connection is attempted at build time.
+ARG DATABASE_URL=prisma+postgres://build-placeholder
+ENV DATABASE_URL=${DATABASE_URL}
+
 RUN npx prisma generate
 
 RUN npm run build
