@@ -629,8 +629,9 @@ The existing `.github/workflows/deploy.yml` uses SSH deploy via Twingate (server
 3. Generate a service key → copy the JSON → paste into `TWINGATE_SERVICE_KEY` secret
 
 - ⬜ Create `github-actions-deploy` Twingate service account and assign resource access
-- ⬜ Add `TWINGATE_SERVICE_KEY`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` secrets to GitHub repo settings
+- ✅ Added `ANTHROPIC_API_KEY`, `GH_PAT_TOKEN`, `GH_USERNAME`, `AUTH_SECRET`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` secrets to GitHub repo settings
 - ✅ Updated deploy workflow: Twingate connect step added, correct path (`~/portfolio`), `docker compose build app`
+- Note: `TWINGATE_SERVICE_KEY` already set. Auto-deploy will work once the Twingate service account is configured and assigned the 192.168.0.104 resource.
 
 ---
 
