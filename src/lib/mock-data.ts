@@ -111,25 +111,25 @@ export const PROJECTS = [
 
 export const ROBOTICS_HIGHLIGHTS = [
   {
-    icon: "",
+    icon: "🤖",
     title: "Autonomous Systems",
     description:
       "Designing and programming autonomous robot behaviors for competition, using sensor feedback, control loops, and drive systems that react to the field in real time.",
   },
   {
-    icon: "",
+    icon: "🏆",
     title: "Competition Robotics",
     description:
       "Built and competed with FRC robots under strict deadlines, coordinating mechanical, electrical, and software subsystems as team captain.",
   },
   {
-    icon: "",
+    icon: "⚡",
     title: "Embedded Development",
     description:
       "Programming microcontrollers with Arduino and WPILib for real-time motor control, sensor reading, and hardware interfacing.",
   },
   {
-    icon: "",
+    icon: "🔧",
     title: "CAD & Mechanical Design",
     description:
       "Designed robot components and assemblies in Fusion 360, bridging the gap between software requirements and physical build constraints.",
