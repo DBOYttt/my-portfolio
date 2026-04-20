@@ -25,7 +25,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd ~/portfolio
+            cd ~/projects/my-portfolio
             git pull origin main
             docker compose build app
             docker compose up -d
