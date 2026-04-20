@@ -5,62 +5,57 @@
  */
 
 export const OWNER = {
-  name: "Alex Kowalski",
-  tagline: "Software Engineer. I also build robots.",
+  name: "Andrzej Czajkowski-Nazim",
+  tagline: "Software engineer. Robotics enthusiast. Always building.",
   bio: [
-    "I'm a software engineer with a strong interest in robotics and embedded systems. I enjoy working at the intersection of software and hardware — writing code that controls real things in the physical world.",
-    "My background spans from low-level embedded C/C++ to high-level Python automation pipelines. I'm comfortable with ROS2, Linux systems, and building reliable software that runs under constraints.",
-    "Outside of engineering, I document my work publicly through open-source projects and technical writing. I believe in building things that are useful, not just technically impressive.",
+    "I'm a software engineer with a passion for robotics and embedded systems. I enjoy working at the intersection of software and hardware — writing code that interacts with the physical world. Whether it's a web application or an autonomous robot, I care about building things that actually work.",
+    "My background spans C#, C++, Python, TypeScript, and Java, with hands-on experience in .NET, Next.js, Docker, and databases. I've worked on data management systems, AI agents, RAG pipelines, and machine learning — from model fine-tuning to production deployment.",
   ],
-  email: "alex@example.com",
-  github: "https://github.com/yourusername",
-  linkedin: "https://linkedin.com/in/yourusername",
-  location: "Warsaw, Poland",
+  email: "andrzejcn041@gmail.com",
+  github: "https://github.com/DBOYttt",
+  linkedin: "https://www.linkedin.com/in/andrzej-nazim-290a451b4/",
+  location: "Kraków, Poland",
 };
 
 export const SKILLS = [
   {
     category: "Languages",
-    skills: ["Python", "TypeScript", "C++", "C", "Rust", "Bash"],
+    skills: ["C#", "C++", "Python", "TypeScript", "JavaScript", "Node.js", "Java"],
   },
   {
     category: "Frameworks & Libraries",
-    skills: ["Next.js", "React", "FastAPI", "Node.js", "Prisma"],
+    skills: [".NET", "Next.js", "Prisma", "Node.js"],
   },
   {
     category: "Robotics & Embedded",
-    skills: ["ROS2", "ROS", "SLAM", "OpenCV", "Arduino", "STM32", "FreeRTOS"],
+    skills: ["Arduino", "WPILib", "CAD", "Fusion 360"],
   },
   {
     category: "Tools & Infrastructure",
-    skills: ["Docker", "Git", "Linux", "Nginx", "PostgreSQL", "n8n"],
+    skills: ["Docker", "Git", "PostgreSQL", "SQL", "Linux"],
+  },
+  {
+    category: "Machine Learning",
+    skills: ["PyTorch", "scikit-learn", "Matplotlib", "model fine-tuning"],
   },
 ];
 
 export const EXPERIENCE = [
   {
-    company: "Robotics Startup",
-    role: "Software Engineer",
-    period: "2023 — Present",
-    type: "Full-time",
-    description:
-      "Led development of the motion planning stack for an autonomous mobile robot. Reduced path replanning latency by 35% through custom A* heuristic tuning and ROS2 lifecycle node architecture.",
-  },
-  {
-    company: "Tech Company",
-    role: "Backend Developer",
-    period: "2021 — 2023",
-    type: "Full-time",
-    description:
-      "Built and maintained REST APIs serving 200k+ daily requests. Migrated a legacy monolith to containerised services, cutting deployment time from 45 minutes to under 4.",
-  },
-  {
-    company: "University Lab",
-    role: "Robotics Research Intern",
-    period: "2020 — 2021",
+    company: "New Technology Kraków",
+    role: "Data Management Specialist",
+    period: "Jan 2021 — Jan 2023",
     type: "Internship",
     description:
-      "Implemented a sensor fusion pipeline for a hexapod walking robot using IMU and optical flow data. Published results in a departmental proceedings paper.",
+      "Optimised SQL queries and maintained database structures for consistency; collaborated with developers to design and test API interfaces.",
+  },
+  {
+    company: "Team 9155, First Robotics Competition (FRC)",
+    role: "Member & Team Captain",
+    period: "2020 — 2024",
+    type: "Volunteer",
+    description:
+      "Led a student team in designing, building, and programming competitive robots — coordinating task delegation, project planning, and contest strategy under strict deadlines.",
   },
 ];
 
@@ -72,7 +67,7 @@ export const PROJECTS = [
       "ROS2-based differential drive robot with custom SLAM implementation. Reduced localization error by 40% vs. baseline using particle filter tuning and a LiDAR preprocessing stage.",
     techTags: ["ROS2", "Python", "C++", "SLAM", "LiDAR", "OpenCV"],
     type: "ROBOTICS" as const,
-    githubUrl: "https://github.com/yourusername/autonomous-nav-robot",
+    githubUrl: "https://github.com/DBOYttt/autonomous-nav-robot",
     liveUrl: null,
   },
   {
@@ -82,8 +77,8 @@ export const PROJECTS = [
       "Async Python pipeline handling 50k+ events/day with sub-100ms p95 latency. Built with FastAPI, PostgreSQL, and n8n for workflow orchestration.",
     techTags: ["Python", "FastAPI", "PostgreSQL", "Docker", "n8n", "Redis"],
     type: "SOFTWARE" as const,
-    githubUrl: "https://github.com/yourusername/automation-pipeline",
-    liveUrl: "https://example.com",
+    githubUrl: "https://github.com/DBOYttt/automation-pipeline",
+    liveUrl: null,
   },
   {
     slug: "embedded-sensor-system",
@@ -92,35 +87,35 @@ export const PROJECTS = [
       "Real-time sensor fusion on STM32F4 aggregating IMU, GPS, and ultrasonic data at 200Hz. Custom Kalman filter implementation in bare-metal C.",
     techTags: ["C", "STM32", "FreeRTOS", "Kalman Filter", "SPI", "I2C"],
     type: "HARDWARE" as const,
-    githubUrl: "https://github.com/yourusername/sensor-fusion",
+    githubUrl: "https://github.com/DBOYttt/sensor-fusion",
     liveUrl: null,
   },
 ];
 
 export const ROBOTICS_HIGHLIGHTS = [
   {
-    icon: "🤖",
+    icon: "",
     title: "Autonomous Systems",
     description:
-      "Mobile robot platforms with autonomous navigation using ROS2, SLAM, and sensor fusion. From design to working prototype.",
+      "Designing and programming autonomous robot behaviors for competition, using sensor feedback, control loops, and drive systems that react to the field in real time.",
   },
   {
-    icon: "⚡",
+    icon: "",
+    title: "Competition Robotics",
+    description:
+      "Built and competed with FRC robots under strict deadlines, coordinating mechanical, electrical, and software subsystems as team captain.",
+  },
+  {
+    icon: "",
     title: "Embedded Development",
     description:
-      "Firmware on STM32 and Arduino platforms. Real-time systems with FreeRTOS, bare-metal C, and custom peripheral drivers.",
+      "Programming microcontrollers with Arduino and WPILib for real-time motor control, sensor reading, and hardware interfacing.",
   },
   {
-    icon: "👁️",
-    title: "Computer Vision",
+    icon: "",
+    title: "CAD & Mechanical Design",
     description:
-      "OpenCV pipelines for object detection, optical flow, and depth estimation integrated into real-time robotic control loops.",
-  },
-  {
-    icon: "🔧",
-    title: "Hardware Integration",
-    description:
-      "End-to-end co-design: sensor selection, calibration, PCB layout review, and actuator control from software to physical output.",
+      "Designed robot components and assemblies in Fusion 360, bridging the gap between software requirements and physical build constraints.",
   },
 ];
 
