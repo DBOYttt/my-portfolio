@@ -8,8 +8,9 @@ export const OWNER = {
   name: "Andrzej Czajkowski-Nazim",
   tagline: "Software engineer. Robotics enthusiast. Always building.",
   bio: [
-    "I'm a software engineer with a passion for robotics and embedded systems. I enjoy working at the intersection of software and hardware — writing code that interacts with the physical world. Whether it's a web application or an autonomous robot, I care about building things that actually work.",
-    "My background spans C#, C++, Python, TypeScript, and Java, with hands-on experience in .NET, Next.js, Docker, and databases. I've worked on data management systems, AI agents, RAG pipelines, and machine learning — from model fine-tuning to production deployment.",
+    "I'm a software engineer with a solid foundation in designing, programming, and testing applications. I enjoy working at the intersection of software and hardware — from database-backed web apps to autonomous robots competing on an international stage.",
+    "My background spans Python, C++ and C#, with hands-on experience in .NET, Next.js, PostgreSQL, and Linux (Ubuntu, Debian, CentOS). I automate workflows with n8n and AI agents, and have built full web applications from design to deployment.",
+    "Outside of engineering I'm interested in machine learning and automation, and I explore the impact of emerging technology on everyday life.",
   ],
   email: "andrzejcn041@gmail.com",
   github: "https://github.com/DBOYttt",
@@ -24,7 +25,7 @@ export const SKILLS = [
   },
   {
     category: "Frameworks & Libraries",
-    skills: [".NET", "Next.js", "Prisma", "Node.js"],
+    skills: [".NET", "Next.js", "Prisma", "Node.js", "Three.js"],
   },
   {
     category: "Robotics & Embedded",
@@ -32,7 +33,7 @@ export const SKILLS = [
   },
   {
     category: "Tools & Infrastructure",
-    skills: ["Docker", "Git", "PostgreSQL", "SQL", "Linux"],
+    skills: ["Docker", "Git", "PostgreSQL", "Linux", "n8n"],
   },
   {
     category: "Machine Learning",
@@ -42,12 +43,12 @@ export const SKILLS = [
 
 export const EXPERIENCE = [
   {
-    company: "New Technology Kraków",
-    role: "Data Management Specialist",
-    period: "Jan 2021 — Jan 2023",
+    company: "NewTech",
+    role: "Database Administration Intern",
+    period: "2021 — 2023",
     type: "Internship",
     description:
-      "Optimised SQL queries and maintained database structures for consistency; collaborated with developers to design and test API interfaces.",
+      "Created backups, optimised SQL queries, and maintained database structure consistency; collaborated with developers to design and test API interfaces.",
   },
   {
     company: "Team 9155, First Robotics Competition (FRC)",
@@ -56,6 +57,22 @@ export const EXPERIENCE = [
     type: "Volunteer",
     description:
       "Led a student team in designing, building, and programming competitive robots — coordinating task delegation, project planning, and contest strategy under strict deadlines.",
+  },
+  {
+    company: "Fundacja IB Polska & Chorągiew Krakowska ZHP",
+    role: "Volunteer",
+    period: "2024",
+    type: "Volunteer",
+    description:
+      "Sorted, packed, and organised relief supplies for flood victims; supported logistics and warehouse operations in a donation centre.",
+  },
+  {
+    company: "JCC Krakow",
+    role: "Volunteer",
+    period: "2021 — 2022",
+    type: "Volunteer",
+    description:
+      "Assisted in organising cultural and community events; supported seniors and Holocaust survivors through companionship programmes.",
   },
 ];
 
