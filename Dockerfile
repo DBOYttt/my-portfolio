@@ -33,10 +33,11 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
-# Copy prisma schema and seed for db:push / db:seed after deploy.
-# prisma.config.ts is intentionally excluded — it imports dotenv which is not
-# installed in the runner; DATABASE_URL is injected by Docker instead.
+# Copy prisma files for db:push / db:seed after deploy.
+# prisma.config.ts provides the datasource URL (Prisma 7 requirement).
+# DATABASE_URL is injected by Docker — no dotenv needed.
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 # Set correct permissions for prerender cache
 RUN mkdir .next
