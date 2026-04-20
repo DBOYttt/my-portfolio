@@ -8,3 +8,9 @@ services:
       - "80:80"
     volumes:
       - ./nginx/portfolio-lan.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # Expose postgres to localhost so migrations can be run from the host with npx prisma.
+  # Remove this block once the schema is stable and you no longer need host access.
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"
