@@ -614,28 +614,23 @@ At this point the app is live but serving placeholder data. Owner must:
 
 ### Phase 7 — Update Deploy Workflow
 
-The existing `.github/workflows/deploy.yml` stub uses SSH deploy. Update secrets in GitHub repo:
+The existing `.github/workflows/deploy.yml` uses SSH deploy via Twingate (server is LAN-only). Add secrets in GitHub repo settings:
 
 | Secret | Value |
 |--------|-------|
+| `TWINGATE_SERVICE_KEY` | JSON key from Twingate Admin → Service Accounts → `github-actions-deploy` |
 | `SSH_HOST` | `192.168.0.104` |
 | `SSH_USER` | `diboy` |
-| `SSH_KEY` | private key for server SSH access |
+| `SSH_KEY` | Contents of `~/.ssh/id_ed25519` (private key with server access) |
 
-The deploy step already does `git pull && docker compose pull && docker compose up -d`.
-Update it to rebuild the app image (it's built locally on the server, not pulled from a registry):
+**Twingate setup (one-time):**
+1. Twingate Admin Console → Settings → Service Accounts → New Service Account → name it `github-actions-deploy`
+2. Assign it access to the `192.168.0.104` resource
+3. Generate a service key → copy the JSON → paste into `TWINGATE_SERVICE_KEY` secret
 
-```yaml
-- name: Deploy
-  run: |
-    git pull
-    docker compose build app
-    docker compose up -d
-```
-
-- ⬜ Add `SSH_HOST`, `SSH_USER`, `SSH_KEY` secrets to GitHub repo settings
-- ✅ Updated deploy workflow: correct path (`~/portfolio`), `docker compose build app`, removed `migrate deploy`
-- Note: GitHub Actions SSH deploy only works if server is reachable from the internet (e.g. via Twingate). Otherwise deploy remains manual.
+- ⬜ Create `github-actions-deploy` Twingate service account and assign resource access
+- ⬜ Add `TWINGATE_SERVICE_KEY`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` secrets to GitHub repo settings
+- ✅ Updated deploy workflow: Twingate connect step added, correct path (`~/portfolio`), `docker compose build app`
 
 ---
 
