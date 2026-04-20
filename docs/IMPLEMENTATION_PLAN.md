@@ -354,7 +354,7 @@ Curl-based pentest (39 PASS / 0 FAIL / 2 WARN):
 
 ---
 
-## Milestone 5 — Homelab Deployment ⬜
+## Milestone 5 — Homelab Deployment ✅
 
 **Target server:** `192.168.0.104` (hostname: `homelab`, Ubuntu 24.04.4 LTS)
 **Access:** SSH as `diboy` (full sudo). Docker 29.4.0 + Compose v5.1.3 pre-installed.
@@ -392,7 +392,7 @@ The skill does **not** modify `BLOG_POSTS` (manage posts via admin panel).
 
 After the skill commits, the content is in git and will be baked into the Docker image on first deploy.
 
-- ⬜ Run `/setup-portfolio` and confirm all sections are accurate
+- ✅ Run `/setup-portfolio` and confirm all sections are accurate
 - ⬜ Place `public/photo.jpg` in the repo (portrait photo, recommended ≥ 400×400px)
 - ⬜ Push both changes before running Phase 4
 
@@ -441,8 +441,8 @@ services:
 
 The base `docker-compose.yml` keeps `443:443` for when a domain is added; the override drops it.
 
-- ⬜ Create `nginx/portfolio-lan.conf`
-- ⬜ Create `docker-compose.override.yml`
+- ✅ Create `nginx/portfolio-lan.conf`
+- ✅ Create `docker-compose.override.yml`
 
 ---
 
@@ -465,7 +465,7 @@ RUN npx prisma generate
 RUN npm run build
 ```
 
-- ⬜ Add `ARG DATABASE_URL=prisma+postgres://build-placeholder` + `ENV` to Dockerfile builder stage
+- ✅ Add `ARG DATABASE_URL=prisma+postgres://build-placeholder` + `ENV` to Dockerfile builder stage
 
 ---
 
@@ -503,8 +503,8 @@ nano .env
 
 All other variables optional — fill in as needed.
 
-- ⬜ SSH into server and clone repo
-- ⬜ Create and populate `.env`
+- ✅ SSH into server and clone repo (at `~/portfolio`)
+- ✅ Create and populate `.env`
 
 ---
 
@@ -533,52 +533,53 @@ curl http://localhost/admin     # should redirect to /admin/login
 docker compose ps               # all three services Up (healthy)
 ```
 
-- ⬜ `docker compose build app`
-- ⬜ `docker compose up -d db` + wait for health
-- ⬜ `docker compose run --rm app npx prisma db push`
-- ⬜ `docker compose run --rm app npm run db:seed`
-- ⬜ `docker compose up -d`
-- ⬜ Verify: `curl http://localhost/` returns 200
+- ✅ `docker compose build app`
+- ✅ `docker compose up -d db` + wait for health
+- ✅ Schema pushed via host (`DATABASE_URL=postgres://...@127.0.0.1:5432/... npx prisma db push`)
+- ✅ Admin user seeded via host (`DATABASE_URL=... npm run db:seed`)
+- ✅ `docker compose up -d`
+- ✅ Verify: `curl http://localhost/` returns 200
 
 ---
 
 ### Phase 5 — Cron Jobs for Agents
 
-Agents run as separate Node.js processes inside the app container via cron on the host:
+Agents run from the **host server** (`~/portfolio`) using `npx tsx`, connecting to the Docker postgres via `127.0.0.1:5432`. The `agents/` directory is not included in the Docker standalone image — running from host avoids this limitation.
 
 ```bash
 # On the host machine (crontab -e for user diboy)
-# Run each agent at sensible intervals
+PORTFOLIO_DB=postgres://portfolio:PASSWORD@127.0.0.1:5432/portfolio_db
 
-# GitHub Summarizer — daily at 07:00
-0 7 * * * cd ~/my-portfolio && docker compose exec -T app npx tsx agents/github-summarizer.ts >> ~/logs/agent-github.log 2>&1
+# GitHub Summarizer — daily 07:00
+0 7 * * * cd ~/portfolio && DATABASE_URL=$PORTFOLIO_DB npx tsx agents/github-summarizer.ts >> ~/logs/agent-github.log 2>&1
 
-# Skills Inference — daily at 07:05
-5 7 * * * cd ~/my-portfolio && docker compose exec -T app npx tsx agents/skills-inference.ts >> ~/logs/agent-skills.log 2>&1
+# Skills Inference — daily 07:05
+5 7 * * * cd ~/portfolio && DATABASE_URL=$PORTFOLIO_DB npx tsx agents/skills-inference.ts >> ~/logs/agent-skills.log 2>&1
+
+# GitHub Project Importer — weekly Monday 07:10
+10 7 * * 1 cd ~/portfolio && DATABASE_URL=$PORTFOLIO_DB npx tsx agents/github-project-importer.ts >> ~/logs/agent-importer.log 2>&1
 
 # Blog Suggester — weekly Monday 08:00
-0 8 * * 1 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/blog-suggester.ts >> ~/logs/agent-blog.log 2>&1
+0 8 * * 1 cd ~/portfolio && DATABASE_URL=$PORTFOLIO_DB npx tsx agents/blog-suggester.ts >> ~/logs/agent-blog.log 2>&1
 
 # Opportunity Watcher — weekly Monday 08:05
-5 8 * * 1 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/opportunity-watcher.ts >> ~/logs/agent-jobs.log 2>&1
+5 8 * * 1 cd ~/portfolio && DATABASE_URL=$PORTFOLIO_DB npx tsx agents/opportunity-watcher.ts >> ~/logs/agent-jobs.log 2>&1
 
 # Robotics News — weekly Wednesday 08:00
-0 8 * * 3 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/robotics-news.ts >> ~/logs/agent-robotics.log 2>&1
+0 8 * * 3 cd ~/portfolio && DATABASE_URL=$PORTFOLIO_DB npx tsx agents/robotics-news.ts >> ~/logs/agent-robotics.log 2>&1
 
 # Brand Monitor — weekly Friday 08:00
-0 8 * * 5 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/brand-monitor.ts >> ~/logs/agent-brand.log 2>&1
+0 8 * * 5 cd ~/portfolio && DATABASE_URL=$PORTFOLIO_DB npx tsx agents/brand-monitor.ts >> ~/logs/agent-brand.log 2>&1
 
 # Platform Sync — weekly Sunday 09:00
-0 9 * * 7 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/platform-sync.ts >> ~/logs/agent-platform.log 2>&1
+0 9 * * 7 cd ~/portfolio && DATABASE_URL=$PORTFOLIO_DB npx tsx agents/platform-sync.ts >> ~/logs/agent-platform.log 2>&1
 
-# CV Generator — weekly Sunday 09:05 (portfolio mode)
-5 9 * * 7 cd ~/my-portfolio && docker compose exec -T app npx tsx agents/cv-generator.ts >> ~/logs/agent-cv.log 2>&1
+# CV Generator — weekly Sunday 09:05
+5 9 * * 7 cd ~/portfolio && DATABASE_URL=$PORTFOLIO_DB npx tsx agents/cv-generator.ts >> ~/logs/agent-cv.log 2>&1
 ```
 
-Create the log directory: `mkdir -p ~/logs`
-
-- ⬜ `mkdir -p ~/logs` on server
-- ⬜ Add all 8 agent cron entries via `crontab -e`
+- ✅ `mkdir -p ~/logs` on server
+- ✅ All 9 agent cron entries installed via `crontab -e`
 
 ---
 
@@ -602,10 +603,10 @@ At this point the app is live but serving placeholder data. Owner must:
    git pull && docker compose build app && docker compose up -d app
    ```
 
-- ⬜ Fill in `OWNER` in `src/lib/mock-data.ts` and push
-- ⬜ `git pull && docker compose build app && docker compose up -d app` on server
+- ✅ Fill in `OWNER` in `src/lib/mock-data.ts` and push (done via `/setup-portfolio` + CV import)
+- ⬜ `git pull && docker compose build app && docker compose up -d app` on server (after photo added)
 - ⬜ Add skills + experience via admin panel
-- ⬜ Copy/build photo into container
+- ⬜ Place `public/photo.jpg` in repo and rebuild image
 - ⬜ Review + publish projects in admin panel
 - ⬜ Run CV Generator from admin panel
 
@@ -633,7 +634,8 @@ Update it to rebuild the app image (it's built locally on the server, not pulled
 ```
 
 - ⬜ Add `SSH_HOST`, `SSH_USER`, `SSH_KEY` secrets to GitHub repo settings
-- ⬜ Update deploy workflow step to `docker compose build app && docker compose up -d`
+- ✅ Updated deploy workflow: correct path (`~/portfolio`), `docker compose build app`, removed `migrate deploy`
+- Note: GitHub Actions SSH deploy only works if server is reachable from the internet (e.g. via Twingate). Otherwise deploy remains manual.
 
 ---
 
@@ -648,12 +650,13 @@ curl -I http://192.168.0.104/api/contact             # 405 (not POST)
 # Log into admin → run one agent → verify report appears
 ```
 
-- ⬜ Curl smoke tests pass
+- ✅ Curl smoke tests pass (200, 307→login, 405, robots.txt, sitemap.xml)
 - ⬜ Browser walkthrough: all 9 public sections load with real data
-- ⬜ Admin login works (AUTH_URL set correctly)
-- ⬜ At least 1 agent run succeeds and report appears in admin
-- ⬜ CV PDF generated and downloadable
-- ⬜ Contact form sends email (if RESEND_API_KEY set)
+- ✅ Admin login works (AUTH_URL=http://192.168.0.104)
+- ✅ GitHub Summarizer ran successfully, report saved
+- ⬜ CV PDF generated and downloadable (run via admin panel)
+- ⬜ Contact form sends email (requires RESEND_API_KEY)
+- ✅ Nikto scan — no critical findings (all XSS findings are false positives for PHP software)
 
 ---
 
