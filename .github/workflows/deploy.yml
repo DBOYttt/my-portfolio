@@ -20,8 +20,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd ~/my-portfolio
+            cd ~/portfolio
             git pull origin main
-            docker compose pull
-            docker compose up -d --remove-orphans
-            docker compose exec app npx prisma migrate deploy
+            docker compose build app
+            docker compose up -d
