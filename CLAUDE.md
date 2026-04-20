@@ -88,9 +88,12 @@ my-portfolio/
 │   │   └── prisma.ts          ← Prisma client singleton
 │   ├── types/                 ← Shared TypeScript types
 │   └── middleware.ts          ← Admin route auth guard
+├── prisma.config.ts           ← Prisma 7 config (schema path, migrations path, datasource URL)
 ├── prisma/
 │   ├── schema.prisma          ← Database schema — source of truth
 │   └── seed.ts                ← Admin user seeder
+├── docker-compose.yml         ← Production: app + db + nginx services
+├── docker-compose.override.yml← Local dev overrides (e.g. port exposure for host-side migrations)
 ├── agents/                    ← Standalone AI agent scripts (run via cron)
 │   ├── github-summarizer.ts
 │   ├── robotics-news.ts
@@ -152,6 +155,7 @@ All public sections, admin CRUD (blog, projects, skills, experience, tools, medi
 - `Agent.config Json?` stores per-agent persistent state (seenUrls, keywords, repoSnapshot, etc.). Runners return `_updatedConfig` in `AgentRunResult`; the run API persists it after success.
 - Build without a real DB: `DATABASE_URL="prisma+postgres://ci" npm run build` — forces `isMock()` true so all pages use mock data. Used in CI.
 - Test suite: `npm test` runs 79 Vitest tests across 8 files (unit, integration, structural scan). `npm run test:watch` for TDD.
+- CI/CD pipeline: `.github/workflows/ci.yml` runs lint → type-check → test → build on every push. `.github/workflows/deploy.yml` SSH-deploys to the VPS automatically when CI passes on `main` (`cd ~/portfolio && git pull && docker compose build app && docker compose up -d`). Requires `SSH_HOST`, `SSH_USER`, `SSH_KEY` in GitHub repo secrets.
 
 ### Pending — owner actions before going live
 - [ ] Add `public/photo.jpg`
@@ -175,9 +179,15 @@ Never create new secrets without adding them to `.env.example` first.
 Key variables:
 - `DATABASE_URL` — PostgreSQL connection string. If absent, site runs in mock mode.
 - `AUTH_SECRET` — Generate with `openssl rand -base64 32`. Required for admin login.
+- `AUTH_URL` — Full site URL for Auth.js callbacks (e.g. `http://localhost:3000`).
 - `ADMIN_EMAIL` / `ADMIN_PASSWORD` — Used by `npm run db:seed` to create the admin user.
-- `RESEND_API_KEY` — Required for contact form email delivery. `resend` package is already installed; the integration stub is in `src/app/api/contact/route.ts`.
+- `RESEND_API_KEY` — Required for contact form email delivery.
+- `CONTACT_EMAIL` — Where contact form submissions are delivered.
+- `CONTACT_FROM_EMAIL` — Must be a verified sender domain in Resend.
 - `ANTHROPIC_API_KEY` — Required for AI agent LLM summarization.
+- `GITHUB_TOKEN` / `GITHUB_USERNAME` — Used by GitHub Summarizer and Skills Inference agents; token is optional but increases rate limits and enables GraphQL.
+- `NEXT_PUBLIC_BASE_URL` — Canonical site URL used in sitemap and JSON-LD schemas.
+- `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` — Cloudflare R2 storage for admin media uploads (optional).
 
 ---
 
@@ -224,8 +234,10 @@ npm run dev          # Start dev server (works without DB — mock mode)
 npm run build        # Production build
 npm run lint         # ESLint via Next.js
 npx tsc --noEmit     # Type-check without emitting (run before committing)
-npm test             # Vitest — 79 tests across 8 files (unit, integration, structural)
-npm run test:watch   # Vitest watch mode for TDD
+npm test                         # Vitest — 79 tests across 8 files (unit, integration, structural)
+npm run test:watch               # Vitest watch mode for TDD
+npm run test:coverage            # Vitest with V8 coverage report
+npx vitest run <pattern>         # Run a single test file, e.g. npx vitest run admin-routes
 npm run db:generate  # Re-generate Prisma client after schema changes
 npm run db:push      # Apply schema to DB — use this locally (migrate dev unsupported with Prisma dev proxy)
 npm run db:migrate   # Apply schema with migration history — use in production only
