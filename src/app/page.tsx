@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { OWNER } from "@/lib/mock-data";
 import Nav from "@/components/public/Nav";
 import HeroSection from "@/components/public/HeroSection";
