@@ -142,9 +142,16 @@ async function getData() {
 
 ---
 
-## Current State (post-Milestone 4.14)
+## Current State (post-Milestone 5)
 
-All public sections, admin CRUD (blog, projects, skills, experience, tools, media), nine AI agents with full usefulness overhaul (35 improvements), CV generation + editor (JD targeting, ATS gap, two-variant output), responsive admin shell, security audit, and automated test suite (79 Vitest tests) are complete. `npm test`, `tsc --noEmit`, `npm run lint`, and `npm run build` are all clean. Next up is Milestone 5 (VPS deployment).
+All public sections, admin CRUD, nine AI agents, CV generation, security audit, and 79 Vitest tests are complete and deployed. The app is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx, port 80). All 9 agents have run and are registered in the DB; 4 GitHub projects imported as drafts. `npm test`, `tsc --noEmit`, `npm run lint`, and `npm run build` are all clean.
+
+### Deployment: `192.168.0.104`
+- **Stack:** Docker Compose — `my-portfolio-app-1` (Next.js, port 3000 internal), `my-portfolio-db-1` (PostgreSQL 16, `127.0.0.1:5432`), `my-portfolio-nginx-1` (port 80, LAN HTTP)
+- **Config:** `nginx/portfolio-lan.conf` via `docker-compose.override.yml` (HTTP only, no TLS)
+- **Cron agents:** 9 jobs in `diboy`'s crontab at `/home/diboy/projects/my-portfolio`, logs → `~/logs/`
+- **GitHub secrets set:** `ANTHROPIC_API_KEY`, `GH_PAT_TOKEN`, `GH_USERNAME`, `AUTH_SECRET`, `SSH_HOST`, `SSH_USER`, `SSH_KEY`
+- **Auto-deploy:** wired (`deploy.yml` uses Twingate + SSH) — pending Twingate service account setup to activate
 
 ### Key architectural facts worth knowing
 - Admin route groups: `(auth)/` — login page only, no shell. `(panel)/` — all authenticated pages; `layout.tsx` calls `auth()` and redirects if no session.
@@ -154,18 +161,23 @@ All public sections, admin CRUD (blog, projects, skills, experience, tools, medi
 - CV PDF is written to `public/cv.pdf`; `cvSource` field on `User` tracks `"ai"` vs `"manual"`.
 - `Agent.config Json?` stores per-agent persistent state (seenUrls, keywords, repoSnapshot, etc.). Runners return `_updatedConfig` in `AgentRunResult`; the run API persists it after success.
 - Build without a real DB: `DATABASE_URL="prisma+postgres://ci" npm run build` — forces `isMock()` true so all pages use mock data. Used in CI.
+- `src/app/page.tsx` and `src/app/blog/page.tsx` declare `export const dynamic = "force-dynamic"` — required because both pages were being pre-rendered as static HTML at build time (with mock data), bypassing the real DB at runtime.
 - Test suite: `npm test` runs 79 Vitest tests across 8 files (unit, integration, structural scan). `npm run test:watch` for TDD.
-- CI/CD pipeline: `.github/workflows/ci.yml` runs lint → type-check → test → build on every push. `.github/workflows/deploy.yml` SSH-deploys to the VPS automatically when CI passes on `main` (`cd ~/portfolio && git pull && docker compose build app && docker compose up -d`). Requires `SSH_HOST`, `SSH_USER`, `SSH_KEY` in GitHub repo secrets.
+- CI/CD pipeline: `.github/workflows/ci.yml` runs lint → type-check → test → build on every push. `.github/workflows/deploy.yml` SSH-deploys via Twingate when CI passes on `main`. Requires `TWINGATE_SERVICE_KEY`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` in GitHub repo secrets.
 
-### Pending — owner actions before going live
-- [ ] Add `public/photo.jpg`
-- [ ] Fill in real personal info in `src/lib/mock-data.ts` (`OWNER` object)
-- [ ] Run Nikto scan: `sudo dnf install nikto && nikto -h http://localhost:3000`
-- [ ] Verify file upload MIME validation and LinkedIn CSV fuzzing (requires authenticated session)
+### Pending — owner actions
+- [ ] Add `public/photo.jpg` to repo, then `git push` → auto-deploy picks it up (or `docker compose build app && docker compose up -d app` manually)
+- [ ] Add real skills via `/admin/skills`
+- [ ] Add real experience via `/admin/experience`
+- [ ] Review + publish the 4 imported GitHub projects via `/admin/projects`
+- [ ] Run CV Generator via `/admin/cv` → "Run now"
+- [ ] Set up Twingate service account (`github-actions-deploy`) to activate auto-deploy
 
-### Upcoming — Milestone 5: Deployment
-- [ ] Deploy to VPS: Docker Compose, Nginx HTTPS, Let's Encrypt, PostgreSQL
-- [ ] Owner fills in real personal data (name, bio, photo, skills, experience, projects)
+### Upcoming — Milestone 6: Polish + Analytics
+- [ ] Lighthouse audit — fix all issues below 90
+- [ ] `next/font` for Inter and JetBrains Mono
+- [ ] Self-hosted Umami analytics (Docker, same server)
+- [ ] Accessibility audit (keyboard nav, WCAG AA contrast)
 
 See `docs/IMPLEMENTATION_PLAN.md` for the full phased breakdown.
 
@@ -257,12 +269,13 @@ npx tsx agents/platform-sync.ts              # Run agent manually (seeds DB row 
 > **Important:** All CLI runners import `{ prisma }` from `src/lib/prisma` (not `new PrismaClient()`).
 > The PrismaPg adapter is set up in the singleton — using `new PrismaClient()` directly fails.
 
-### Local DB connection
-`DATABASE_URL` must be a direct `postgres://` connection string — **not** `prisma+postgres://`.
-Use `127.0.0.1`, not `localhost` (postgres only listens on IPv4 on this machine):
+### DB connection (host-side, for migrations and agent runs)
+`DATABASE_URL` must be a direct `postgres://` string — **not** `prisma+postgres://`.
+The Docker container exposes PostgreSQL on `127.0.0.1:5432` (via `docker-compose.override.yml`):
 ```
-DATABASE_URL="postgres://postgres:postgres@127.0.0.1:51214/template1?sslmode=disable"
+DATABASE_URL="postgres://portfolio:POSTGRES_PASSWORD@127.0.0.1:5432/portfolio_db"
 ```
-Pass it inline to seed: `DATABASE_URL="postgres://..." npm run db:seed`
+Pass inline: `DATABASE_URL="postgres://..." npm run db:seed`
+All 9 agent scripts require `DATABASE_URL` inline or from `.env` (tsx does not auto-load `.env`).
 
 Do **not** modify `prisma/schema.prisma` without running `npm run db:push` and committing the change.

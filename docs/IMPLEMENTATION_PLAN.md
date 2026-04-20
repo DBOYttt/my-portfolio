@@ -544,7 +544,7 @@ docker compose ps               # all three services Up (healthy)
 
 ### Phase 5 — Cron Jobs for Agents
 
-Agents run from the **host server** (`~/portfolio`) using `npx tsx`, connecting to the Docker postgres via `127.0.0.1:5432`. The `agents/` directory is not included in the Docker standalone image — running from host avoids this limitation.
+Agents run from the **host server** (`/home/diboy/projects/my-portfolio`) using `npx tsx`, connecting to the Docker postgres via `127.0.0.1:5432`. The `agents/` directory is not included in the Docker standalone image — running from host avoids this limitation.
 
 ```bash
 # On the host machine (crontab -e for user diboy)
@@ -603,12 +603,16 @@ At this point the app is live but serving placeholder data. Owner must:
    git pull && docker compose build app && docker compose up -d app
    ```
 
-- ✅ Fill in `OWNER` in `src/lib/mock-data.ts` and push (done via `/setup-portfolio` + CV import)
-- ⬜ `git pull && docker compose build app && docker compose up -d app` on server (after photo added)
-- ⬜ Add skills + experience via admin panel
-- ⬜ Place `public/photo.jpg` in repo and rebuild image
-- ⬜ Review + publish projects in admin panel
-- ⬜ Run CV Generator from admin panel
+- ✅ Fill in `OWNER` in `src/lib/mock-data.ts` and push (done via `/setup-portfolio`)
+- ✅ All 9 agents ran via CLI — DB rows seeded, 9 initial reports created
+- ✅ GitHub Project Importer ran — 4 GitHub repos imported as draft projects
+- ✅ GitHub Summarizer ran — first audit report saved
+- ✅ `force-dynamic` added to `src/app/page.tsx` + `src/app/blog/page.tsx` — pages were pre-rendering as static HTML at build time, bypassing the real DB at runtime; rebuild + redeploy applied
+- ⬜ Add real skills via `/admin/skills`
+- ⬜ Add real experience via `/admin/experience`
+- ⬜ Place `public/photo.jpg` in repo → `git push` (auto-deploy or manual `docker compose build app && docker compose up -d app`)
+- ⬜ Review + publish the 4 imported draft projects via `/admin/projects`
+- ⬜ Run CV Generator via `/admin/cv` → "Run now"
 
 ---
 
@@ -647,12 +651,13 @@ curl -I http://192.168.0.104/api/contact             # 405 (not POST)
 ```
 
 - ✅ Curl smoke tests pass (200, 307→login, 405, robots.txt, sitemap.xml)
-- ⬜ Browser walkthrough: all 9 public sections load with real data
-- ✅ Admin login works (AUTH_URL=http://192.168.0.104)
-- ✅ GitHub Summarizer ran successfully, report saved
-- ⬜ CV PDF generated and downloadable (run via admin panel)
-- ⬜ Contact form sends email (requires RESEND_API_KEY)
-- ✅ Nikto scan — no critical findings (all XSS findings are false positives for PHP software)
+- ✅ Admin login works (`AUTH_URL=http://192.168.0.104`, admin: `andrzejcn041@gmail.com`)
+- ✅ All 9 agents visible in `/admin/agents` with initial reports
+- ✅ GitHub Summarizer ran — first audit report saved
+- ✅ Nikto scan — no critical findings
+- ⬜ Browser walkthrough: public sections load with real data (pending after skills/experience added)
+- ⬜ CV PDF generated and downloadable (run via `/admin/cv`)
+- ⬜ Contact form sends email (requires `RESEND_API_KEY` in `.env`)
 
 ---
 
