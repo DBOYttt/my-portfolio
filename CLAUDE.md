@@ -185,6 +185,12 @@ All public sections, admin CRUD, nine AI agents, CV generation, security audit, 
 - [ ] Accessibility audit (keyboard nav, WCAG AA contrast)
 - [ ] Self-hosted Umami analytics (Docker, same server)
 
+### Upcoming — Milestone 6.5: Admin Panel Audit & Bug Fixes
+- [ ] Walk through every admin section as a real user (dashboard, blog, projects, skills, experience, agents, CV, media, tools)
+- [ ] Document all bugs with P1/P2/P3 severity
+- [ ] Fix all P1 and P2 bugs, deploy to 192.168.0.104
+- [ ] Mobile layout check at ≤ 768px
+
 ### Upcoming — Milestone 7: MCP Server
 - [ ] `mcp-server/` package with `@modelcontextprotocol/sdk`
 - [ ] stdio transport (Claude Desktop / Claude Code)
