@@ -91,6 +91,8 @@ model Project {
   type        ProjectType @default(SOFTWARE)
   githubUrl   String?
   liveUrl     String?
+  year        String?
+  sketchLabel String?
   featured    Boolean     @default(false)
   order       Int         @default(0)
   publishedAt DateTime?

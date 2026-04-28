@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getBlogPosts } from "@/lib/data";
+import { SectionHead } from "@/components/ui/hand-drawn";
 
 export default async function BlogPreviewSection() {
   const allPosts = await getBlogPosts();
@@ -7,43 +8,101 @@ export default async function BlogPreviewSection() {
   if (posts.length === 0) return null;
 
   return (
-    <section id="blog" className="py-24 border-t border-[#2a2d3a]">
-      <div className="section-container">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <h2 className="section-heading">Blog</h2>
-            <div className="accent-line mb-0" />
-          </div>
-          <Link
-            href="/blog"
-            className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors font-mono"
-          >
-            All posts →
-          </Link>
-        </div>
-
-        <div className="space-y-4">
+    <section id="writing" className="logbook-section">
+      <SectionHead
+        num="06"
+        kicker="Writing"
+        meta="Long-form notes from the workbench"
+        title={
+          <>
+            Recent <em>dispatches.</em>
+          </>
+        }
+      />
+      <div className="logbook-row">
+        <aside className="margin" />
+        <div>
           {posts.map((post) => (
-            <Link key={post.slug} href={`/blog/${post.slug}`}>
-              <article className="card flex flex-col sm:flex-row sm:items-center gap-4 group">
-                <div className="flex-1">
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {post.tags.map((tag) => (
-                      <span key={tag} className="tag">{tag}</span>
-                    ))}
-                  </div>
-                  <h3 className="font-semibold text-slate-100 group-hover:text-cyan-400 transition-colors mb-1">
+            <Link
+              key={post.slug}
+              href={`/blog/${post.slug}`}
+              className="entry"
+              style={{ display: "block", textDecoration: "none", color: "inherit" }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "120px 1fr auto",
+                  gap: 24,
+                  alignItems: "baseline",
+                }}
+                className="post-row"
+              >
+                <span
+                  className="mono"
+                  style={{
+                    fontSize: 12,
+                    color: "var(--ink-faint)",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {post.date}
+                </span>
+                <div>
+                  <h3
+                    className="serif"
+                    style={{ fontSize: 24, fontWeight: 500, lineHeight: 1.2 }}
+                  >
                     {post.title}
                   </h3>
-                  <p className="text-slate-400 text-sm">{post.excerpt}</p>
+                  <p
+                    style={{
+                      marginTop: 8,
+                      fontSize: 16,
+                      lineHeight: 1.5,
+                      maxWidth: "62ch",
+                      color: "var(--ink-soft)",
+                    }}
+                  >
+                    {post.excerpt}
+                  </p>
+                  <div className="entry-tags" style={{ marginTop: 10 }}>
+                    {post.tags.map((t) => (
+                      <span key={t}>{t}</span>
+                    ))}
+                  </div>
                 </div>
-                <div className="shrink-0 text-right">
-                  <p className="font-mono text-xs text-slate-500">{post.date}</p>
-                  <p className="font-mono text-xs text-slate-600">{post.readTime} read</p>
-                </div>
-              </article>
+                <span
+                  className="mono"
+                  style={{
+                    fontSize: 11,
+                    color: "var(--ink-faint)",
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {post.readTime} →
+                </span>
+              </div>
             </Link>
           ))}
+
+          <div style={{ marginTop: 24, paddingTop: 16 }}>
+            <Link
+              href="/blog"
+              className="btn-link"
+              style={{
+                fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+                fontSize: 12,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              All entries <span className="arr">→</span>
+            </Link>
+          </div>
+
+          <style>{`@media (max-width:760px){ .post-row { grid-template-columns: 1fr !important; } }`}</style>
         </div>
       </div>
     </section>

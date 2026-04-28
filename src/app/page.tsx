@@ -5,9 +5,9 @@ import Nav from "@/components/public/Nav";
 import HeroSection from "@/components/public/HeroSection";
 import AboutSection from "@/components/public/AboutSection";
 import SkillsSection from "@/components/public/SkillsSection";
-import ExperienceSection from "@/components/public/ExperienceSection";
 import ProjectsSection from "@/components/public/ProjectsSection";
 import RoboticsSection from "@/components/public/RoboticsSection";
+import ExperienceSection from "@/components/public/ExperienceSection";
 import BlogPreviewSection from "@/components/public/BlogPreviewSection";
 import ContactSection from "@/components/public/ContactSection";
 import Footer from "@/components/public/Footer";
@@ -34,13 +34,13 @@ export default function HomePage() {
       />
       <Nav />
       {isMockMode && <MockModeBanner />}
-      <main>
+      <main className="page">
         <HeroSection />
         <AboutSection />
         <SkillsSection />
-        <ExperienceSection />
         <ProjectsSection />
         <RoboticsSection />
+        <ExperienceSection />
         <BlogPreviewSection />
         <ContactSection />
       </main>

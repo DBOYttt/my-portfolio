@@ -1,11 +1,26 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Newsreader, Inter_Tight, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import { OWNER } from "@/lib/mock-data";
 import "./globals.css";
 
-const inter = Inter({
+const newsreader = Newsreader({
   subsets: ["latin"],
-  variable: "--font-inter",
+  axes: ["opsz"],
+  variable: "--font-newsreader",
+  display: "swap",
+});
+
+const interTight = Inter_Tight({
+  subsets: ["latin"],
+  variable: "--font-inter-tight",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -13,7 +28,7 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_BASE_URL ?? "https://yourdomain.com"
   ),
   title: {
-    default: `${OWNER.name} — Software Engineer`,
+    default: `${OWNER.name} — Logbook`,
     template: `%s | ${OWNER.name}`,
   },
   description: OWNER.bio[0],
@@ -37,8 +52,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} font-sans`}>{children}</body>
+    <html lang="en" className={`${newsreader.variable} ${interTight.variable} ${jetbrainsMono.variable}`}>
+      <body>
+        <Script
+          id="logbook-theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('logbook-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})()`,
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

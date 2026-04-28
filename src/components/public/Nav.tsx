@@ -1,108 +1,79 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { OWNER } from "@/lib/mock-data";
 
-const navLinks = [
-  { href: "/#about", label: "About" },
-  { href: "/#skills", label: "Skills" },
-  { href: "/#experience", label: "Experience" },
-  { href: "/#projects", label: "Projects" },
-  { href: "/#robotics", label: "Robotics" },
-  { href: "/blog", label: "Blog" },
-  { href: "/#contact", label: "Contact" },
+const SECTIONS = [
+  { num: "01", id: "about",      label: "About" },
+  { num: "02", id: "skills",     label: "Stack" },
+  { num: "03", id: "projects",   label: "Projects" },
+  { num: "04", id: "robotics",   label: "Robotics" },
+  { num: "05", id: "experience", label: "Experience" },
+  { num: "06", id: "writing",    label: "Writing" },
+  { num: "07", id: "contact",    label: "Contact" },
 ];
 
 export default function Nav() {
-  const [scrolled, setScrolled] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const stored = localStorage.getItem("logbook-theme") as "light" | "dark" | null;
+    const attr = document.documentElement.getAttribute("data-theme") as "light" | "dark" | null;
+    setTheme(stored ?? attr ?? "light");
   }, []);
 
+  function toggle() {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("logbook-theme", next);
+  }
+
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled || menuOpen
-          ? "bg-[#0f1117]/95 backdrop-blur border-b border-[#2a2d3a]"
-          : "bg-transparent"
-      }`}
-    >
-      <div className="section-container">
-        <div className="flex items-center justify-between h-16">
-          <Link
-            href="/"
-            className="font-mono text-cyan-400 font-semibold text-sm tracking-wider hover:text-cyan-300 transition-colors"
-          >
-            &gt; {OWNER.name.toLowerCase().replace(" ", ".")}
-          </Link>
+    <nav className="logbook-nav">
+      {menuOpen && (
+        <div className="nav-mobile-drawer">
+          {SECTIONS.map((s) => (
+            <a key={s.id} href={`/#${s.id}`} onClick={() => setMenuOpen(false)}>
+              <span className="nav-num">{s.num}</span>
+              {s.label}
+            </a>
+          ))}
+        </div>
+      )}
+      <div className="logbook-nav-inner">
+        <a href="/#top" className="nav-brand">
+          <span style={{ fontStyle: "italic" }}>The Logbook</span>
+          <span className="stamp">A.C.N. · 2026</span>
+        </a>
 
-          {/* Desktop nav */}
-          <ul className="hidden md:flex items-center gap-6">
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="text-sm text-slate-400 hover:text-slate-100 transition-colors"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-            <li>
-              <a
-                href="/cv.pdf"
-                download
-                className="btn-primary text-sm py-2 px-4"
-              >
-                Download CV
-              </a>
-            </li>
-          </ul>
-
-          {/* Mobile menu button */}
-          <button
-            className="md:hidden text-slate-400 hover:text-slate-100 p-2"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {menuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
+        <div className="nav-links">
+          {SECTIONS.map((s) => (
+            <a key={s.id} href={`/#${s.id}`}>
+              <span className="nav-num">{s.num}</span>
+              {s.label}
+            </a>
+          ))}
         </div>
 
-        {/* Mobile menu */}
-        {menuOpen && (
-          <div className="md:hidden border-t border-[#2a2d3a] py-4 bg-[#0f1117]">
-            <ul className="flex flex-col gap-3">
-              {navLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="block text-slate-400 hover:text-slate-100 transition-colors py-1"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-              <li>
-                <a href="/cv.pdf" download className="btn-primary text-sm inline-flex mt-2">
-                  Download CV
-                </a>
-              </li>
-            </ul>
-          </div>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            className="nav-menu-btn"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? "✕" : "≡"}
+          </button>
+          <button
+            className="theme-toggle"
+            onClick={toggle}
+            aria-label="Toggle theme"
+            suppressHydrationWarning
+          >
+            {theme === "dark" ? "☾  dark" : "☀  light"}
+          </button>
+        </div>
       </div>
     </nav>
   );
