@@ -64,12 +64,7 @@ export default function HeroSection() {
                 textTransform: "uppercase",
               }}
             >
-              Entry No. 001 ·{" "}
-              {new Date().toLocaleDateString("en-GB", {
-                year: "numeric",
-                month: "short",
-                day: "2-digit",
-              })}
+              Entry No. 001 · Vol. III · 2026 ed.
             </span>
           </div>
 

@@ -14,6 +14,7 @@ const SECTIONS = [
 
 export default function Nav() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("logbook-theme") as "light" | "dark" | null;
@@ -30,6 +31,16 @@ export default function Nav() {
 
   return (
     <nav className="logbook-nav">
+      {menuOpen && (
+        <div className="nav-mobile-drawer">
+          {SECTIONS.map((s) => (
+            <a key={s.id} href={`/#${s.id}`} onClick={() => setMenuOpen(false)}>
+              <span className="nav-num">{s.num}</span>
+              {s.label}
+            </a>
+          ))}
+        </div>
+      )}
       <div className="logbook-nav-inner">
         <a href="/#top" className="nav-brand">
           <span style={{ fontStyle: "italic" }}>The Logbook</span>
@@ -45,14 +56,24 @@ export default function Nav() {
           ))}
         </div>
 
-        <button
-          className="theme-toggle"
-          onClick={toggle}
-          aria-label="Toggle theme"
-          suppressHydrationWarning
-        >
-          {theme === "dark" ? "☾  dark" : "☀  light"}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            className="nav-menu-btn"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? "✕" : "≡"}
+          </button>
+          <button
+            className="theme-toggle"
+            onClick={toggle}
+            aria-label="Toggle theme"
+            suppressHydrationWarning
+          >
+            {theme === "dark" ? "☾  dark" : "☀  light"}
+          </button>
+        </div>
       </div>
     </nav>
   );

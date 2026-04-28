@@ -104,11 +104,11 @@ export default function ProjectFilter({ projects }: { projects: ProjectSummary[]
       <div className="logbook-row">
         <aside className="margin" />
         <div>
-          {filtered.map((p) => (
+          {filtered.map((p, i) => (
             <ProjectEntry
               key={p.slug}
               p={p}
-              num={String(projects.indexOf(p) + 1).padStart(2, "0")}
+              num={String(i + 1).padStart(2, "0")}
             />
           ))}
         </div>

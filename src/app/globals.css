@@ -227,6 +227,42 @@ section.logbook-section:first-of-type { padding-top: 32px; }
 .nav-links .nav-num { color: var(--ink-faint); margin-right: 4px; }
 @media (max-width: 760px) { .nav-links { display: none; } }
 
+/* Mobile menu button — hidden on desktop */
+.nav-menu-btn {
+  display: none;
+  background: none;
+  border: 1px solid var(--hairline);
+  color: var(--ink-soft);
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 10px;
+  cursor: pointer;
+  border-radius: 0;
+}
+@media (max-width: 760px) { .nav-menu-btn { display: block; } }
+
+/* Mobile drawer — full-width below the nav bar */
+.nav-mobile-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--paper);
+  border-bottom: 1px solid var(--hairline);
+  padding: 8px 0;
+}
+.nav-mobile-drawer a {
+  padding: 10px clamp(20px, 5vw, 48px);
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hairline);
+}
+.nav-mobile-drawer a:last-child { border-bottom: none; }
+.nav-mobile-drawer a:hover { color: var(--accent); background: var(--paper-2); }
+
 .theme-toggle {
   display: inline-flex;
   align-items: center;
@@ -294,6 +330,23 @@ section.logbook-section:first-of-type { padding-top: 32px; }
   color: var(--accent);
   pointer-events: none;
 }
+
+/* ── Contact form field input ───────────────────────────────────────────────── */
+.logbook-field-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  padding: 8px 0;
+  font-family: var(--font-newsreader, Georgia, serif);
+  font-size: 18px;
+  color: var(--ink);
+  outline: none;
+  resize: vertical;
+  display: block;
+}
+.logbook-field-input::placeholder { color: var(--ink-faint); opacity: 1; }
+.logbook-field-input:focus { border-bottom-color: var(--accent); }
 
 /* ── Highlighter mark ───────────────────────────────────────────────────────── */
 .hl {
