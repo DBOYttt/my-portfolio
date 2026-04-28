@@ -661,7 +661,7 @@ curl -I http://192.168.0.104/api/contact             # 405 (not POST)
 
 ---
 
-### Future: Adding HTTPS (M5.5)
+### Future: Adding HTTPS (when domain added)
 
 When a domain is pointed at this server:
 1. Install Certbot: `sudo apt install certbot`
@@ -674,13 +674,70 @@ When a domain is pointed at this server:
 
 ---
 
+## Milestone 5.5 — Engineering Logbook Redesign ✅
+
+**Goal:** Complete visual overhaul of the public portfolio — from dark slate to bone-paper Engineering Logbook aesthetic.
+
+### Design System
+- ✅ CSS custom properties (`--paper`, `--paper-2`, `--ink`, `--ink-soft`, `--ink-faint`, `--hairline`, `--rule`, `--accent`, `--accent-soft`, `--highlight`) in `globals.css`
+- ✅ Light mode (`:root`) and dark mode (`[data-theme="dark"]`) using oklch colour values
+- ✅ Light/dark theme toggle in Nav, persisted in `localStorage` key `logbook-theme`
+- ✅ FOUC prevention via `next/script strategy="beforeInteractive"` in `layout.tsx`
+- ✅ `suppressHydrationWarning` on theme-toggle button and decorative SVG `<path>` elements
+
+### Typography (via `next/font/google`)
+- ✅ Newsreader — serif body, headings, italic emphasis (`--font-newsreader`)
+- ✅ Inter Tight — navigation, UI labels, buttons (`--font-inter-tight`)
+- ✅ JetBrains Mono — code, metadata labels, `.mono` class (`--font-mono`)
+
+### Hand-drawn SVG primitives
+- ✅ `src/components/ui/hand-drawn.tsx` — `HandRule`, `HandUnderline`, `HandArrow`, `SectionHead`, `SketchPlaceholder`, and supporting primitives
+- ✅ All primitives use `useMemo` for path computation; `suppressHydrationWarning` on `<path>` elements to handle PRNG SSR/hydration differences
+
+### Layout classes (globals.css)
+- ✅ `.page` — max-width 1060px container
+- ✅ `.logbook-section` — section with vertical padding
+- ✅ `.logbook-row` — two-column grid: margin column (120px) + body column
+- ✅ `.margin` — left margin column for marginalia
+- ✅ `.entry` / `.entry-head` / `.entry-body` / `.entry-tags` / `.entry-actions` — expandable logbook entry rows
+- ✅ `.pill` — small status badge
+- ✅ `.btn-link` — Newsreader italic link with arrow
+- ✅ `.serif` / `.mono` / `.hl` / `.num` / `.meta` / `.arr` / `.fn` / `.stack` / `.row` / `.sketch-frame` / `.nav` / `.nav-num` / `.theme-toggle` — utility classes
+- ✅ Old classes removed: `.section-container`, `.card`, `.tag`, `.btn-primary`, `.btn-secondary`, `.section-heading`, `.accent-line`
+
+### Public section components (all rewritten)
+- ✅ `Nav.tsx` — logbook nav with section numbers, theme toggle
+- ✅ `HeroSection.tsx`
+- ✅ `AboutSection.tsx`
+- ✅ `SkillsSection.tsx`
+- ✅ `ExperienceSection.tsx`
+- ✅ `ProjectsSection.tsx`
+- ✅ `RoboticsSection.tsx`
+- ✅ `BlogPreviewSection.tsx`
+- ✅ `ContactSection.tsx`
+- ✅ `Footer.tsx`
+- ✅ `src/components/public/ProjectFilter.tsx` — new client component for projects page filtering
+
+### Pages
+- ✅ `src/app/blog/page.tsx` — updated to logbook tokens
+- ✅ `src/app/projects/page.tsx` — updated to logbook tokens
+
+### DB schema additions
+- ✅ `Project.year String?` — display year e.g. "2024" used in logbook entry header
+- ✅ `Project.sketchLabel String?` — label for engineering sketch placeholder
+- ✅ Both fields pushed to production DB via host-side `db:push` after deploy
+
+### Production fix
+- ✅ Post-merge 500 error resolved — `Project.year` column was missing in production DB; fixed by running `db:push` via host-side connection
+
+---
+
 ## Milestone 6 — Polish + Analytics ⬜
 
 **Goal:** Public site scores 90+ Lighthouse. Ready for employer sharing.
 
 ### Performance
 - ⬜ Lighthouse audit — fix all issues below 90
-- ⬜ `next/font` for Inter and JetBrains Mono (eliminates Google Fonts request)
 - ⬜ Lazy load below-fold sections
 - ⬜ Loading skeletons for DB-fetched content
 
@@ -694,14 +751,61 @@ When a domain is pointed at this server:
 - ⬜ Self-hosted Umami (Docker, same VPS)
 - ⬜ Add Umami tracking script to layout (privacy-first, no cookies)
 
-### Dark/light mode
-- ⬜ Theme toggle in Nav
-- ⬜ CSS variables for both themes in globals.css
-- ⬜ Persist preference in localStorage
+### Already done in M5.5
+- ✅ `next/font` for Newsreader, Inter Tight, JetBrains Mono
+- ✅ Theme toggle in Nav
+- ✅ CSS variables for both themes in globals.css
+- ✅ Persist preference in localStorage
 
 ---
 
-## Milestone 7 — Growth Features ⏸ (Deferred)
+## Milestone 7 — MCP Server for AI Content Population ⬜
+
+**Goal:** Expose the entire portfolio as an MCP server so AI agents (Claude Desktop, Claude Code, n8n) can read and write content without going through the web admin panel.
+
+### MCP Server Package
+- ⬜ `mcp-server/` directory — standalone TypeScript package with `@modelcontextprotocol/sdk`
+- ⬜ stdio transport (for Claude Desktop / Claude Code)
+- ⬜ HTTP/SSE transport (for n8n / remote agents)
+- ⬜ Auth: `MCP_SECRET` env var — bearer token on HTTP mode; stdio requires local access
+- ⬜ Reuses `{ prisma }` singleton — no separate DB connection
+
+### Resources (read-only)
+- ⬜ `portfolio://owner` — owner bio, tagline, location, status
+- ⬜ `portfolio://posts` — all published posts (title, slug, excerpt, tags, date)
+- ⬜ `portfolio://posts/{slug}` — full post with Markdown content
+- ⬜ `portfolio://projects` — all published projects (title, slug, summary, techTags, type)
+- ⬜ `portfolio://projects/{slug}` — full project with case study content
+- ⬜ `portfolio://skills` — skills grouped by category
+- ⬜ `portfolio://experience` — experience entries in chronological order
+- ⬜ `portfolio://agent-reports` — latest report per agent (title + summary)
+- ⬜ `portfolio://cv` — current CV JSON (structured: summary, skills, experience, projects)
+
+### Tools (write operations)
+- ⬜ `create_post` — title, content (Markdown), excerpt, tags, status (DRAFT/PUBLISHED)
+- ⬜ `update_post` — by slug; any subset of fields
+- ⬜ `delete_post` — by slug; marks as DRAFT first (soft delete)
+- ⬜ `create_project` — title, summary, content, techTags, type, githubUrl, liveUrl
+- ⬜ `update_project` — by slug; any subset of fields
+- ⬜ `add_skill` — name, category, level
+- ⬜ `remove_skill` — by name + category
+- ⬜ `add_experience` — company, role, description, startDate, endDate, type
+- ⬜ `update_owner_info` — name, bio, tagline, location (writes to User table)
+- ⬜ `run_agent` — by AgentType; uses existing AGENT_RUNNERS; returns report title when done
+- ⬜ `generate_cv` — triggers CV Generator; returns path to rendered PDF
+
+### Admin Panel Integration
+- ⬜ `/admin/mcp` status page — connection mode (stdio/HTTP), last tool call timestamp, recent tool call log (last 20 entries from AuditLog)
+- ⬜ MCP entry in admin sidebar
+- ⬜ Each MCP tool call writes to `AuditLog` with `action: "mcp.tool_call"` + tool name + entity metadata
+
+### n8n Integration Guide
+- ⬜ `docs/MCP_SETUP.md` — setup instructions for Claude Desktop, Claude Code, and n8n HTTP mode
+- ⬜ Example n8n workflow: "When GitHub push → run GitHub Summarizer → read report → update project description"
+
+---
+
+## Milestone 8 — Growth Features ⏸ (Deferred)
 
 Defer until site is live and generating traffic.
 

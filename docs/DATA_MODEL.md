@@ -86,6 +86,8 @@ Portfolio projects and case studies.
 | featured | Boolean | Show on homepage (max 3) |
 | order | Int | Manual sort order |
 | publishedAt | DateTime? | Null = hidden from public |
+| year | String? | Display year e.g. "2024" — used in logbook entry header |
+| sketchLabel | String? | Label for the engineering sketch placeholder e.g. "FIG. 01 — chassis + sensor mast" |
 
 ### Skill
 Individual skills displayed in the Skills section.

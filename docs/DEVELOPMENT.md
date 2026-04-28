@@ -134,7 +134,9 @@ R2_*                  Cloudflare R2 credentials (for media uploads in Phase 2+)
 ### Component rules
 - Server components by default — add `"use client"` only when you need browser APIs or event handlers
 - Keep components focused: one section = one component
-- No inline styles — use Tailwind classes or globals.css
+- Public components (`src/components/public/`) use inline styles — the logbook design uses inline style objects for fine-grained typography and spacing control
+- Admin components (`src/components/admin/`) use Tailwind utility classes with explicit hex values
+- Shared UI primitives (`src/components/ui/`) follow the pattern of their consumer
 
 ### Adding a new public section
 1. Create `src/components/public/YourSection.tsx`
@@ -169,34 +171,45 @@ src/app/api/
 
 ## Design System
 
-All design tokens are in `tailwind.config.ts` and `src/app/globals.css`.
+All design tokens are CSS custom properties in `src/app/globals.css`. The public portfolio uses an Engineering Logbook aesthetic; the admin panel uses Tailwind explicit hex values and is unaffected by theme changes.
 
-### Colours
+### Colours (logbook palette — CSS custom properties)
+Light/dark via `[data-theme="dark"]` on `<html>`. Key tokens:
 ```
-Background page:    #0f1117  (bg-[#0f1117])
-Background card:    #1a1d27  (bg-[#1a1d27])
-Border:             #2a2d3a  (border-[#2a2d3a])
-Text primary:       slate-100
-Text body:          slate-400
-Text muted:         slate-500, slate-600
-Accent:             cyan-500 / #06b6d4
+--paper        page background
+--paper-2      elevated surfaces
+--ink          primary text
+--ink-soft     body text
+--ink-faint    muted / labels
+--accent       rust-orange oklch(58% 0.13 45) — use sparingly
+--hairline     light borders
+--highlight    text marker yellow-tint
+```
+
+Admin panel colours (Tailwind explicit hex, not CSS vars):
+```
+Background:   #0f1117 / #1a1d27 / #2a2d3a
+Text:         slate-100 / slate-400 / slate-500
+Accent:       cyan-500 / #06b6d4
 ```
 
 ### Reusable CSS classes (globals.css)
-```css
-.section-container   /* max-w-6xl centered with padding */
-.section-heading     /* h2 typography */
-.accent-line         /* cyan decorative underline */
-.card                /* elevated card surface */
-.tag                 /* small tech/category label */
-.btn-primary         /* cyan CTA button */
-.btn-secondary       /* ghost/outline button */
+```
+.page                /* max-width container */
+.logbook-section     /* section vertical rhythm */
+.logbook-row         /* two-col margin+body grid */
+.margin              /* left margin column */
+.entry               /* expandable logbook row */
+.btn-link            /* Newsreader italic link button */
+.pill                /* status badge */
+.serif .mono         /* font utility classes */
+.sketch-frame        /* hand-drawn placeholder border */
 ```
 
 ### Typography
-- Headings: Inter bold
-- Body: Inter regular
-- Code/labels/mono details: JetBrains Mono (loaded via next/font in Phase 2)
+- Headings/body: Newsreader (Google Font, loaded via `next/font`)
+- UI/navigation: Inter Tight (Google Font, loaded via `next/font`)
+- Code/labels/mono: JetBrains Mono (Google Font, loaded via `next/font`)
 
 ---
 
@@ -234,9 +247,14 @@ TypeScript strict mode is on. Fix all type errors before committing — do not s
 
 ## Testing Strategy
 
-No automated tests exist yet (appropriate for MVP phase). When adding tests:
-- Unit tests: `vitest` (fast, TypeScript-native)
-- Integration tests: real database, not mocks (lessons learned: mock/prod divergence causes silent failures)
-- E2E tests: `playwright` for critical user flows (employer visits homepage, admin publishes post)
+### Running tests
+```bash
+npm test                          # Vitest — 79 tests across 8 files
+npm run test:watch                # TDD watch mode
+npm run test:coverage             # V8 coverage report
+npx vitest run <pattern>          # Run a single test file
+```
 
-Add tests before Milestone 4 (AI agents), where correctness is harder to verify visually.
+Test files: `src/lib/__tests__/` — data fetchers, rate-limit, CV generator helpers, skills-inference helpers, admin-auth integration, admin-routes guard scan, agents-run endpoint, agent helper types.
+
+Integration tests use the real database (not mocks). Lesson learned: mock/prod divergence caused silent failures in a previous project.

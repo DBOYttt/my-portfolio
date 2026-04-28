@@ -48,6 +48,8 @@ Both are served by a single Next.js 14 App Router application. There is no separ
 │                   /api/admin/*        → auth-required   │
 │                   /api/auth/*         → Auth.js handlers │
 │                                                         │
+│  MCP Server       mcp-server/         → stdio + HTTP/SSE, auth-gated  │
+│                                                         │
 │  Middleware       src/middleware.ts   → session check   │
 └───────────────────────────┬─────────────────────────────┘
                             │
@@ -94,6 +96,15 @@ cron → npx tsx agents/github-summarizer.ts
          → Anthropic API (summarize)
          → prisma.agentReport.create()
          → Admin panel reads reports on next visit
+```
+
+### MCP tool call (Claude Desktop / n8n)
+```
+MCP client → mcp-server (stdio or HTTP)
+              → bearer token check (HTTP) or local access (stdio)
+              → prisma write/read
+              → AuditLog entry written
+              → response returned to client
 ```
 
 ---
@@ -193,3 +204,45 @@ Auth.js v5 does not support `strategy: "database"` with the Credentials provider
 
 **Middleware is Edge-only (cookie check, not full session validation):**
 `src/middleware.ts` runs in the Edge runtime and cannot import Prisma or bcryptjs (Node.js-only). It checks for session cookie presence as a fast guard. Real session validity is enforced server-side in the Node.js runtime by `auth()` inside `(panel)/layout.tsx` and `requireAdminSession()` in API routes.
+
+---
+
+## Design System
+
+The public portfolio uses an Engineering Logbook aesthetic.
+
+### Colour tokens (CSS custom properties in globals.css)
+
+```
+Light mode (:root)              Dark mode ([data-theme="dark"])
+--paper:     oklch(97% ...)     --paper:     oklch(14% ...)    # base background
+--paper-2:   oklch(94.5% ...)                                  # elevated surfaces
+--ink:       oklch(20% ...)     --ink:       oklch(92% ...)    # primary text
+--ink-soft:  oklch(38% ...)                                    # body text
+--ink-faint: oklch(58% ...)                                    # muted/labels
+--hairline:  oklch(82% ...)                                    # light borders
+--rule:      oklch(70% ...)                                    # strong rule lines
+--accent:    oklch(58% 0.13 45)                                # rust-orange, both modes
+--accent-soft: oklch(58% 0.13 45 / 0.18)                      # tint
+--highlight: oklch(90% 0.10 95 / 0.55)                        # text highlight
+```
+
+Theme persisted in `localStorage` under key `logbook-theme`. Initialized before first render via `next/script strategy="beforeInteractive"` to prevent FOUC.
+
+### Typography
+- **Serif (Newsreader):** headings, body prose, italic em. Loaded via `next/font/google`.
+- **UI (Inter Tight):** navigation, labels, buttons. Loaded via `next/font/google`.
+- **Mono (JetBrains Mono):** code, metadata labels, `.mono` class. Loaded via `next/font/google`.
+
+### Key layout classes (globals.css)
+- `.page` — max-width 1060px container
+- `.logbook-section` — section with vertical padding
+- `.logbook-row` — two-column grid: margin column (120px) + body column
+- `.margin` — left margin column for marginalia (section number, metadata)
+- `.entry` / `.entry-head` / `.entry-body` — expandable logbook entry rows
+- `.btn-link` — Newsreader italic link with arrow
+- `.pill` — small status badge
+- `.serif` / `.mono` — font utility classes
+- `.sketch-frame` — hand-drawn border placeholder
+
+Admin panel uses Tailwind explicit hex values (`bg-[#0f1117]`, `border-[#2a2d3a]`) — not CSS custom properties — so theme changes do not affect it.

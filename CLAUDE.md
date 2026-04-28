@@ -144,9 +144,9 @@ async function getData() {
 
 ---
 
-## Current State (post-Milestone 5)
+## Current State (post-Milestone 5.5)
 
-All public sections, admin CRUD, nine AI agents, CV generation, security audit, and 79 Vitest tests are complete and deployed. The app is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx, port 80). All 9 agents have run and are registered in the DB; 4 GitHub projects imported as drafts. `npm test`, `tsc --noEmit`, `npm run lint`, and `npm run build` are all clean.
+All public sections, admin CRUD, nine AI agents, CV generation, security audit, and 79 Vitest tests are complete and deployed. The Engineering Logbook redesign (M5.5) is live — new bone-paper aesthetic, light/dark theme toggle, Newsreader + Inter Tight + JetBrains Mono fonts, hand-drawn SVG primitives. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx, port 80).
 
 ### Deployment: `192.168.0.104`
 - **Stack:** Docker Compose — `my-portfolio-app-1` (Next.js, port 3000 internal), `my-portfolio-db-1` (PostgreSQL 16, `127.0.0.1:5432`), `my-portfolio-nginx-1` (port 80, LAN HTTP)
@@ -166,6 +166,8 @@ All public sections, admin CRUD, nine AI agents, CV generation, security audit, 
 - `src/app/page.tsx` and `src/app/blog/page.tsx` declare `export const dynamic = "force-dynamic"` — required because both pages were being pre-rendered as static HTML at build time (with mock data), bypassing the real DB at runtime.
 - Test suite: `npm test` runs 79 Vitest tests across 8 files (unit, integration, structural scan). `npm run test:watch` for TDD.
 - CI/CD pipeline: `.github/workflows/ci.yml` runs lint → type-check → test → build on every push. `.github/workflows/deploy.yml` SSH-deploys via Twingate when CI passes on `main`. Requires `TWINGATE_SERVICE_KEY`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` in GitHub repo secrets.
+- Public portfolio CSS: logbook CSS custom properties (`--paper`, `--ink`, `--accent`, etc.) in `src/app/globals.css`. Admin uses Tailwind explicit hex values — `:root` changes don't affect admin. Theme toggle writes `data-theme` attribute on `<html>` + `localStorage['logbook-theme']`.
+- `src/components/ui/hand-drawn.tsx` — SVG primitives (HandRule, HandUnderline, HandArrow, SectionHead, SketchPlaceholder). All use `useMemo` for path computation and `suppressHydrationWarning` on `<path>` elements to handle PRNG SSR/hydration differences.
 
 ### Pending — owner actions
 - [ ] Add `public/photo.jpg` to repo, then `git push` → auto-deploy picks it up (or `docker compose build app && docker compose up -d app` manually)
@@ -174,12 +176,22 @@ All public sections, admin CRUD, nine AI agents, CV generation, security audit, 
 - [ ] Review + publish the 4 imported GitHub projects via `/admin/projects`
 - [ ] Run CV Generator via `/admin/cv` → "Run now"
 - [ ] Set up Twingate service account (`github-actions-deploy`) to activate auto-deploy
+- [ ] Add `MCP_SECRET` to `.env` before running MCP server (Milestone 7)
 
 ### Upcoming — Milestone 6: Polish + Analytics
 - [ ] Lighthouse audit — fix all issues below 90
-- [ ] `next/font` for Inter and JetBrains Mono
-- [ ] Self-hosted Umami analytics (Docker, same server)
+- [ ] Lazy load below-fold sections
+- [ ] Loading skeletons for DB-fetched content
 - [ ] Accessibility audit (keyboard nav, WCAG AA contrast)
+- [ ] Self-hosted Umami analytics (Docker, same server)
+
+### Upcoming — Milestone 7: MCP Server
+- [ ] `mcp-server/` package with `@modelcontextprotocol/sdk`
+- [ ] stdio transport (Claude Desktop / Claude Code)
+- [ ] HTTP/SSE transport (n8n / external agents)
+- [ ] Full Resources + Tools surface (see `docs/IMPLEMENTATION_PLAN.md` M7)
+- [ ] `/admin/mcp` status page + sidebar entry
+- [ ] `docs/MCP_SETUP.md` with Claude Desktop + n8n setup guide
 
 See `docs/IMPLEMENTATION_PLAN.md` for the full phased breakdown.
 
@@ -221,20 +233,41 @@ Key variables:
 
 ## Design System Quick Reference
 
-```
-Background:   #0f1117 (page), #1a1d27 (cards/elevated), #2a2d3a (borders)
-Text:         slate-100 (primary), slate-400 (body), slate-500/600 (muted)
-Accent:       cyan-500 (#06b6d4) — use sparingly, only for emphasis
-Font:         Inter (UI), JetBrains Mono (code, labels)
+**Public portfolio** — Engineering Logbook aesthetic (bone-paper, serif + mono):
 
-CSS classes (defined in globals.css):
-  .section-container  → max-w-6xl mx-auto with horizontal padding
-  .section-heading    → h2 style
-  .accent-line        → cyan underline decorative element
-  .card               → elevated surface with hover border
-  .tag                → small label pill (cyan tint)
-  .btn-primary        → cyan filled button
-  .btn-secondary      → ghost/outline button
+```
+CSS custom properties (globals.css):
+  --paper / --paper-2   background / elevated surfaces
+  --ink / --ink-soft / --ink-faint   text hierarchy
+  --accent              rust-orange oklch(58% 0.13 45) — sparingly
+  --hairline / --rule   borders and rules
+  --highlight           text marker
+
+Theme: light by default; [data-theme="dark"] on <html> for dark mode.
+Toggled via Nav button, persisted in localStorage key `logbook-theme`.
+FOUC prevention: next/script strategy="beforeInteractive" in layout.tsx.
+
+Fonts (all via next/font/google):
+  Newsreader      → --font-newsreader  (serif body, headings, italic em)
+  Inter Tight     → --font-inter-tight (nav, UI, labels)
+  JetBrains Mono  → --font-mono        (code, .mono labels)
+
+Key layout classes (globals.css — public only):
+  .page              max-width container
+  .logbook-section   vertical-rhythm section
+  .logbook-row       two-col: margin (120px) + body
+  .margin            left margin column
+  .entry             expandable logbook row
+  .btn-link          Newsreader italic link
+  .pill              status badge
+  .serif / .mono     font utilities
+```
+
+Admin panel uses Tailwind explicit hex values — NOT CSS vars — so redesign doesn't affect it:
+```
+Background:  #0f1117 / #1a1d27 / #2a2d3a
+Text:        slate-100 / slate-400 / slate-500
+Accent:      cyan-500 / #06b6d4
 ```
 
 ---

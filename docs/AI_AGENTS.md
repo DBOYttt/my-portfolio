@@ -9,7 +9,7 @@ Agents are standalone TypeScript scripts in the `agents/` directory. They run as
 3. Writes an `AgentReport` row to the database
 4. Never modifies public content directly
 
-Agents are **research assistants**, not autonomous actors. They surface information; the owner decides what to do with it.
+Agents are **research assistants**, not autonomous actors. They surface information; the owner decides what to do with it. In Milestone 7, an MCP server will expose the full content API so AI agents can also *write* content — creating posts, updating projects, and populating the portfolio programmatically via the Model Context Protocol.
 
 ---
 
@@ -269,3 +269,21 @@ Reports are fetched from the `AgentReport` table and displayed in:
 
 Unread badge: `AgentReport.readAt === null`
 Mark as read: `PATCH /api/admin/agents/reports/[id]/read`
+
+---
+
+## Planned: MCP Server (Milestone 7)
+
+The existing cron-based agents write `AgentReport` rows to the DB. They cannot modify content directly.
+
+Milestone 7 adds an MCP (Model Context Protocol) server that exposes the full portfolio as a read/write API for AI clients (Claude Desktop, Claude Code, n8n, custom agents):
+
+- **Resources:** read portfolio content (posts, projects, skills, experience, owner bio, CV, agent reports)
+- **Tools:** create/update posts + projects, manage skills and experience, trigger agents, generate CV
+- **Auth:** bearer token (HTTP mode) or local-access-only (stdio mode)
+- **Writes:** every tool call goes through the same Prisma models as the admin panel; all writes logged to `AuditLog`
+
+See `docs/MCP_SETUP.md` (created in M7) for setup instructions for Claude Desktop, Claude Code, and n8n.
+
+### Why MCP over direct DB access?
+MCP gives AI clients a structured, typed interface with field validation and auth. Direct DB access would require sharing production credentials with every agent. MCP tools can also enforce business logic (e.g. slug uniqueness, status transitions) that raw SQL cannot.
