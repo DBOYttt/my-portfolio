@@ -36,6 +36,8 @@ export async function getProjects(): Promise<ProjectSummary[]> {
       type: p.type,
       githubUrl: p.githubUrl,
       liveUrl: p.liveUrl,
+      year: p.year,
+      sketchLabel: p.sketchLabel,
     }));
   }
 

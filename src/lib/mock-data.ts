@@ -7,6 +7,7 @@
 export const OWNER = {
   name: "Andrzej Czajkowski-Nazim",
   tagline: "Software engineer. Robotics enthusiast. Always building.",
+  status: "Open to opportunities — Spring 2026",
   bio: [
     "I'm a software engineer with a solid foundation in designing, programming, and testing applications. I enjoy working at the intersection of software and hardware — from database-backed web apps to autonomous robots competing on an international stage.",
     "My background spans Python, C++ and C#, with hands-on experience in .NET, Next.js, PostgreSQL, and Linux (Ubuntu, Debian, CentOS). I automate workflows with n8n and AI agents, and have built full web applications from design to deployment.",
@@ -80,32 +81,50 @@ export const PROJECTS = [
   {
     slug: "autonomous-nav-robot",
     title: "Autonomous Navigation Robot",
+    year: "2024",
     summary:
       "ROS2-based differential drive robot with custom SLAM implementation. Reduced localization error by 40% vs. baseline using particle filter tuning and a LiDAR preprocessing stage.",
     techTags: ["ROS2", "Python", "C++", "SLAM", "LiDAR", "OpenCV"],
     type: "ROBOTICS" as const,
     githubUrl: "https://github.com/DBOYttt/autonomous-nav-robot",
     liveUrl: null,
+    sketchLabel: "FIG. 01 — chassis + sensor mast",
   },
   {
     slug: "automation-pipeline",
     title: "Event-Driven Automation Pipeline",
+    year: "2024",
     summary:
       "Async Python pipeline handling 50k+ events/day with sub-100ms p95 latency. Built with FastAPI, PostgreSQL, and n8n for workflow orchestration.",
     techTags: ["Python", "FastAPI", "PostgreSQL", "Docker", "n8n", "Redis"],
     type: "SOFTWARE" as const,
     githubUrl: "https://github.com/DBOYttt/automation-pipeline",
     liveUrl: null,
+    sketchLabel: "FIG. 02 — service topology",
   },
   {
     slug: "embedded-sensor-system",
     title: "Multi-Sensor Fusion Firmware",
+    year: "2023",
     summary:
       "Real-time sensor fusion on STM32F4 aggregating IMU, GPS, and ultrasonic data at 200Hz. Custom Kalman filter implementation in bare-metal C.",
     techTags: ["C", "STM32", "FreeRTOS", "Kalman Filter", "SPI", "I2C"],
     type: "HARDWARE" as const,
     githubUrl: "https://github.com/DBOYttt/sensor-fusion",
     liveUrl: null,
+    sketchLabel: "FIG. 03 — pinout & wiring",
+  },
+  {
+    slug: "personal-platform",
+    title: "Personal Portfolio Platform",
+    year: "2025",
+    summary:
+      "Two-layer Next.js platform — public portfolio and private admin with content editor, agent orchestration, and a CV generator that drafts a tailored PDF from structured data.",
+    techTags: ["Next.js", "TypeScript", "Prisma", "PostgreSQL", "Claude API"],
+    type: "SOFTWARE" as const,
+    githubUrl: "https://github.com/DBOYttt/my-portfolio",
+    liveUrl: null,
+    sketchLabel: "FIG. 04 — admin / public split",
   },
 ];
 

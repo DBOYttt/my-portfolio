@@ -109,6 +109,8 @@ my-portfolio/
 ```
 
 > **Agent registry:** `src/lib/agents/index.ts` exports `AGENT_RUNNERS` — a map from `AgentType` enum value to runner function. Every new agent runner must be registered here for the admin "Run now" button to work. `src/lib/agents/types.ts` defines the `AgentRunResult` interface all runners must return.
+>
+> **Note:** `src/lib/agents/twitter-profile.ts` is a utility types/helper file only — it exports TypeScript interfaces, not a runner. It is not registered in `AGENT_RUNNERS` and has no CLI runner in `agents/`.
 
 ### Adding a new agent (all steps required)
 1. Add the new value to the `AgentType` enum in `prisma/schema.prisma` → `npm run db:push` → `npm run db:generate`

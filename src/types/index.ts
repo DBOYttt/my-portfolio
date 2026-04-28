@@ -6,6 +6,8 @@ export interface ProjectSummary {
   type: "ROBOTICS" | "SOFTWARE" | "HARDWARE" | "RESEARCH";
   githubUrl: string | null;
   liveUrl: string | null;
+  year?: string;
+  sketchLabel?: string;
 }
 
 export interface ProjectDetail extends ProjectSummary {
