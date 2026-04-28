@@ -175,7 +175,61 @@ export const BLOG_POSTS: {
     date: "2024-03-15",
     readTime: "12 min",
     tags: ["ROS2", "SLAM", "Robotics"],
-    content: "*Full post content is not available in preview mode.*",
+    content: `## The Problem
+
+Building a particle filter SLAM from scratch is one of those tasks that looks straightforward on paper but reveals layers of subtlety when you're debugging at 2am wondering why your robot thinks it drove through a wall.
+
+I started this project for a differential-drive robot I was building as part of my robotics thesis. The robot needed to localize itself in a known map and update that map incrementally as it explored. I wanted to understand the math deeply rather than plug in an existing library.
+
+## The Algorithm
+
+Particle filter SLAM represents the robot's belief as a set of weighted particles. Each particle is a hypothesis about the robot's pose $(x, y, \\theta)$ and a local map estimate.
+
+### Prediction Step
+
+At each timestep we propagate every particle through the motion model, adding Gaussian noise to simulate odometry uncertainty:
+
+\`\`\`cpp
+void predict(Particle& p, double v, double w, double dt) {
+    p.theta += w * dt;
+    p.x += v * std::cos(p.theta) * dt;
+    p.y += v * std::sin(p.theta) * dt;
+    p.x += gaussian(0, sigma_x);
+    p.y += gaussian(0, sigma_y);
+    p.theta += gaussian(0, sigma_theta);
+}
+\`\`\`
+
+### Update Step
+
+When a laser scan arrives, each particle's weight is updated as the likelihood of the scan given the particle's pose and the current map. Particles with higher likelihood get more weight and survive resampling.
+
+### Resampling
+
+I used systematic resampling, which has O(N) complexity and lower variance than multinomial sampling. After resampling, all particle weights are reset to 1/N.
+
+## ROS2 Integration
+
+The hardest part was the TF2 transform tree. The \`nav_msgs/OccupancyGrid\` message needs the correct \`frame_id\`, and the transform from \`odom\` to \`map\` must be published atomically to avoid race conditions:
+
+\`\`\`python
+def publish_transform(self, pose: PoseStamped) -> None:
+    t = TransformStamped()
+    t.header.stamp = self.get_clock().now().to_msg()
+    t.header.frame_id = 'map'
+    t.child_frame_id = 'odom'
+    t.transform.translation.x = pose.pose.position.x
+    t.transform.translation.y = pose.pose.position.y
+    self.tf_broadcaster.sendTransform(t)
+\`\`\`
+
+## Results
+
+On a 10m × 10m test environment the filter converged to within 8cm RMS error with 500 particles running at 10Hz on a Raspberry Pi 4. CPU usage was around 40%, leaving headroom for the navigation stack.
+
+## What I'd Do Differently
+
+Naive systematic resampling causes particle degeneracy on long runs. Adaptive resampling — only resampling when the effective particle count drops below a threshold — would have significantly improved long-term accuracy without the extra computational cost.`,
     seoTitle: null,
     seoDesc: null,
     publishedAt: null,

@@ -6,14 +6,13 @@ export default function ProjectNotFound() {
   return (
     <>
       <Nav />
-      <main className="min-h-screen pt-24 pb-16 flex items-center">
-        <div className="section-container text-center">
-          <p className="font-mono text-cyan-400 text-sm mb-4">404</p>
-          <h1 className="text-2xl font-bold text-slate-100 mb-4">Project not found</h1>
-          <Link
-            href="/#projects"
-            className="font-mono text-sm text-slate-500 hover:text-cyan-400 transition-colors"
-          >
+      <main className="page" style={{ paddingTop: 80, paddingBottom: 64, minHeight: "60vh", display: "flex", alignItems: "center" }}>
+        <div>
+          <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 12, color: "var(--accent)", letterSpacing: "0.08em", textTransform: "uppercase" }}>404</span>
+          <h1 style={{ fontFamily: "var(--font-newsreader, Georgia, serif)", fontSize: 32, fontWeight: 700, color: "var(--ink)", margin: "8px 0 16px" }}>
+            Project not found.
+          </h1>
+          <Link href="/#projects" className="btn-link">
             ← Back to projects
           </Link>
         </div>

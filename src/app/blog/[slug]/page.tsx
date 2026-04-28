@@ -51,41 +51,36 @@ export default async function BlogPostPage({
   return (
     <>
       <Nav />
-      <main className="min-h-screen pt-24 pb-16">
-        <div className="section-container max-w-3xl">
-          {/* Back link */}
+      <main className="page" style={{ paddingTop: 80, paddingBottom: 64 }}>
+        <div style={{ maxWidth: 780 }}>
           <Link
             href="/blog"
-            className="inline-flex items-center gap-2 font-mono text-sm text-slate-500 hover:text-cyan-400 transition-colors mb-8"
+            className="btn-link"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 32 }}
           >
-            ← Back to blog
+            ← Back to writing
           </Link>
 
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-4 font-mono text-xs text-slate-500 mb-4">
+          <header style={{ marginBottom: 32 }}>
+            <div style={{ display: "flex", gap: 16, fontFamily: "var(--font-mono, monospace)", fontSize: 12, color: "var(--ink-faint)", marginBottom: 12 }}>
               <span>{post.date}</span>
               <span>·</span>
               <span>{post.readTime} read</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-100 mb-4">
+            <h1 style={{ fontFamily: "var(--font-newsreader, Georgia, serif)", fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 700, color: "var(--ink)", lineHeight: 1.2, marginBottom: 12 }}>
               {post.title}
             </h1>
-            <p className="text-slate-400 text-lg leading-relaxed">
+            <p style={{ fontSize: 17, color: "var(--ink-soft)", lineHeight: 1.6, maxWidth: "60ch" }}>
               {post.excerpt}
             </p>
-          </div>
+          </header>
 
-          {/* Tags */}
           {post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-10">
-              {post.tags.map((tag) => (
-                <span key={tag} className="tag">{tag}</span>
-              ))}
+            <div className="entry-tags" style={{ marginBottom: 32 }}>
+              {post.tags.map((tag) => <span key={tag}>{tag}</span>)}
             </div>
           )}
 
-          {/* JSON-LD Article schema */}
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
@@ -94,26 +89,20 @@ export default async function BlogPostPage({
                 "@type": "Article",
                 headline: post.title,
                 description: post.excerpt,
-                author: {
-                  "@type": "Person",
-                  name: OWNER.name,
-                },
-                datePublished:
-                  post.publishedAt?.toISOString() ?? post.date,
+                author: { "@type": "Person", name: OWNER.name },
+                datePublished: post.publishedAt?.toISOString() ?? post.date,
                 url: `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://yourdomain.com"}/blog/${post.slug}`,
               }),
             }}
           />
 
-          {/* Content */}
-          <div className="border-t border-[#2a2d3a] pt-8">
-            {/* Mobile ToC — collapsible, hidden on lg */}
+          <div style={{ borderTop: "1px solid var(--hairline)", paddingTop: 32 }}>
             {headings.length >= 3 && (
-              <details className="lg:hidden mb-6 border border-[#2a2d3a] rounded-lg p-4">
-                <summary className="text-xs font-mono text-slate-500 uppercase tracking-wider cursor-pointer">
+              <details className="lg:hidden" style={{ marginBottom: 24, border: "1px solid var(--hairline)", padding: 16 }}>
+                <summary style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11, color: "var(--ink-faint)", textTransform: "uppercase", letterSpacing: "0.06em", cursor: "pointer" }}>
                   Contents
                 </summary>
-                <div className="mt-3">
+                <div style={{ marginTop: 12 }}>
                   <TableOfContents headings={headings} />
                 </div>
               </details>

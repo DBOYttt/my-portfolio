@@ -45,7 +45,12 @@ export default function Nav() {
           ))}
         </div>
 
-        <button className="theme-toggle" onClick={toggle} aria-label="Toggle theme">
+        <button
+          className="theme-toggle"
+          onClick={toggle}
+          aria-label="Toggle theme"
+          suppressHydrationWarning
+        >
           {theme === "dark" ? "☾  dark" : "☀  light"}
         </button>
       </div>

@@ -9,11 +9,11 @@ import MarkdownRenderer from "@/components/ui/MarkdownRenderer";
 import TableOfContents from "@/components/ui/TableOfContents";
 import { extractTocHeadings } from "@/lib/markdown";
 
-const typeColors: Record<string, string> = {
-  ROBOTICS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-  SOFTWARE: "text-blue-400 bg-blue-500/10 border-blue-500/20",
-  HARDWARE: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-  RESEARCH: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+const TYPE_DISPLAY: Record<string, string> = {
+  ROBOTICS: "Robotics",
+  SOFTWARE: "Software",
+  HARDWARE: "Hardware",
+  RESEARCH: "Research",
 };
 
 export const dynamicParams = true;
@@ -55,70 +55,56 @@ export default async function ProjectPage({
   if (!project) notFound();
 
   const headings = extractTocHeadings(project.content);
-  const typeColor = typeColors[project.type] ?? typeColors["SOFTWARE"];
+  const typeLabel = TYPE_DISPLAY[project.type] ?? project.type;
 
   return (
     <>
       <Nav />
-      <main className="min-h-screen pt-24 pb-16">
-        <div className="section-container">
-          {/* Back link */}
+      <main className="page" style={{ paddingTop: 80, paddingBottom: 64 }}>
+        <div style={{ maxWidth: 780 }}>
           <Link
             href="/projects"
-            className="inline-flex items-center gap-2 font-mono text-sm text-slate-500 hover:text-cyan-400 transition-colors mb-8"
+            className="btn-link"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 32 }}
           >
             ← Back to projects
           </Link>
 
-          {/* Header */}
-          <div className="mb-8">
-            <span className={`text-xs font-medium px-2 py-0.5 rounded border ${typeColor} inline-block mb-4`}>
-              {project.type.charAt(0) + project.type.slice(1).toLowerCase()}
+          <header style={{ marginBottom: 32 }}>
+            <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11, color: "var(--accent)", letterSpacing: "0.08em", textTransform: "uppercase", display: "inline-block", marginBottom: 10 }}>
+              {typeLabel}
             </span>
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-100 mb-4">
+            <h1 style={{ fontFamily: "var(--font-newsreader, Georgia, serif)", fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 700, color: "var(--ink)", lineHeight: 1.2, marginBottom: 12 }}>
               {project.title}
             </h1>
-            <p className="text-slate-400 text-lg leading-relaxed max-w-2xl">
+            <p style={{ fontSize: 17, color: "var(--ink-soft)", lineHeight: 1.6, maxWidth: "60ch" }}>
               {project.summary}
             </p>
-          </div>
+          </header>
 
-          {/* Tech tags */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            {project.techTags.map((tag) => (
-              <span key={tag} className="tag">{tag}</span>
-            ))}
-          </div>
+          {project.techTags.length > 0 && (
+            <div className="entry-tags" style={{ marginBottom: 24 }}>
+              {project.techTags.map((tag) => <span key={tag}>{tag}</span>)}
+            </div>
+          )}
 
-          {/* Links */}
           {(project.githubUrl || project.liveUrl) && (
-            <div className="flex gap-4 mb-10">
+            <div style={{ display: "flex", gap: 16, marginBottom: 32 }}>
               {project.githubUrl && (
-                <a
-                  href={project.githubUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-secondary text-sm"
-                >
-                  View on GitHub
+                <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="btn-link">
+                  <span className="ar">↗</span> source on github
                 </a>
               )}
               {project.liveUrl && (
-                <a
-                  href={project.liveUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-secondary text-sm"
-                >
-                  Live Demo
+                <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="btn-link">
+                  <span className="ar">↗</span> live demo
                 </a>
               )}
             </div>
           )}
 
-          {/* Cover image */}
           {project.coverImage ? (
-            <div className="mb-10 rounded-2xl overflow-hidden border border-[#2a2d3a]">
+            <div style={{ marginBottom: 32, overflow: "hidden", border: "1px solid var(--hairline)" }}>
               <Image
                 src={project.coverImage}
                 alt={project.title}
@@ -128,20 +114,18 @@ export default async function ProjectPage({
               />
             </div>
           ) : (
-            <div className="mb-10 h-48 rounded-2xl bg-[#1a1d27] border border-[#2a2d3a] flex items-center justify-center">
-              <span className="font-mono text-slate-700 text-sm">no cover image</span>
+            <div style={{ marginBottom: 32, height: 160, background: "var(--paper-2)", border: "1px solid var(--hairline)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 12, color: "var(--ink-faint)" }}>no cover image</span>
             </div>
           )}
 
-          {/* Content */}
-          <div className="max-w-3xl">
-            {/* Mobile ToC — collapsible, hidden on lg */}
+          <div style={{ borderTop: "1px solid var(--hairline)", paddingTop: 32 }}>
             {headings.length >= 3 && (
-              <details className="lg:hidden mb-6 border border-[#2a2d3a] rounded-lg p-4">
-                <summary className="text-xs font-mono text-slate-500 uppercase tracking-wider cursor-pointer">
+              <details className="lg:hidden" style={{ marginBottom: 24, border: "1px solid var(--hairline)", padding: 16 }}>
+                <summary style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11, color: "var(--ink-faint)", textTransform: "uppercase", letterSpacing: "0.06em", cursor: "pointer" }}>
                   Contents
                 </summary>
-                <div className="mt-3">
+                <div style={{ marginTop: 12 }}>
                   <TableOfContents headings={headings} />
                 </div>
               </details>
