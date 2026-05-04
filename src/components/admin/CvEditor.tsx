@@ -42,19 +42,19 @@ const IT_CATEGORIES = [
 ];
 
 const CAT_TO_DB: Record<string, string> = {
-  Languages: "LANGUAGES",
-  "Frameworks & Libraries": "FRAMEWORKS",
-  Databases: "DATABASES",
-  "Tools & Platforms": "TOOLS",
-  Concepts: "CONCEPTS",
+  Languages: "LANGUAGE",
+  "Frameworks & Libraries": "FRAMEWORK",
+  Databases: "DATABASE",
+  "Tools & Platforms": "TOOL",
+  Concepts: "OTHER",
 };
 
 const DB_TO_CAT: Record<string, string> = {
-  LANGUAGES: "Languages",
-  FRAMEWORKS: "Frameworks & Libraries",
-  DATABASES: "Databases",
-  TOOLS: "Tools & Platforms",
-  CONCEPTS: "Concepts",
+  LANGUAGE: "Languages",
+  FRAMEWORK: "Frameworks & Libraries",
+  DATABASE: "Databases",
+  TOOL: "Tools & Platforms",
+  OTHER: "Concepts",
 };
 
 const EXP_TYPES = ["FULLTIME", "PARTTIME", "CONTRACT", "INTERNSHIP", "VOLUNTEER"];
