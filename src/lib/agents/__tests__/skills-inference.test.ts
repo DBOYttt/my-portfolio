@@ -2,35 +2,35 @@ import { describe, it, expect } from 'vitest'
 import { normaliseCategoryEnum } from '../skills-inference'
 
 describe('normaliseCategoryEnum', () => {
-  it('maps LANGUAGE to LANGUAGES', () => {
-    expect(normaliseCategoryEnum('LANGUAGE')).toBe('LANGUAGES')
+  it('maps LANGUAGE to LANGUAGE', () => {
+    expect(normaliseCategoryEnum('LANGUAGE')).toBe('LANGUAGE')
   })
 
-  it('maps FRAMEWORK to FRAMEWORKS', () => {
-    expect(normaliseCategoryEnum('FRAMEWORK')).toBe('FRAMEWORKS')
+  it('maps FRAMEWORK to FRAMEWORK', () => {
+    expect(normaliseCategoryEnum('FRAMEWORK')).toBe('FRAMEWORK')
   })
 
-  it('maps DATABASE to DATABASES', () => {
-    expect(normaliseCategoryEnum('DATABASE')).toBe('DATABASES')
+  it('maps DATABASE to DATABASE', () => {
+    expect(normaliseCategoryEnum('DATABASE')).toBe('DATABASE')
   })
 
-  it('maps TOOL to TOOLS', () => {
-    expect(normaliseCategoryEnum('TOOL')).toBe('TOOLS')
+  it('maps TOOL to TOOL', () => {
+    expect(normaliseCategoryEnum('TOOL')).toBe('TOOL')
   })
 
-  it('maps ROBOTICS to CONCEPTS', () => {
-    expect(normaliseCategoryEnum('ROBOTICS')).toBe('CONCEPTS')
+  it('maps ROBOTICS to OTHER', () => {
+    expect(normaliseCategoryEnum('ROBOTICS')).toBe('OTHER')
   })
 
-  it('maps EMBEDDED to CONCEPTS', () => {
-    expect(normaliseCategoryEnum('EMBEDDED')).toBe('CONCEPTS')
+  it('maps EMBEDDED to OTHER', () => {
+    expect(normaliseCategoryEnum('EMBEDDED')).toBe('OTHER')
   })
 
-  it('maps OTHER to TOOLS', () => {
-    expect(normaliseCategoryEnum('OTHER')).toBe('TOOLS')
+  it('maps OTHER to OTHER', () => {
+    expect(normaliseCategoryEnum('OTHER')).toBe('OTHER')
   })
 
-  it('maps unknown value "RANDOM" to TOOLS as fallback', () => {
-    expect(normaliseCategoryEnum('RANDOM')).toBe('TOOLS')
+  it('maps unknown value "RANDOM" to OTHER as fallback', () => {
+    expect(normaliseCategoryEnum('RANDOM')).toBe('OTHER')
   })
 })

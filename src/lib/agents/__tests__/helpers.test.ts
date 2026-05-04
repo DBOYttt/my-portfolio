@@ -27,29 +27,29 @@ import type { DigestItem, RoboticsDigestRawData } from '../robotics-news'
 // ─── normaliseCategoryEnum — edge cases ───────────────────────────────────────
 
 describe('normaliseCategoryEnum — edge cases', () => {
-  it('returns TOOLS for an empty string (fallback path)', () => {
-    expect(normaliseCategoryEnum('')).toBe('TOOLS')
+  it('returns OTHER for an empty string (fallback path)', () => {
+    expect(normaliseCategoryEnum('')).toBe('OTHER')
   })
 
-  it('returns TOOLS for a lowercase "language" (not in the map)', () => {
+  it('returns OTHER for a lowercase "language" (not in the map)', () => {
     // The map keys are UPPER_CASE; lowercase input is a different key → fallback
-    expect(normaliseCategoryEnum('language')).toBe('TOOLS')
+    expect(normaliseCategoryEnum('language')).toBe('OTHER')
   })
 
-  it('returns TOOLS for a lowercase "framework"', () => {
-    expect(normaliseCategoryEnum('framework')).toBe('TOOLS')
+  it('returns OTHER for a lowercase "framework"', () => {
+    expect(normaliseCategoryEnum('framework')).toBe('OTHER')
   })
 
-  it('returns TOOLS for a numeric-looking string', () => {
-    expect(normaliseCategoryEnum('123')).toBe('TOOLS')
+  it('returns OTHER for a numeric-looking string', () => {
+    expect(normaliseCategoryEnum('123')).toBe('OTHER')
   })
 
-  it('returns TOOLS for whitespace-only string', () => {
-    expect(normaliseCategoryEnum('  ')).toBe('TOOLS')
+  it('returns OTHER for whitespace-only string', () => {
+    expect(normaliseCategoryEnum('  ')).toBe('OTHER')
   })
 
-  it('returns TOOLS for a mixed-case string like "Language"', () => {
-    expect(normaliseCategoryEnum('Language')).toBe('TOOLS')
+  it('returns OTHER for a mixed-case string like "Language"', () => {
+    expect(normaliseCategoryEnum('Language')).toBe('OTHER')
   })
 
   it('is deterministic — same input always produces same output', () => {
