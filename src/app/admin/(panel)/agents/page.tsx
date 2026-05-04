@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import RunAgentButton from "@/components/admin/RunAgentButton";
+
+export const metadata: Metadata = { title: "Agents" };
 
 export default async function AgentsAdminPage() {
   const session = await auth();

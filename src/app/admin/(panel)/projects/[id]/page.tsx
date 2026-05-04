@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ProjectForm from "@/components/admin/ProjectForm";
+
+export const metadata: Metadata = { title: "Edit Project" };
 
 export default async function EditProjectPage({
   params,

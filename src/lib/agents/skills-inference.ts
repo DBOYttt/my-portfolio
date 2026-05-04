@@ -58,15 +58,15 @@ interface GraphQLResponse {
 
 export function normaliseCategoryEnum(raw: string): string {
   const map: Record<string, string> = {
-    LANGUAGE: "LANGUAGES",
-    FRAMEWORK: "FRAMEWORKS",
-    DATABASE: "DATABASES",
-    TOOL: "TOOLS",
-    ROBOTICS: "CONCEPTS",
-    EMBEDDED: "CONCEPTS",
-    OTHER: "TOOLS",
+    LANGUAGE: "LANGUAGE",
+    FRAMEWORK: "FRAMEWORK",
+    DATABASE: "DATABASE",
+    TOOL: "TOOL",
+    ROBOTICS: "OTHER",
+    EMBEDDED: "OTHER",
+    OTHER: "OTHER",
   };
-  return map[raw] ?? "TOOLS";
+  return map[raw] ?? "OTHER";
 }
 
 function makeHeaders(): Record<string, string> {

@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import PostForm from "@/components/admin/PostForm";
+
+export const metadata: Metadata = { title: "Edit Post" };
 
 export default async function EditPostPage({
   params,

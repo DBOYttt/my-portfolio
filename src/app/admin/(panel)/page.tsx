@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = { title: "Dashboard" };
 
 function formatRelative(date: Date): string {
   const diff = Date.now() - date.getTime();

@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = { title: "Blog" };
 
 const statusColors: Record<string, string> = {
   DRAFT: "text-slate-400 bg-slate-500/10 border-slate-500/20",
