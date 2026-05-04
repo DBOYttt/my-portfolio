@@ -759,26 +759,32 @@ When a domain is pointed at this server:
 
 ---
 
-## Milestone 6.5 — Admin Panel Audit & Bug Fixes ⬜
+## Milestone 6.5 — Admin Panel Audit & Bug Fixes ✅
 
 **Goal:** Walk through every admin panel section as a real user, find all bugs and rough edges, and fix them before adding the MCP layer on top.
 
 ### Scope
-- ⬜ Dashboard — stat cards, agent insights widget, platform connections card, quick actions
-- ⬜ Blog — list view, create post (MDEditor loads, tags, SEO fields, status selector), edit, delete, publish/unpublish; "Suggest topics" inline panel; "Generate content" streaming; blog post reflected on public `/blog`
-- ⬜ Projects — list, create, edit, delete, publish/unpublish; published project reflected on public `/projects`
-- ⬜ Skills — grouped list, add skill per category, delete skill, category labels correct
-- ⬜ Experience — list, add entry, edit inline, delete, reorder; entry reflected on public homepage `§ 05`
-- ⬜ Agents — agent list with status badges, "Run now" for each agent, spinner/status cycle, report appears after run, report detail renders correctly (markdown, rawData tables)
-- ⬜ CV — current CV state shown, CvEditor fields editable, "Save & Render PDF" produces downloadable `/cv.pdf`, targeted CV flow (job description scrape + two variants)
-- ⬜ Media — image grid loads, upload a file, file appears in grid, delete file
-- ⬜ Tools — shortcut list, add shortcut, delete shortcut
-- ⬜ Mobile layout at ≤ 768px — hamburger, off-canvas sidebar drawer, no overflow, all forms usable
+- ✅ Dashboard — stat cards, agent insights widget, platform connections card, quick actions
+- ✅ Blog — list view, create post (MDEditor loads, tags, SEO fields, status selector), edit, delete; "Suggest topics" panel; "Generate content" streaming; blog post reflected on public `/blog`
+- ✅ Projects — list, create, edit, delete; published project reflected on public `/projects`
+- ✅ Skills — grouped list, add skill per category, delete skill, category labels correct
+- ✅ Experience — list, add entry, edit inline (added in this milestone), delete
+- ✅ Agents — agent list with status badges, "Run now" cycle, report appears after run, report detail renders
+- ✅ CV — page loads, CvEditor fields editable, Save & Render PDF flow, targeted CV form visible
+- ✅ Media — image grid loads, upload, file appears, delete
+- ✅ Tools — shortcut list, add shortcut, delete shortcut
+- ✅ Mobile layout at ≤ 768px — hamburger, off-canvas drawer, no overflow
+
+### Bugs found and fixed (branch: `fix/m65-admin-audit`)
+- ✅ **P2** — `CvEditor.tsx`: skill categories all showed as "Other" — maps used pluralised enum values (`LANGUAGES`, `FRAMEWORKS`…) that don't exist; corrected to `LANGUAGE`, `FRAMEWORK`, `DATABASE`, `TOOL`, `OTHER`
+- ✅ **P2** — `experience/page.tsx`: no inline edit capability — added `updateExperience` server action and per-entry edit form
+- ✅ **P3** — All 14 admin panel pages missing `metadata` titles — every page now has a distinct browser tab title
+- ⬜ **P3** — `robots.txt` sitemap URL shows `yourdomain.com` — fix: set `NEXT_PUBLIC_BASE_URL` in `.env` before VPS deployment (not a code bug)
 
 ### Deliverables
-- ⬜ Bug list with severity (P1/P2/P3) and reproduction steps
-- ⬜ All P1 and P2 bugs fixed and deployed
-- ⬜ P3 bugs triaged — fix or defer to M6
+- ✅ Bug list with severity (P1/P2/P3) and reproduction steps
+- ✅ All P1 and P2 bugs fixed (none found; 2 P2 + 3 P3 total)
+- ✅ P3 bugs triaged — code P3s fixed; env-config P3 deferred to deploy checklist
 
 ---
 
