@@ -21,6 +21,7 @@ Built to help the owner get hired. Every decision should serve that goal first.
 
 ### Git — non-negotiable
 - **Commit and push after every change.** No batching across multiple responses.
+- **Feature branches for all untested work.** Any change not yet tested and explicitly accepted by the owner must be committed to a feature branch (e.g. `feat/description`, `fix/description`), never directly to `main`. Open a PR and merge to `main` only after the owner explicitly approves — either via PR review or a clear "looks good, merge it" in conversation.
 - Use `git add <specific files>` — never `git add -A` blindly (avoids committing secrets).
 - Commit messages must follow: `type(scope): short description` (see section below).
 - Never commit `.env`, `node_modules/`, or any file in `.gitignore`.
@@ -146,14 +147,15 @@ async function getData() {
 
 ## Current State (post-Milestone 5.5)
 
-All public sections, admin CRUD, nine AI agents, CV generation, security audit, and 79 Vitest tests are complete and deployed. The Engineering Logbook redesign (M5.5) is live — new bone-paper aesthetic, light/dark theme toggle, Newsreader + Inter Tight + JetBrains Mono fonts, hand-drawn SVG primitives. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx, port 80).
+All public sections, admin CRUD, nine AI agents, CV generation, security audit, and 79 Vitest tests are complete and deployed. The Engineering Logbook redesign (M5.5) is live — bone-paper aesthetic, light/dark theme toggle, Newsreader + Inter Tight + JetBrains Mono fonts, hand-drawn SVG primitives. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx, port 80).
+
+**Next milestones (not started):** M6.5 — Admin Panel Audit & Bug Fixes → M7 — MCP Server. See `docs/IMPLEMENTATION_PLAN.md` for full task breakdown and status.
 
 ### Deployment: `192.168.0.104`
 - **Stack:** Docker Compose — `my-portfolio-app-1` (Next.js, port 3000 internal), `my-portfolio-db-1` (PostgreSQL 16, `127.0.0.1:5432`), `my-portfolio-nginx-1` (port 80, LAN HTTP)
 - **Config:** `nginx/portfolio-lan.conf` via `docker-compose.override.yml` (HTTP only, no TLS)
 - **Cron agents:** 9 jobs in `diboy`'s crontab at `/home/diboy/projects/my-portfolio`, logs → `~/logs/`
-- **GitHub secrets set:** `ANTHROPIC_API_KEY`, `GH_PAT_TOKEN`, `GH_USERNAME`, `AUTH_SECRET`, `SSH_HOST`, `SSH_USER`, `SSH_KEY`
-- **Auto-deploy:** wired (`deploy.yml` uses Twingate + SSH) — pending Twingate service account setup to activate
+- **Auto-deploy:** `.github/workflows/deploy.yml` wired via Twingate + SSH — pending Twingate service account `github-actions-deploy` to activate
 
 ### Key architectural facts worth knowing
 - Admin route groups: `(auth)/` — login page only, no shell. `(panel)/` — all authenticated pages; `layout.tsx` calls `auth()` and redirects if no session.
@@ -168,38 +170,6 @@ All public sections, admin CRUD, nine AI agents, CV generation, security audit, 
 - CI/CD pipeline: `.github/workflows/ci.yml` runs lint → type-check → test → build on every push. `.github/workflows/deploy.yml` SSH-deploys via Twingate when CI passes on `main`. Requires `TWINGATE_SERVICE_KEY`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` in GitHub repo secrets.
 - Public portfolio CSS: logbook CSS custom properties (`--paper`, `--ink`, `--accent`, etc.) in `src/app/globals.css`. Admin uses Tailwind explicit hex values — `:root` changes don't affect admin. Theme toggle writes `data-theme` attribute on `<html>` + `localStorage['logbook-theme']`.
 - `src/components/ui/hand-drawn.tsx` — SVG primitives (HandRule, HandUnderline, HandArrow, SectionHead, SketchPlaceholder). All use `useMemo` for path computation and `suppressHydrationWarning` on `<path>` elements to handle PRNG SSR/hydration differences.
-
-### Pending — owner actions
-- [ ] Add `public/photo.jpg` to repo, then `git push` → auto-deploy picks it up (or `docker compose build app && docker compose up -d app` manually)
-- [ ] Add real skills via `/admin/skills`
-- [ ] Add real experience via `/admin/experience`
-- [ ] Review + publish the 4 imported GitHub projects via `/admin/projects`
-- [ ] Run CV Generator via `/admin/cv` → "Run now"
-- [ ] Set up Twingate service account (`github-actions-deploy`) to activate auto-deploy
-- [ ] Add `MCP_SECRET` to `.env` before running MCP server (Milestone 7)
-
-### Upcoming — Milestone 6: Polish + Analytics
-- [ ] Lighthouse audit — fix all issues below 90
-- [ ] Lazy load below-fold sections
-- [ ] Loading skeletons for DB-fetched content
-- [ ] Accessibility audit (keyboard nav, WCAG AA contrast)
-- [ ] Self-hosted Umami analytics (Docker, same server)
-
-### Upcoming — Milestone 6.5: Admin Panel Audit & Bug Fixes
-- [ ] Walk through every admin section as a real user (dashboard, blog, projects, skills, experience, agents, CV, media, tools)
-- [ ] Document all bugs with P1/P2/P3 severity
-- [ ] Fix all P1 and P2 bugs, deploy to 192.168.0.104
-- [ ] Mobile layout check at ≤ 768px
-
-### Upcoming — Milestone 7: MCP Server
-- [ ] `mcp-server/` package with `@modelcontextprotocol/sdk`
-- [ ] stdio transport (Claude Desktop / Claude Code)
-- [ ] HTTP/SSE transport (n8n / external agents)
-- [ ] Full Resources + Tools surface (see `docs/IMPLEMENTATION_PLAN.md` M7)
-- [ ] `/admin/mcp` status page + sidebar entry
-- [ ] `docs/MCP_SETUP.md` with Claude Desktop + n8n setup guide
-
-See `docs/IMPLEMENTATION_PLAN.md` for the full phased breakdown.
 
 ---
 

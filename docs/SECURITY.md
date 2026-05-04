@@ -195,7 +195,7 @@ The audit log is append-only. No delete route. View in admin settings (Milestone
 ## Pre-Deploy Checklist
 
 Before first VPS deploy:
-- [ ] Run Nikto scan: `sudo dnf install nikto && nikto -h http://localhost:3000`
+- [x] Run Nikto scan: `sudo dnf install nikto && nikto -h http://localhost:3000` — completed M5 Phase 8, no critical findings
 - [ ] Test file upload MIME validation (requires authenticated session + `/api/admin/media/upload`)
 - [ ] Test LinkedIn CSV import fuzzing (requires authenticated session)
 - [ ] Confirm `OPPORTUNITY_ALERT_EMAIL` and `OPPORTUNITY_ALERT_THRESHOLD` set in production `.env`

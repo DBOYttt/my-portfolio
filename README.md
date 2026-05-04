@@ -158,9 +158,12 @@ Or use the "Run now" button on `/admin/agents` or the shortcut buttons on `/admi
 - **Milestone 2** — Full portfolio: projects, experience, contact form, SEO ✅
 - **Milestone 3** — Admin + Blog: CRUD editor, markdown, media uploads ✅
 - **Milestone 4** — AI Agents, CV generator, skills inference, project importer, inline editor triggers, platform scraping ✅
-- **Milestone 4.10** — Pre-deployment security audit: 39/39 checks passed (auth bypass, headers, rate limiting, XSS, open redirect, path traversal) ✅
-- **Milestone 5** — Deployment: VPS, Docker Compose, Nginx HTTPS, PostgreSQL
-- **Milestone 6** — Polish: Lighthouse 90+, analytics, accessibility
+- **Milestone 4.10** — Pre-deployment security audit: 39/39 checks passed ✅
+- **Milestone 5** — Homelab deployment: Docker Compose, Nginx, PostgreSQL, cron agents live at `http://192.168.0.104` ✅
+- **Milestone 5.5** — Engineering Logbook redesign: bone-paper aesthetic, light/dark theme, SVG primitives, new typography ✅
+- **Milestone 6.5** — Admin panel audit & bug fixes ⬜
+- **Milestone 7** — MCP server (stdio + HTTP/SSE, Claude Desktop + n8n) ⬜
+- **Milestone 6** — Polish: Lighthouse 90+, analytics, accessibility ⬜
 
 ## Security Notes
 

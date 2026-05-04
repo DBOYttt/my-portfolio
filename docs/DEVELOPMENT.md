@@ -118,7 +118,7 @@ TWITTER_BEARER_TOKEN   Twitter API v2 bearer token (optional — Platform Sync w
 
 ### Optional
 ```
-NEXT_PUBLIC_SITE_URL  Full URL of your site (used for OG images, sitemap)
+NEXT_PUBLIC_BASE_URL  Full URL of your site (used for OG images, sitemap)
 R2_*                  Cloudflare R2 credentials (for media uploads in Phase 2+)
 ```
 
