@@ -10,3 +10,4 @@
 - [Phase 5 Agent Feature Test Results](project_phase5_results.md) — Robotics News digest empty on first run (P2), GH Importer URL hallucination pre-existing (P2), Platform Sync all PASS
 - [Milestone 5 Pre-Deployment Sign-Off](project_milestone5_presignoff.md) — Final walkthrough 2026-04-19; zero P1/P2 bugs; all 23 test points PASS; app is deployment-ready
 - [Blog Pages — Logbook Redesign Audit Findings](project_blog_redesign_findings.md) — Old design classes (card, tag, section-heading, etc.) not migrated; affects /blog, /projects, and not-found pages
+- [Milestone 6.5 — Admin Panel Audit Results](project_m65_results.md) — 2 new P2 bugs (CvEditor skill category mismatch, Experience no inline edit); 2 new P3 bugs; all CRUD and auth pass
