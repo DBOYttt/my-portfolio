@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import MediaUploader from "@/components/admin/MediaUploader";
+
+export const metadata: Metadata = { title: "Media" };
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;

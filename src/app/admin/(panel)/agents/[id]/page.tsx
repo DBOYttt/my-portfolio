@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -5,6 +6,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import RunAgentButton from "@/components/admin/RunAgentButton";
+
+export const metadata: Metadata = { title: "Agent Reports" };
 
 export default async function AgentDetailPage({
   params,

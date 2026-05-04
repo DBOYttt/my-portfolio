@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+
+export const metadata: Metadata = { title: "Experience" };
 
 const WORK_TYPES = ["FULLTIME", "PARTTIME", "CONTRACT", "INTERNSHIP", "VOLUNTEER"] as const;
 const typeLabels: Record<string, string> = {

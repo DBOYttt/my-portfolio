@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import PostForm from "@/components/admin/PostForm";
+
+export const metadata: Metadata = { title: "New Post" };
 
 function toSlug(s: string) {
   return s

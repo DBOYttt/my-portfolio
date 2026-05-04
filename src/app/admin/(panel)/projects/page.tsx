@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import RunAgentButton from "@/components/admin/RunAgentButton";
+
+export const metadata: Metadata = { title: "Projects" };
 
 const typeColors: Record<string, string> = {
   ROBOTICS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",

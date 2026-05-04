@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import ProjectForm from "@/components/admin/ProjectForm";
+
+export const metadata: Metadata = { title: "New Project" };
 
 export default function NewProjectPage() {
   return (

@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import RunAgentButton from "@/components/admin/RunAgentButton";
+
+export const metadata: Metadata = { title: "Skills" };
 
 const CATEGORIES = ["LANGUAGE", "FRAMEWORK", "TOOL", "ROBOTICS", "EMBEDDED", "DATABASE", "OTHER"] as const;
 const LEVELS = ["FAMILIAR", "PROFICIENT", "EXPERT"] as const;

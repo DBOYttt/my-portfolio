@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+
+export const metadata: Metadata = { title: "Tools" };
 
 export default async function ToolsAdminPage() {
   const session = await auth();
