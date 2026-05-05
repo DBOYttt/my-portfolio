@@ -4,7 +4,7 @@
       "command": "npx",
       "args": ["tsx", "mcp-server/index.ts"],
       "env": {
-        "DATABASE_URL": "postgres://portfolio:2c55002e1a02b61c0dc6b67c4b49d4b2@127.0.0.1:5432/portfolio_db"
+        "DATABASE_URL": "postgres://portfolio:devpassword@127.0.0.1:5432/portfolio_db"
       }
     }
   }
