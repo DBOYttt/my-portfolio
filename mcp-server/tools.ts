@@ -314,4 +314,93 @@ export function registerTools(server: McpServer): void {
       return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
     }
   );
+
+  server.tool(
+    "list_agents",
+    "List all registered agents with their current status and last run time",
+    {},
+    async () => {
+      const agents = await prisma.agent.findMany({
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          enabled: true,
+          status: true,
+          schedule: true,
+          lastRunAt: true,
+          lastError: true,
+          _count: { select: { reports: true } },
+        },
+      });
+      return { content: [{ type: "text" as const, text: JSON.stringify(agents) }] };
+    }
+  );
+
+  server.tool(
+    "get_agent_reports",
+    "Get reports for a specific agent. Returns up to 20 most recent reports including full raw data.",
+    {
+      agentType: z.enum([
+        "GITHUB_SUMMARIZER",
+        "BRAND_MONITOR",
+        "ROBOTICS_NEWS",
+        "BLOG_SUGGESTER",
+        "OPPORTUNITY_WATCHER",
+        "SKILLS_INFERENCE",
+        "GITHUB_PROJECT_IMPORTER",
+        "CV_GENERATOR",
+        "PLATFORM_SYNC",
+      ]).describe("The agent type to fetch reports for"),
+      limit: z.number().int().min(1).max(50).optional().default(20),
+    },
+    async ({ agentType, limit }) => {
+      const agent = await prisma.agent.findFirst({ where: { type: agentType as AgentType } });
+      if (!agent) throw new Error("Agent not found: " + agentType);
+      const reports = await prisma.agentReport.findMany({
+        where: { agentId: agent.id },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          sources: true,
+          rawData: true,
+          readAt: true,
+          createdAt: true,
+        },
+      });
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify({ agent: { id: agent.id, name: agent.name, type: agent.type }, reports }),
+          },
+        ],
+      };
+    }
+  );
+
+  server.tool(
+    "delete_agent_report",
+    "Permanently delete an agent report by ID",
+    {
+      reportId: z.string().describe("The report ID to delete"),
+    },
+    async ({ reportId }) => {
+      const report = await prisma.agentReport.findUnique({ where: { id: reportId } });
+      if (!report) throw new Error("Report not found: " + reportId);
+      await prisma.agentReport.delete({ where: { id: reportId } });
+      await prisma.auditLog.create({
+        data: {
+          action: "mcp.tool_call",
+          entityId: reportId,
+          metadata: { tool: "delete_agent_report", reportId, title: report.title },
+        },
+      });
+      return { content: [{ type: "text" as const, text: JSON.stringify({ ok: true, deleted: reportId }) }] };
+    }
+  );
 }
