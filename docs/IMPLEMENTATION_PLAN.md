@@ -870,7 +870,38 @@ When a domain is pointed at this server:
 
 ---
 
-## Milestone 9 — Growth Features ⏸ (Deferred)
+## Milestone 9 — Open Source Preparation ⬜
+
+**Goal:** Make the repository public and usable by others as a self-hosted portfolio starter. Anyone should be able to clone it, fill in their own content, and deploy it without touching the codebase.
+
+### Code Hygiene
+- ⬜ Audit all hardcoded personal references — ensure everything is in `src/lib/mock-data.ts` or `.env`
+- ⬜ Remove any committed secrets, personal tokens, or private URLs from git history (`git filter-repo` if needed)
+- ⬜ Verify `.gitignore` covers `.env`, `public/cv.pdf`, `public/photo.jpg`, and any local overrides
+
+### Documentation
+- ⬜ `README.md` — rewrite intro to address an external user ("fork this to build your own portfolio"), not the owner
+- ⬜ Add "Quick Start" section: clone → fill `.env.example` → `npm run dev`
+- ⬜ `docs/CONTRIBUTING.md` — contribution guidelines, PR expectations, issue templates
+- ⬜ `LICENSE` file — choose and add a licence (MIT recommended)
+- ⬜ `.github/ISSUE_TEMPLATE/` — bug report + feature request templates
+- ⬜ `.github/pull_request_template.md` — PR checklist
+
+### Configuration
+- ⬜ Ensure all personal config is driven by env vars or `mock-data.ts` — no owner-specific defaults in code
+- ⬜ `src/lib/mock-data.ts` — replace all real personal data with clearly labelled placeholders (`"Your Name"`, `"your@email.com"`, etc.)
+- ⬜ Verify `npm run dev` works out-of-the-box with zero `.env` setup (mock mode)
+- ⬜ Verify `docker compose up` with only `.env.example` values produces a working deployment
+
+### GitHub Repository
+- ⬜ Make repository public on GitHub
+- ⬜ Add repository topics: `nextjs`, `portfolio`, `typescript`, `prisma`, `tailwindcss`, `self-hosted`, `mcp`
+- ⬜ Add a social preview image (`public/og-image.png` or GitHub repo settings)
+- ⬜ Pin repository on GitHub profile
+
+---
+
+## Milestone 10 — Growth Features ⏸ (Deferred)
 
 Defer until site is live and generating traffic.
 

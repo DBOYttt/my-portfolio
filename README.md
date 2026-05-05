@@ -182,7 +182,8 @@ Add to `.mcp.json` at the project root for Claude Code integration — see `docs
 - **Milestone 6.5** — Admin panel audit & bug fixes ✅
 - **Milestone 7** — MCP server (stdio + HTTP/SSE, 14 tools, Claude Desktop + n8n) ✅
 - **Milestone 8** — Cloudflare Zero Trust Tunnel → `diboy.dev` (public internet, no port forwarding) ⬜
-- **Milestone 9** — Growth features: analytics, newsletter, 2FA (deferred) ⏸
+- **Milestone 9** — Open source preparation: licence, docs, mock-data cleanup, public repo ⬜
+- **Milestone 10** — Growth features: analytics, newsletter, 2FA (deferred) ⏸
 
 ## Security Notes
 
