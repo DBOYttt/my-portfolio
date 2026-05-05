@@ -145,11 +145,11 @@ async function getData() {
 
 ---
 
-## Current State (post-Milestone 5.5)
+## Current State (post-Milestone 7)
 
-All public sections, admin CRUD, nine AI agents, CV generation, security audit, and 79 Vitest tests are complete and deployed. The Engineering Logbook redesign (M5.5) is live — bone-paper aesthetic, light/dark theme toggle, Newsreader + Inter Tight + JetBrains Mono fonts, hand-drawn SVG primitives. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx, port 80).
+All public sections, admin CRUD, nine AI agents, CV generation, security audit, and 79 Vitest tests are complete and deployed. The Engineering Logbook redesign (M5.5) is live. M6.5 (Admin Panel Audit & Bug Fixes) is complete. M7 (MCP Server) is complete — 14 MCP tools, 9 read-only resources, stdio + HTTP/SSE transports, AuditLog integration, and `/admin/mcp` status page. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx, port 80).
 
-**Next milestones (not started):** M6.5 — Admin Panel Audit & Bug Fixes → M7 — MCP Server. See `docs/IMPLEMENTATION_PLAN.md` for full task breakdown and status.
+**Next milestone:** M8 — Growth Features (deferred until site is live and generating traffic). See `docs/IMPLEMENTATION_PLAN.md` for full task breakdown and status.
 
 ### Deployment: `192.168.0.104`
 - **Stack:** Docker Compose — `my-portfolio-app-1` (Next.js, port 3000 internal), `my-portfolio-db-1` (PostgreSQL 16, `127.0.0.1:5432`), `my-portfolio-nginx-1` (port 80, LAN HTTP)
@@ -275,6 +275,8 @@ npx tsx agents/skills-inference.ts           # Run agent manually (seeds DB row 
 npx tsx agents/github-project-importer.ts    # Run agent manually (seeds DB row on first run)
 npx tsx agents/cv-generator.ts               # Run agent manually (seeds DB row on first run)
 npx tsx agents/platform-sync.ts              # Run agent manually (seeds DB row on first run)
+npm run mcp:stdio                             # Start MCP server (stdio transport)
+npm run mcp:http                              # Start MCP server (HTTP transport, port MCP_SERVER_PORT)
 ```
 
 > **Important:** All CLI runners import `{ prisma }` from `src/lib/prisma` (not `new PrismaClient()`).

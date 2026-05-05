@@ -788,49 +788,49 @@ When a domain is pointed at this server:
 
 ---
 
-## Milestone 7 — MCP Server for AI Content Population ⬜
+## Milestone 7 — MCP Server for AI Content Population ✅
 
 **Goal:** Expose the entire portfolio as an MCP server so AI agents (Claude Desktop, Claude Code, n8n) can read and write content without going through the web admin panel.
 
 ### MCP Server Package
-- ⬜ `mcp-server/` directory — standalone TypeScript package with `@modelcontextprotocol/sdk`
-- ⬜ stdio transport (for Claude Desktop / Claude Code)
-- ⬜ HTTP/SSE transport (for n8n / remote agents)
-- ⬜ Auth: `MCP_SECRET` env var — bearer token on HTTP mode; stdio requires local access
-- ⬜ Reuses `{ prisma }` singleton — no separate DB connection
+- ✅ `mcp-server/` directory — standalone TypeScript package with `@modelcontextprotocol/sdk`
+- ✅ stdio transport (for Claude Desktop / Claude Code)
+- ✅ HTTP/SSE transport (for n8n / remote agents)
+- ✅ Auth: `MCP_SECRET` env var — bearer token on HTTP mode; stdio requires local access
+- ✅ Reuses `{ prisma }` singleton — no separate DB connection
 
 ### Resources (read-only)
-- ⬜ `portfolio://owner` — owner bio, tagline, location, status
-- ⬜ `portfolio://posts` — all published posts (title, slug, excerpt, tags, date)
-- ⬜ `portfolio://posts/{slug}` — full post with Markdown content
-- ⬜ `portfolio://projects` — all published projects (title, slug, summary, techTags, type)
-- ⬜ `portfolio://projects/{slug}` — full project with case study content
-- ⬜ `portfolio://skills` — skills grouped by category
-- ⬜ `portfolio://experience` — experience entries in chronological order
-- ⬜ `portfolio://agent-reports` — latest report per agent (title + summary)
-- ⬜ `portfolio://cv` — current CV JSON (structured: summary, skills, experience, projects)
+- ✅ `portfolio://owner` — owner bio, tagline, location, status
+- ✅ `portfolio://posts` — all published posts (title, slug, excerpt, tags, date)
+- ✅ `portfolio://posts/{slug}` — full post with Markdown content
+- ✅ `portfolio://projects` — all published projects (title, slug, summary, techTags, type)
+- ✅ `portfolio://projects/{slug}` — full project with case study content
+- ✅ `portfolio://skills` — skills grouped by category
+- ✅ `portfolio://experience` — experience entries in chronological order
+- ✅ `portfolio://agent-reports` — latest report per agent (title + summary)
+- ✅ `portfolio://cv` — current CV JSON (structured: summary, skills, experience, projects)
 
 ### Tools (write operations)
-- ⬜ `create_post` — title, content (Markdown), excerpt, tags, status (DRAFT/PUBLISHED)
-- ⬜ `update_post` — by slug; any subset of fields
-- ⬜ `delete_post` — by slug; marks as DRAFT first (soft delete)
-- ⬜ `create_project` — title, summary, content, techTags, type, githubUrl, liveUrl
-- ⬜ `update_project` — by slug; any subset of fields
-- ⬜ `add_skill` — name, category, level
-- ⬜ `remove_skill` — by name + category
-- ⬜ `add_experience` — company, role, description, startDate, endDate, type
-- ⬜ `update_owner_info` — name, bio, tagline, location (writes to User table)
-- ⬜ `run_agent` — by AgentType; uses existing AGENT_RUNNERS; returns report title when done
-- ⬜ `generate_cv` — triggers CV Generator; returns path to rendered PDF
+- ✅ `create_post` — title, content (Markdown), excerpt, tags, status (DRAFT/PUBLISHED)
+- ✅ `update_post` — by slug; any subset of fields
+- ✅ `delete_post` — by slug; marks as DRAFT first (soft delete)
+- ✅ `create_project` — title, summary, content, techTags, type, githubUrl, liveUrl
+- ✅ `update_project` — by slug; any subset of fields
+- ✅ `add_skill` — name, category, level
+- ✅ `remove_skill` — by name + category
+- ✅ `add_experience` — company, role, description, startDate, endDate, type
+- ✅ `update_owner_info` — name, bio, tagline, location (writes to User table)
+- ✅ `run_agent` — by AgentType; uses existing AGENT_RUNNERS; returns report title when done
+- ✅ `generate_cv` — triggers CV Generator; returns path to rendered PDF
 
 ### Admin Panel Integration
-- ⬜ `/admin/mcp` status page — connection mode (stdio/HTTP), last tool call timestamp, recent tool call log (last 20 entries from AuditLog)
-- ⬜ MCP entry in admin sidebar
-- ⬜ Each MCP tool call writes to `AuditLog` with `action: "mcp.tool_call"` + tool name + entity metadata
+- ✅ `/admin/mcp` status page — connection mode (stdio/HTTP), last tool call timestamp, recent tool call log (last 20 entries from AuditLog)
+- ✅ MCP entry in admin sidebar
+- ✅ Each MCP tool call writes to `AuditLog` with `action: "mcp.tool_call"` + tool name + entity metadata
 
 ### n8n Integration Guide
-- ⬜ `docs/MCP_SETUP.md` — setup instructions for Claude Desktop, Claude Code, and n8n HTTP mode
-- ⬜ Example n8n workflow: "When GitHub push → run GitHub Summarizer → read report → update project description"
+- ✅ `docs/MCP_SETUP.md` — setup instructions for Claude Desktop, Claude Code, and n8n HTTP mode
+- ✅ Example n8n workflow: "When GitHub push → run GitHub Summarizer → read report → update project description"
 
 ---
 
