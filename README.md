@@ -181,7 +181,8 @@ Add to `.mcp.json` at the project root for Claude Code integration — see `docs
 - **Milestone 5.5** — Engineering Logbook redesign: bone-paper aesthetic, light/dark theme, SVG primitives, new typography ✅
 - **Milestone 6.5** — Admin panel audit & bug fixes ✅
 - **Milestone 7** — MCP server (stdio + HTTP/SSE, 14 tools, Claude Desktop + n8n) ✅
-- **Milestone 8** — Growth features: analytics, newsletter, 2FA (deferred) ⏸
+- **Milestone 8** — Cloudflare Zero Trust Tunnel → `diboy.dev` (public internet, no port forwarding) ⬜
+- **Milestone 9** — Growth features: analytics, newsletter, 2FA (deferred) ⏸
 
 ## Security Notes
 

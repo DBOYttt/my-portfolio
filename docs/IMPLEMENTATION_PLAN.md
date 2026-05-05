@@ -834,7 +834,43 @@ When a domain is pointed at this server:
 
 ---
 
-## Milestone 8 — Growth Features ⏸ (Deferred)
+## Milestone 8 — Cloudflare Zero Trust Tunnel (diboy.dev) ⬜
+
+**Goal:** Expose the homelab server at `192.168.0.104` to the public internet on `diboy.dev` via Cloudflare Zero Trust Tunnel. No open router ports. Cloudflare handles HTTPS automatically.
+
+### Phase 1 — Migrate DNS to Cloudflare
+- ⬜ Add `diboy.dev` to Cloudflare (free plan) → Add a Site
+- ⬜ Copy the two Cloudflare nameservers provided
+- ⬜ Log into name.com → diboy.dev → Nameservers → replace with Cloudflare's NS records
+- ⬜ Verify propagation: `dig NS diboy.dev`
+
+### Phase 2 — Create Cloudflare Tunnel
+- ⬜ Cloudflare dashboard → Zero Trust → Networks → Tunnels → Create tunnel
+- ⬜ Name: `portfolio-homelab`
+- ⬜ Save the tunnel token (used in Phase 3)
+
+### Phase 3 — Install cloudflared on 192.168.0.104
+- ⬜ Download and install `cloudflared` (latest Linux amd64 .deb)
+- ⬜ Install as systemd service: `sudo cloudflared service install <TUNNEL_TOKEN>`
+- ⬜ Enable + start: `sudo systemctl enable --now cloudflared`
+
+### Phase 4 — Configure Public Hostnames
+- ⬜ Zero Trust → Tunnels → portfolio-homelab → Public Hostnames
+- ⬜ `diboy.dev` (root) → `http://localhost:80`
+- ⬜ `www.diboy.dev` → `http://localhost:80`
+
+### Phase 5 — Update App Config and Redeploy
+- ⬜ Update `~/projects/my-portfolio/.env` on server: `AUTH_URL=https://diboy.dev`, `NEXT_PUBLIC_BASE_URL=https://diboy.dev`
+- ⬜ Redeploy: `git pull && docker compose up -d --build`
+
+### Phase 6 — Verify
+- ⬜ `curl https://diboy.dev` returns portfolio homepage
+- ⬜ `https://diboy.dev/admin` shows admin login
+- ⬜ SSL padlock visible — cert issued by Cloudflare (Universal SSL)
+
+---
+
+## Milestone 9 — Growth Features ⏸ (Deferred)
 
 Defer until site is live and generating traffic.
 
