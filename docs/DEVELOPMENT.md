@@ -62,6 +62,11 @@ npx tsx agents/skills-inference.ts           # seeds DB row on first run
 npx tsx agents/github-project-importer.ts    # seeds DB row on first run
 npx tsx agents/cv-generator.ts               # seeds DB row on first run
 npx tsx agents/platform-sync.ts              # seeds DB row on first run
+
+# MCP Server
+npm run mcp:stdio                            # stdio transport (Claude Desktop / Claude Code)
+npm run mcp:http                             # HTTP/SSE transport on $MCP_SERVER_PORT (default 3001)
+npx tsc --project tsconfig.mcp.json --noEmit # type-check mcp-server/ standalone
 ```
 
 ---
@@ -87,11 +92,11 @@ Must be a standard `postgres://` URL — **not** `prisma+postgres://`.
 The `PrismaPg` adapter uses the `pg` library which requires a direct TCP connection to postgres.
 
 ```
-# Local dev example (with prisma dev running):
-DATABASE_URL="postgres://postgres:postgres@127.0.0.1:51214/template1?sslmode=disable"
+# Local dev example (Docker Compose stack running locally):
+DATABASE_URL="postgres://portfolio:yourpassword@127.0.0.1:5432/portfolio_db"
 
 # Production example:
-DATABASE_URL="postgres://user:password@your-db-host:5432/portfolio"
+DATABASE_URL="postgres://portfolio:yourpassword@127.0.0.1:5432/portfolio_db"
 ```
 
 If postgres only listens on `127.0.0.1` (not `localhost`/`::1`) on your machine, always use the explicit IP.
@@ -99,7 +104,7 @@ If postgres only listens on `127.0.0.1` (not `localhost`/`::1`) on your machine,
 ### Seeding with a direct URL
 If the default `DATABASE_URL` in `.env` doesn't connect for scripts, override inline:
 ```bash
-DATABASE_URL="postgres://postgres:postgres@127.0.0.1:51214/template1?sslmode=disable" npm run db:seed
+DATABASE_URL="postgres://portfolio:yourpassword@127.0.0.1:5432/portfolio_db" npm run db:seed
 ```
 
 ### Required for contact form email
@@ -114,6 +119,12 @@ ANTHROPIC_API_KEY      Get from console.anthropic.com
 GITHUB_USERNAME        Your GitHub username (required for GitHub Summarizer + Project Importer)
 GITHUB_TOKEN           GitHub PAT with public_repo read scope (for higher rate limits)
 TWITTER_BEARER_TOKEN   Twitter API v2 bearer token (optional — Platform Sync works without it)
+```
+
+### MCP Server
+```
+MCP_SECRET            Bearer token for HTTP transport — leave empty to disable auth (stdio / LAN only)
+MCP_SERVER_PORT       HTTP transport port (default: 3001)
 ```
 
 ### Optional

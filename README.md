@@ -19,6 +19,7 @@ A two-layer platform:
 | Auth | Auth.js v5 |
 | Email | Resend |
 | AI Agents | Anthropic Claude API |
+| MCP Server | `@modelcontextprotocol/sdk` (stdio + HTTP/SSE) |
 | Deployment | Docker Compose + Nginx |
 
 ## What You Need to Provide
@@ -125,6 +126,7 @@ prisma/
 ├── schema.prisma             # Database schema
 └── seed.ts                   # Admin user seeder
 agents/                       # AI agent scripts (run via cron)
+mcp-server/                   # MCP server (stdio + HTTP/SSE transports)
 ```
 
 ## AI Agents
@@ -133,7 +135,8 @@ The platform ships several autonomous agents that run on a schedule (or on deman
 
 | Agent | Schedule | What it does |
 |---|---|---|
-| **GitHub Summarizer** | Weekly | Summarises recent GitHub activity + profile |
+| **GitHub Summarizer** | Weekly Mon | Summarises recent GitHub activity + profile gaps |
+| **Robotics News** | Weekly | Pulls robotics industry news and summarises with Claude |
 | **Blog Suggester** | Weekly | Suggests blog topics from your GitHub + post history |
 | **Brand Monitor** | Weekly | Monitors mentions of your name/brand online |
 | **Opportunity Watcher** | Weekly | Surfaces relevant jobs and opportunities |
@@ -152,6 +155,21 @@ npx tsx agents/platform-sync.ts
 
 Or use the "Run now" button on `/admin/agents` or the shortcut buttons on `/admin/skills` (Sync from GitHub) and `/admin/projects` (Import from GitHub).
 
+## MCP Server
+
+The platform ships an MCP server that exposes all portfolio content to AI agents (Claude Desktop, Claude Code, n8n) over stdio or HTTP/SSE.
+
+**9 read-only resources:** `portfolio://owner`, `portfolio://posts`, `portfolio://posts/{slug}`, `portfolio://projects`, `portfolio://projects/{slug}`, `portfolio://skills`, `portfolio://experience`, `portfolio://agent-reports`, `portfolio://cv`
+
+**14 write tools:** create/update/delete posts and projects, add/remove skills, add experience, update owner info, run any agent, generate CV, list agents, get agent reports, delete agent reports
+
+```bash
+npm run mcp:stdio   # stdio transport (Claude Desktop / Claude Code)
+npm run mcp:http    # HTTP/SSE transport (n8n / remote agents)
+```
+
+Add to `.mcp.json` at the project root for Claude Code integration — see `docs/MCP_SETUP.md` for full setup instructions.
+
 ## Implementation Phases
 
 - **Milestone 1** — Foundation: Next.js setup, DB, auth, core portfolio sections ✅
@@ -161,9 +179,9 @@ Or use the "Run now" button on `/admin/agents` or the shortcut buttons on `/admi
 - **Milestone 4.10** — Pre-deployment security audit: 39/39 checks passed ✅
 - **Milestone 5** — Homelab deployment: Docker Compose, Nginx, PostgreSQL, cron agents live at `http://192.168.0.104` ✅
 - **Milestone 5.5** — Engineering Logbook redesign: bone-paper aesthetic, light/dark theme, SVG primitives, new typography ✅
-- **Milestone 6.5** — Admin panel audit & bug fixes ⬜
-- **Milestone 7** — MCP server (stdio + HTTP/SSE, Claude Desktop + n8n) ⬜
-- **Milestone 6** — Polish: Lighthouse 90+, analytics, accessibility ⬜
+- **Milestone 6.5** — Admin panel audit & bug fixes ✅
+- **Milestone 7** — MCP server (stdio + HTTP/SSE, 14 tools, Claude Desktop + n8n) ✅
+- **Milestone 8** — Growth features: analytics, newsletter, 2FA (deferred) ⏸
 
 ## Security Notes
 
