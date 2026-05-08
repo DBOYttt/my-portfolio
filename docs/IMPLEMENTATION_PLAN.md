@@ -834,6 +834,63 @@ When a domain is pointed at this server:
 
 ---
 
+## Milestone 7.5 — Career-Ops Integration (CV + Job Search) ⬜
+
+**Goal:** Replace the in-portfolio CV generation and opportunity-watching agents with [career-ops](https://github.com/santifer/career-ops) — an AI-powered job search pipeline that evaluates offers, generates tailored ATS PDFs, and tracks applications. The portfolio retains a single public CV download; all job hunting moves out of the portfolio codebase entirely.
+
+### What changes
+The current portfolio has two agents covering this space:
+- `agents/cv-generator.ts` — AI-generates `public/cv.pdf` from DB content via Claude + `@react-pdf/renderer`
+- `agents/opportunity-watcher.ts` — scrapes WWR/HackerNews, scores job listings 1–10, emails on strong matches
+
+Both are replaced by career-ops, which runs as a standalone tool outside the portfolio repo. The portfolio's only job is to serve the master CV PDF that career-ops produces.
+
+### Phase 1 — Set up career-ops
+- ⬜ Clone `santifer/career-ops` on the homelab server (separate directory, not inside this repo)
+- ⬜ Run `npm install && npx playwright install chromium`
+- ⬜ Copy `config/profile.example.yml` → `config/profile.yml`; fill in personal details
+- ⬜ Create `cv.md` in the career-ops root — master CV in markdown (source of truth for all PDFs)
+- ⬜ Configure portal targets in `portals.yml` — add relevant companies (robotics, AI, software)
+- ⬜ Run `npm run doctor` to validate prerequisites
+- ⬜ Do a first evaluation with Claude Code (`/career-ops`) to onboard the system to your background
+
+### Phase 2 — Wire the portfolio CV to career-ops output
+- ⬜ Establish a convention: career-ops `portfolio` mode writes the master PDF; copy it to `~/projects/my-portfolio/public/cv.pdf` (or symlink)
+- ⬜ Add a simple shell alias / cron entry: after generating the master CV, `cp <career-ops-output> ~/projects/my-portfolio/public/cv.pdf && cd ~/projects/my-portfolio && git add public/cv.pdf && git commit -m "chore: update master cv" && git push`
+- ⬜ Verify the public CV download link (`/cv.pdf`) serves the career-ops-generated file
+
+### Phase 3 — Remove cv-generator from the portfolio
+- ⬜ Delete `agents/cv-generator.ts` CLI runner
+- ⬜ Delete `src/lib/agents/cv-generator.ts` runner module
+- ⬜ Remove `CV_GENERATOR` from `AgentType` enum in `prisma/schema.prisma` → `npm run db:push` → `npm run db:generate`
+- ⬜ Remove the CV_GENERATOR entry from `src/lib/agents/index.ts` → `AGENT_RUNNERS`
+- ⬜ Simplify `/admin/cv` page: remove "Run AI generation" and `CvTargetForm` UI; keep only the manual upload section (`POST /api/admin/cv/upload`) so the owner can still push a career-ops PDF via the admin panel if needed
+- ⬜ Remove API routes that are now dead: `POST /api/admin/cv/run`, `POST /api/admin/cv/render`, `POST /api/admin/cv/scrape-jd`; keep `GET|PUT /api/admin/cv` and `POST /api/admin/cv/upload`
+- ⬜ Remove `src/lib/cv-template.tsx` (`@react-pdf/renderer` template — no longer used)
+- ⬜ Remove User schema fields made redundant: `cvContent Json?`, `cvSource String`, `cvGeneratedAt DateTime?` → `npm run db:push`
+- ⬜ Remove the `@react-pdf/renderer` dependency from `package.json` if nothing else uses it
+- ⬜ Update the 79-test suite: remove/replace cv-generator unit tests; verify `npm test` still passes
+
+### Phase 4 — Remove opportunity-watcher from the portfolio
+- ⬜ Remove the cron job for `opportunity-watcher.ts` from `diboy`'s crontab on the server
+- ⬜ Delete `agents/opportunity-watcher.ts` CLI runner
+- ⬜ Delete `src/lib/agents/opportunity-watcher.ts` runner module
+- ⬜ Remove `OPPORTUNITY_WATCHER` from `AgentType` enum → `npm run db:push` → `npm run db:generate`
+- ⬜ Remove `OPPORTUNITY_WATCHER` from `src/lib/agents/index.ts` → `AGENT_RUNNERS`
+- ⬜ Remove `OPPORTUNITY_ALERT_EMAIL`, `OPPORTUNITY_ALERT_THRESHOLD` from `.env.example` (or mark as deprecated)
+- ⬜ Delete any AgentReport rows for OPPORTUNITY_WATCHER from the DB (optional cleanup)
+
+### Phase 5 — Docs + CLAUDE.md update
+- ⬜ Update `docs/AI_AGENTS.md` — remove cv-generator and opportunity-watcher sections; add a note pointing to career-ops for job search
+- ⬜ Update `CLAUDE.md` — remove cv-generator and opportunity-watcher from the agent CLI command list; add a note about career-ops living outside this repo
+- ⬜ Update `docs/IMPLEMENTATION_PLAN.md` — mark M4.6 and the OW sections of M4.14 as superseded by this milestone
+
+### Owner actions still needed after this milestone
+- ⬜ Populate `cv.md` in career-ops with real experience (same source of truth as `mock-data.ts` for the portfolio)
+- ⬜ Run initial career-ops evaluation on 5–10 real job listings to calibrate the scoring weights to your preferences
+
+---
+
 ## Milestone 8 — Cloudflare Zero Trust Tunnel (diboy.dev) ⬜
 
 **Goal:** Expose the homelab server at `192.168.0.104` to the public internet on `diboy.dev` via Cloudflare Zero Trust Tunnel. No open router ports. Cloudflare handles HTTPS automatically.
