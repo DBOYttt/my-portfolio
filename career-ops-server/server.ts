@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import { spawn } from "child_process";
 import { randomUUID } from "crypto";
 import { readFile } from "fs/promises";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 
 const app = express();
@@ -20,6 +20,26 @@ interface Job {
 }
 
 const jobs = new Map<string, Job>();
+const CV_OUTPUT_DIR = "/app/cv_output";
+const PIPELINE_PATH = `${CV_OUTPUT_DIR}/pipeline.json`;
+
+function appendToPipeline(jobId: string, url: string, job: Job): void {
+  try {
+    mkdirSync(CV_OUTPUT_DIR, { recursive: true });
+    let entries: unknown[] = [];
+    if (existsSync(PIPELINE_PATH)) {
+      try { entries = JSON.parse(readFileSync(PIPELINE_PATH, "utf-8")); } catch { entries = []; }
+    }
+    const existing = entries.findIndex((e) => (e as { jobId?: string }).jobId === jobId);
+    const record = { jobId, url, status: job.status, completedAt: new Date().toISOString(), pdfPath: job.pdfPath };
+    if (existing >= 0) {
+      entries[existing] = record;
+    } else {
+      entries.unshift(record);
+    }
+    writeFileSync(PIPELINE_PATH, JSON.stringify(entries, null, 2), "utf-8");
+  } catch { /* non-critical */ }
+}
 
 function authMiddleware(req: Request, res: Response, next: NextFunction): void {
   if (!SECRET) {
@@ -36,7 +56,7 @@ function authMiddleware(req: Request, res: Response, next: NextFunction): void {
 
 app.use(authMiddleware);
 
-function spawnJob(jobId: string, args: string[], cwd: string): void {
+function spawnJob(jobId: string, args: string[], cwd: string, pipelineUrl?: string): void {
   const job = jobs.get(jobId);
   if (!job) return;
 
@@ -57,6 +77,7 @@ function spawnJob(jobId: string, args: string[], cwd: string): void {
 
   child.on("close", (code: number | null) => {
     job.status = code === 0 ? "done" : "error";
+    if (pipelineUrl) appendToPipeline(jobId, pipelineUrl, job);
   });
 }
 
@@ -72,7 +93,7 @@ app.post("/evaluate", (req: Request, res: Response): void => {
   jobs.set(jobId, { status: "pending", log: [] });
   res.json({ jobId });
 
-  spawnJob(jobId, ["-p", `/career-ops ${url}`], "/app/career-ops");
+  spawnJob(jobId, ["-p", `/career-ops ${url}`], "/app/career-ops", url);
 });
 
 // GET /status/:jobId
@@ -96,14 +117,16 @@ app.post("/cv/master", (req: Request, res: Response): void => {
 
 // GET /pipeline
 app.get("/pipeline", async (_req: Request, res: Response): Promise<void> => {
-  const pipelinePath = "/app/cv_output/pipeline.json";
-  if (!existsSync(pipelinePath)) {
+  if (!existsSync(PIPELINE_PATH)) {
     res.json({ jobs: [] });
     return;
   }
   try {
-    const raw = await readFile(pipelinePath, "utf-8");
-    res.json(JSON.parse(raw));
+    const raw = await readFile(PIPELINE_PATH, "utf-8");
+    const parsed = JSON.parse(raw);
+    // Normalise: file may be a bare array (from career-ops CLI) or already { jobs: [] }
+    const jobs = Array.isArray(parsed) ? parsed : (parsed.jobs ?? []);
+    res.json({ jobs });
   } catch {
     res.status(500).json({ error: "Failed to read pipeline.json" });
   }
