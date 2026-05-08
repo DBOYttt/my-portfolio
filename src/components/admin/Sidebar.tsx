@@ -11,7 +11,6 @@ const navLinks = [
   { label: "Media", href: "/admin/media" },
   { label: "Agents", href: "/admin/agents" },
   { label: "MCP", href: "/admin/mcp" },
-  { label: "CV", href: "/admin/cv" },
   { label: "Career", href: "/admin/career" },
   { label: "Tools", href: "/admin/tools" },
 ];
