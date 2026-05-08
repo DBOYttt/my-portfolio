@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "mcp:stdio": "npx tsx mcp-server/index.ts",
-    "mcp:http": "npx tsx mcp-server/index.ts --http"
+    "mcp:http": "npx tsx mcp-server/index.ts --http",
+    "setup:career-ops": "bash scripts/setup-career-ops.sh"
   },
   "keywords": [],
   "author": "",
