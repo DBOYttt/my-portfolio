@@ -37,3 +37,6 @@ public/uploads/
 
 # CV (keep out of repo if private — link to hosted version instead)
 # public/cv.pdf
+
+career-ops/node_modules/
+career-ops/.env
