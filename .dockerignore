@@ -2,6 +2,8 @@
 .github
 .next
 node_modules
+career-ops/node_modules
+career-ops/.env
 .env
 .env.local
 .env*.local
