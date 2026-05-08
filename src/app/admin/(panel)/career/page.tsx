@@ -17,21 +17,22 @@ interface PipelineResponse {
   jobs?: PipelineJob[];
 }
 
-async function fetchPipeline(): Promise<PipelineJob[]> {
+async function fetchPipeline(): Promise<PipelineJob[] | null> {
   const internalUrl = process.env.CAREER_OPS_INTERNAL_URL;
   const secret = process.env.CAREER_OPS_INTERNAL_SECRET;
 
-  if (!internalUrl) return [];
+  if (!internalUrl) return null;
 
   try {
     const res = await fetch(`${internalUrl}/pipeline`, {
       headers: secret ? { Authorization: `Bearer ${secret}` } : {},
       next: { revalidate: 0 },
     });
+    if (!res.ok) return null;
     const data = (await res.json()) as PipelineResponse;
     return data.jobs ?? [];
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -51,7 +52,6 @@ export default async function CareerAdminPage() {
   const session = await auth();
   if (!session) redirect("/admin/login");
 
-  const hasInternalUrl = !!process.env.CAREER_OPS_INTERNAL_URL;
   const jobs = await fetchPipeline();
 
   return (
@@ -73,9 +73,9 @@ export default async function CareerAdminPage() {
           Jobs evaluated by career-ops
         </p>
 
-        {!hasInternalUrl ? (
+        {jobs === null ? (
           <p className="text-slate-500 font-mono text-sm">
-            Career-ops service unavailable — <span className="text-slate-600">CAREER_OPS_INTERNAL_URL</span> is not set.
+            Pipeline fetch failed — <span className="text-slate-400">career-ops</span> may be unreachable.
           </p>
         ) : jobs.length === 0 ? (
           <p className="text-slate-500 font-mono text-sm">No evaluations yet.</p>

@@ -37,6 +37,7 @@ export default function CareerEvaluateForm() {
   const [publishResult, setPublishResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [publishing, setPublishing] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
   const logBoxRef = useRef<HTMLPreElement | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -46,9 +47,22 @@ export default function CareerEvaluateForm() {
     }
   }, []);
 
+  const POLL_MAX = 100; // 100 × 3 s = 5 min max
+
   const pollStatus = useCallback(
     (jobId: string) => {
+      pollCountRef.current = 0;
       pollRef.current = setInterval(async () => {
+        pollCountRef.current += 1;
+
+        if (pollCountRef.current >= POLL_MAX) {
+          stopPolling();
+          setEvaluating(false);
+          setJobStatus("error");
+          setLogLines((prev) => [...prev, "\nTimed out after 5 minutes."]);
+          return;
+        }
+
         try {
           const res = await fetch(`/api/admin/career/status/${jobId}`);
           const data = (await res.json()) as StatusResponse;
@@ -60,12 +74,20 @@ export default function CareerEvaluateForm() {
             }
           }
 
-          if (data.status) {
-            setJobStatus(data.status);
-            if (data.status === "done" || data.status === "error") {
+          const knownStatuses: JobStatus[] = ["pending", "running", "done", "error"];
+          const status = data.status && knownStatuses.includes(data.status) ? data.status : null;
+
+          if (status) {
+            setJobStatus(status);
+            if (status === "done" || status === "error") {
               stopPolling();
               setEvaluating(false);
             }
+          } else if (data.status) {
+            stopPolling();
+            setEvaluating(false);
+            setJobStatus("error");
+            setLogLines((prev) => [...prev, `\nUnexpected status: ${data.status}`]);
           }
         } catch {
           stopPolling();
@@ -195,7 +217,7 @@ export default function CareerEvaluateForm() {
         <div className="flex items-center gap-4 flex-wrap">
           <button
             onClick={handlePublish}
-            disabled={publishing}
+            disabled={publishing || evaluating}
             className="px-4 py-2 rounded bg-cyan-500 text-[#0f1117] font-semibold text-sm hover:bg-cyan-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {publishing ? "Publishing…" : "Publish CV"}
