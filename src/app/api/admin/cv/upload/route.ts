@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 import { writeFile } from "fs/promises";
 import path from "path";
 import { requireAdminSession } from "@/lib/admin-auth";
-import { prisma } from "@/lib/prisma";
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -40,17 +39,6 @@ export async function POST(req: Request) {
 
   const outputPath = path.join(process.cwd(), "public", "cv.pdf");
   await writeFile(outputPath, buffer);
-
-  const user = await prisma.user.findFirst({ select: { id: true } });
-  if (user) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        cvSource: "manual",
-        cvGeneratedAt: new Date(),
-      },
-    });
-  }
 
   return NextResponse.json({ ok: true });
 }
