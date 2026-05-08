@@ -836,58 +836,119 @@ When a domain is pointed at this server:
 
 ## Milestone 7.5 — Career-Ops Integration (CV + Job Search) ⬜
 
-**Goal:** Replace the in-portfolio CV generation and opportunity-watching agents with [career-ops](https://github.com/santifer/career-ops) — an AI-powered job search pipeline that evaluates offers, generates tailored ATS PDFs, and tracks applications. The portfolio retains a single public CV download; all job hunting moves out of the portfolio codebase entirely.
+**Goal:** Ship [career-ops](https://github.com/santifer/career-ops) as a git submodule inside this repo so all requirements travel together. Claude Code drives career-ops inside an isolated Docker container that has zero access to the portfolio database or auth secrets — a web breach of the public portfolio cannot reach the CV agent. The portfolio admin panel gets a Career section to trigger evaluations and publish the master CV.
 
-### What changes
-The current portfolio has two agents covering this space:
-- `agents/cv-generator.ts` — AI-generates `public/cv.pdf` from DB content via Claude + `@react-pdf/renderer`
-- `agents/opportunity-watcher.ts` — scrapes WWR/HackerNews, scores job listings 1–10, emails on strong matches
+### Architecture
 
-Both are replaced by career-ops, which runs as a standalone tool outside the portfolio repo. The portfolio's only job is to serve the master CV PDF that career-ops produces.
+```
+Internet ──► Nginx ──► Next.js app ──► PostgreSQL        (portfolio network)
+                           │
+                    auth-gated API
+                    (POST /api/admin/career/*)
+                           │
+                    internal HTTP call           cv_output volume (shared)
+                           ▼                            ▲
+                     career-ops service ──────────────── │  (career-ops-net, isolated)
+                     └─ Claude Code CLI                  │
+                     └─ Playwright / Chromium            │
+                     └─ career-ops submodule  ───────────┘ writes PDFs here
 
-### Phase 1 — Set up career-ops
-- ⬜ Clone `santifer/career-ops` on the homelab server (separate directory, not inside this repo)
-- ⬜ Run `npm install && npx playwright install chromium`
-- ⬜ Copy `config/profile.example.yml` → `config/profile.yml`; fill in personal details
-- ⬜ Create `cv.md` in the career-ops root — master CV in markdown (source of truth for all PDFs)
-- ⬜ Configure portal targets in `portals.yml` — add relevant companies (robotics, AI, software)
-- ⬜ Run `npm run doctor` to validate prerequisites
-- ⬜ Do a first evaluation with Claude Code (`/career-ops`) to onboard the system to your background
+career-ops env: ANTHROPIC_API_KEY only — no DATABASE_URL, no AUTH_SECRET
+portfolio env:  full secrets — career-ops cannot see them
+```
 
-### Phase 2 — Wire the portfolio CV to career-ops output
-- ⬜ Establish a convention: career-ops `portfolio` mode writes the master PDF; copy it to `~/projects/my-portfolio/public/cv.pdf` (or symlink)
-- ⬜ Add a simple shell alias / cron entry: after generating the master CV, `cp <career-ops-output> ~/projects/my-portfolio/public/cv.pdf && cd ~/projects/my-portfolio && git add public/cv.pdf && git commit -m "chore: update master cv" && git push`
-- ⬜ Verify the public CV download link (`/cv.pdf`) serves the career-ops-generated file
+- **`career-ops/`** — git submodule (`santifer/career-ops`), checked in at this path
+- **`cv_output/`** — Docker named volume; career-ops writes PDFs, portfolio reads `master.pdf` → `public/cv.pdf`
+- **`career-ops` Docker service** — isolated network, Claude Code + Playwright inside, exposes internal HTTP trigger API
+- **`scripts/setup-career-ops.sh`** — one-shot setup: submodule init, npm install, playwright install, scaffold config if missing
+- **`src/app/admin/(panel)/career/`** — new admin section: trigger evaluations, browse pipeline, publish CV
 
-### Phase 3 — Remove cv-generator from the portfolio
-- ⬜ Delete `agents/cv-generator.ts` CLI runner
-- ⬜ Delete `src/lib/agents/cv-generator.ts` runner module
-- ⬜ Remove `CV_GENERATOR` from `AgentType` enum in `prisma/schema.prisma` → `npm run db:push` → `npm run db:generate`
-- ⬜ Remove the CV_GENERATOR entry from `src/lib/agents/index.ts` → `AGENT_RUNNERS`
-- ⬜ Simplify `/admin/cv` page: remove "Run AI generation" and `CvTargetForm` UI; keep only the manual upload section (`POST /api/admin/cv/upload`) so the owner can still push a career-ops PDF via the admin panel if needed
-- ⬜ Remove API routes that are now dead: `POST /api/admin/cv/run`, `POST /api/admin/cv/render`, `POST /api/admin/cv/scrape-jd`; keep `GET|PUT /api/admin/cv` and `POST /api/admin/cv/upload`
-- ⬜ Remove `src/lib/cv-template.tsx` (`@react-pdf/renderer` template — no longer used)
-- ⬜ Remove User schema fields made redundant: `cvContent Json?`, `cvSource String`, `cvGeneratedAt DateTime?` → `npm run db:push`
-- ⬜ Remove the `@react-pdf/renderer` dependency from `package.json` if nothing else uses it
-- ⬜ Update the 79-test suite: remove/replace cv-generator unit tests; verify `npm test` still passes
+### Phase 1 — Add career-ops as a git submodule
+- ⬜ `git submodule add https://github.com/santifer/career-ops.git career-ops` — adds `.gitmodules` and pins the submodule at HEAD
+- ⬜ `git submodule update --init --recursive` to verify checkout works
+- ⬜ Add `career-ops/` to `.dockerignore` exclusions for the portfolio build (it's only used by the career-ops service)
+- ⬜ Commit `.gitmodules` and the submodule pointer
 
-### Phase 4 — Remove opportunity-watcher from the portfolio
-- ⬜ Remove the cron job for `opportunity-watcher.ts` from `diboy`'s crontab on the server
-- ⬜ Delete `agents/opportunity-watcher.ts` CLI runner
-- ⬜ Delete `src/lib/agents/opportunity-watcher.ts` runner module
-- ⬜ Remove `OPPORTUNITY_WATCHER` from `AgentType` enum → `npm run db:push` → `npm run db:generate`
-- ⬜ Remove `OPPORTUNITY_WATCHER` from `src/lib/agents/index.ts` → `AGENT_RUNNERS`
-- ⬜ Remove `OPPORTUNITY_ALERT_EMAIL`, `OPPORTUNITY_ALERT_THRESHOLD` from `.env.example` (or mark as deprecated)
-- ⬜ Delete any AgentReport rows for OPPORTUNITY_WATCHER from the DB (optional cleanup)
+### Phase 2 — Automatic setup script
+- ⬜ Create `scripts/setup-career-ops.sh`:
+  - `git submodule update --init --recursive`
+  - `cd career-ops && npm install`
+  - `npx playwright install chromium --with-deps`
+  - Scaffold `career-ops/config/profile.yml` from `profile.example.yml` if absent
+  - Scaffold `career-ops/cv.md` with a placeholder header if absent
+  - Print next-steps: edit `career-ops/config/profile.yml`, fill `career-ops/cv.md`
+- ⬜ Make it executable: `chmod +x scripts/setup-career-ops.sh`
+- ⬜ Add `npm run setup:career-ops` script in `package.json` → `bash scripts/setup-career-ops.sh`
+- ⬜ Document in `README.md` (or `.env.example` header) that `npm run setup:career-ops` must be run after first clone
 
-### Phase 5 — Docs + CLAUDE.md update
-- ⬜ Update `docs/AI_AGENTS.md` — remove cv-generator and opportunity-watcher sections; add a note pointing to career-ops for job search
-- ⬜ Update `CLAUDE.md` — remove cv-generator and opportunity-watcher from the agent CLI command list; add a note about career-ops living outside this repo
-- ⬜ Update `docs/IMPLEMENTATION_PLAN.md` — mark M4.6 and the OW sections of M4.14 as superseded by this milestone
+### Phase 3 — career-ops HTTP trigger server
+Career-ops is designed for interactive Claude Code sessions. We need a thin wrapper so the portfolio admin can trigger it headlessly.
+- ⬜ Create `career-ops-server/server.js` (a new top-level directory, NOT inside the submodule):
+  - Minimal Express/http server on `CAREER_OPS_PORT` (default `4200`)
+  - `POST /evaluate` — accepts `{ url: string }`, shells out `claude -p "/career-ops [url]"` inside the `career-ops/` directory, streams output to a log file, returns `{ jobId }` immediately
+  - `GET /status/:jobId` — returns job status + last N lines of log
+  - `POST /cv/master` — triggers `claude -p "/career-ops-pdf"` to regenerate the master CV PDF; copies output to the shared `cv_output` volume path
+  - `GET /pipeline` — reads `career-ops/pipeline.json` (career-ops tracker file) and returns it as JSON
+  - Auth: `CAREER_OPS_INTERNAL_SECRET` header check — only the portfolio `app` service knows this value
+- ⬜ `career-ops-server/package.json` with only `express` as dependency
+- ⬜ `career-ops-server/Dockerfile` — `node:20-slim` base; installs Claude Code CLI (`npm install -g @anthropic-ai/claude-code`); installs Playwright Chromium; copies `career-ops/` submodule and server code; runs `server.js`
 
-### Owner actions still needed after this milestone
-- ⬜ Populate `cv.md` in career-ops with real experience (same source of truth as `mock-data.ts` for the portfolio)
-- ⬜ Run initial career-ops evaluation on 5–10 real job listings to calibrate the scoring weights to your preferences
+### Phase 4 — Docker Compose: isolated career-ops service
+- ⬜ Add `career-ops` service to `docker-compose.yml`:
+  ```yaml
+  career-ops:
+    build:
+      context: .
+      dockerfile: career-ops-server/Dockerfile
+    restart: unless-stopped
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CAREER_OPS_PORT: ${CAREER_OPS_PORT:-4200}
+      CAREER_OPS_INTERNAL_SECRET: ${CAREER_OPS_INTERNAL_SECRET}
+      CV_OUTPUT_PATH: /cv_output
+    volumes:
+      - cv_output:/cv_output
+    networks:
+      - career-ops-internal   # can reach app; cannot reach db
+  ```
+- ⬜ Add `career-ops-internal` network (bridge) to `docker-compose.yml` — career-ops joins this; `app` joins both `portfolio` and `career-ops-internal`; `db` joins only `portfolio`
+- ⬜ Add `cv_output` named volume to `docker-compose.yml`
+- ⬜ Mount `cv_output` in the `app` service at `/app/public/cv-output` so Next.js can read published PDFs directly
+- ⬜ Add `CAREER_OPS_INTERNAL_URL` (e.g. `http://career-ops:4200`) and `CAREER_OPS_INTERNAL_SECRET` to `app` service environment
+- ⬜ Add all new env vars to `.env.example` with comments
+
+### Phase 5 — Portfolio admin integration
+- ⬜ `src/app/api/admin/career/evaluate/route.ts` — `POST`, auth-gated, proxies to `career-ops` service `POST /evaluate`; stores job ID in a new `CareerJob` table or as a JSON blob in `Agent.config`
+- ⬜ `src/app/api/admin/career/status/[jobId]/route.ts` — `GET`, proxies to `career-ops` service `GET /status/:jobId`
+- ⬜ `src/app/api/admin/career/pipeline/route.ts` — `GET`, reads pipeline JSON from `career-ops` service
+- ⬜ `src/app/api/admin/career/cv/publish/route.ts` — `POST`, tells career-ops to regenerate master CV, then symlinks/copies `cv_output/master.pdf` to `public/cv.pdf`
+- ⬜ `src/app/admin/(panel)/career/page.tsx` — Career admin page:
+  - Input field: paste a job URL → POST to `/api/admin/career/evaluate` → shows live status
+  - Pipeline table: list of evaluated jobs from `GET /pipeline`, with score, status, PDF download link
+  - "Publish master CV" button → `POST /api/admin/career/cv/publish` → confirms `public/cv.pdf` updated
+- ⬜ Add "Career" nav link to admin sidebar (in `src/components/admin/AdminNav.tsx` or equivalent)
+
+### Phase 6 — Remove old portfolio agents
+*Supersedes M4.6 (CV Generation) and the OW-* items in M4.14.*
+- ⬜ Delete `agents/cv-generator.ts` and `src/lib/agents/cv-generator.ts`
+- ⬜ Delete `agents/opportunity-watcher.ts` and `src/lib/agents/opportunity-watcher.ts`
+- ⬜ Remove `CV_GENERATOR` and `OPPORTUNITY_WATCHER` from `AgentType` enum in `prisma/schema.prisma` → `npm run db:push` → `npm run db:generate`
+- ⬜ Remove both from `src/lib/agents/index.ts` → `AGENT_RUNNERS`
+- ⬜ Simplify `/admin/cv` page to upload-only — remove AI generation UI, `CvTargetForm`, and associated dead API routes (`/run`, `/render`, `/scrape-jd`)
+- ⬜ Delete `src/lib/cv-template.tsx` and remove `@react-pdf/renderer` from `package.json`
+- ⬜ Drop `cvContent Json?`, `cvSource String`, `cvGeneratedAt DateTime?` from `User` schema → `npm run db:push`
+- ⬜ Remove `OPPORTUNITY_ALERT_EMAIL`, `OPPORTUNITY_ALERT_THRESHOLD` from `.env.example`
+- ⬜ Update test suite: remove cv-generator and opportunity-watcher unit tests; `npm test` must still pass
+
+### Phase 7 — Docs update
+- ⬜ Update `docs/AI_AGENTS.md` — remove cv-generator and opportunity-watcher; add career-ops section describing the submodule, Docker service, and Claude Code driver
+- ⬜ Update `CLAUDE.md` — remove the two deprecated agent CLI commands; add `career-ops` submodule and `npm run setup:career-ops` to the setup section; note that career-ops is driven by Claude Code in an isolated container
+- ⬜ Update `docs/ARCHITECTURE.md` — add career-ops service to the deployment diagram and describe the isolation model
+
+### Owner actions after this milestone
+- ⬜ Run `npm run setup:career-ops`, then fill in `career-ops/config/profile.yml` and `career-ops/cv.md` with real details
+- ⬜ Do the initial onboarding session: `cd career-ops && claude` → ask Claude to adapt archetypes and scoring to your background
+- ⬜ Run 5–10 real job evaluations to calibrate scoring weights before relying on the pipeline
 
 ---
 
