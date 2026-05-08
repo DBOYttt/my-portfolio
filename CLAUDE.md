@@ -72,7 +72,10 @@ my-portfolio/
 │   ├── IMPLEMENTATION_PLAN.md ← Phased roadmap with task breakdown
 │   ├── DATA_MODEL.md          ← Database schema reference
 │   ├── AI_AGENTS.md           ← AI agent specs and implementation guide
-│   └── SECURITY.md            ← Security model and rules
+│   ├── SECURITY.md            ← Security model and rules
+│   ├── MCP_SETUP.md           ← MCP server setup guide (Claude Desktop, Claude Code, n8n)
+│   ├── FEATURE_AUDIT.md       ← Feature completeness audit
+│   └── AGENT_IMPROVEMENTS.md  ← Agent improvement notes
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx           ← Homepage — imports section components
@@ -131,7 +134,7 @@ Do NOT hardcode strings in components. When adding a new section that needs cont
 2. Import it in the component
 3. The owner replaces values in one place
 
-When the admin panel + database are active (Milestone 3+), components will fetch from the DB instead. `mock-data.ts` becomes the fallback/seed source.
+The admin panel and database are live (Milestone 3+ complete). Components fetch from the DB via `src/lib/data.ts`; `mock-data.ts` is the fallback/seed source when `DATABASE_URL` is absent.
 
 **Mock mode** is active when `DATABASE_URL` is absent or starts with `prisma+postgres://`. The `isMock()` helper in `src/lib/data.ts` centralises this check; all fetchers use it. The homepage (`src/app/page.tsx`) checks `!process.env.DATABASE_URL` to conditionally render `<MockModeBanner />`.
 
@@ -149,7 +152,10 @@ async function getData() {
 
 All public sections, admin CRUD, nine AI agents, CV generation, security audit, and 79 Vitest tests are complete and deployed. The Engineering Logbook redesign (M5.5) is live. M6.5 (Admin Panel Audit & Bug Fixes) is complete. M7 (MCP Server) is complete — 14 MCP tools, 9 read-only resources, stdio + HTTP/SSE transports, AuditLog integration, and `/admin/mcp` status page. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx, port 80).
 
-**Next milestone:** M8 — Growth Features (deferred until site is live and generating traffic). See `docs/IMPLEMENTATION_PLAN.md` for full task breakdown and status.
+**Next milestones:**
+- **M8 — Cloudflare Zero Trust Tunnel** — Expose homelab to public internet at `diboy.dev` via `cloudflared`. Requires DNS migration from name.com to Cloudflare nameservers first. See `docs/IMPLEMENTATION_PLAN.md` for the 6-phase checklist.
+- **M9 — Open Source Preparation** — Audit hardcoded personal data, rewrite README for external users, add `LICENSE`, `CONTRIBUTING.md`, issue/PR templates, then make repo public.
+- **M10 — Growth Features** ⏸ — Deferred until site is live and generating traffic.
 
 ### Deployment: `192.168.0.104`
 - **Stack:** Docker Compose — `my-portfolio-app-1` (Next.js, port 3000 internal), `my-portfolio-db-1` (PostgreSQL 16, `127.0.0.1:5432`), `my-portfolio-nginx-1` (port 80, LAN HTTP)
