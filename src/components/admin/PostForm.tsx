@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import AgentSuggestPanel from "./AgentSuggestPanel";
@@ -65,6 +65,17 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
   const [generatingOutline, setGeneratingOutline] = useState(false);
   const [outline, setOutline] = useState<OutlineSection[] | null>(null);
   const [showOutlinePrompt, setShowOutlinePrompt] = useState(false);
+  const isDirty = useRef(false);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!isDirty.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
   const [form, setForm] = useState<PostFormData>({
     title: initialData?.title ?? "",
@@ -79,15 +90,18 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
   });
 
   function set(key: keyof PostFormData, value: string | string[]) {
+    isDirty.current = true;
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   function handleTitleChange(value: string) {
+    isDirty.current = true;
     set("title", value);
     if (!slugManuallyEdited) set("slug", toSlug(value));
   }
 
   function addTag() {
+    isDirty.current = true;
     const tag = tagInput.trim();
     if (tag && !form.tags.includes(tag)) {
       set("tags", [...form.tags, tag]);
@@ -96,6 +110,7 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
   }
 
   function removeTag(tag: string) {
+    isDirty.current = true;
     set("tags", form.tags.filter((t) => t !== tag));
   }
 
@@ -168,6 +183,7 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
         const data = await res.json();
         throw new Error(data.error ?? "Failed to save");
       }
+      isDirty.current = false;
       setSaved(true);
       setTimeout(() => {
         router.push("/admin/blog");
@@ -456,13 +472,25 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
         <button
           type="submit"
           disabled={saving || saved}
-          className={`btn-primary transition-colors ${saved ? "bg-emerald-500 border-emerald-500 hover:bg-emerald-500" : ""}`}
+          className={`btn-primary transition-colors ${saved ? "bg-cyan-600 border-cyan-600 hover:bg-cyan-600" : ""}`}
         >
-          {saved ? "Saved ✓" : saving ? "Saving…" : postId ? "Update post" : "Create post"}
+          {saved
+            ? "Saved ✓"
+            : saving
+              ? "Saving…"
+              : form.status === "PUBLISHED"
+                ? (postId ? "Save & publish" : "Publish")
+                : (postId ? "Update post" : "Create post")}
         </button>
         <button
           type="button"
-          onClick={() => router.push("/admin/blog")}
+          onClick={(e) => {
+            if (isDirty.current && !window.confirm("Discard unsaved changes?")) {
+              e.preventDefault();
+              return;
+            }
+            router.push("/admin/blog");
+          }}
           className="btn-secondary"
         >
           Cancel
