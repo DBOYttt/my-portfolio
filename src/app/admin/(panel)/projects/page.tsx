@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import RunAgentButton from "@/components/admin/RunAgentButton";
+import ConfirmDeleteButton from "@/components/admin/ConfirmDeleteButton";
 
 export const metadata: Metadata = { title: "Projects" };
 
@@ -131,15 +132,7 @@ export default async function ProjectsAdminPage() {
                       >
                         Edit
                       </Link>
-                      <form action={deleteProject}>
-                        <input type="hidden" name="id" value={project.id} />
-                        <button
-                          type="submit"
-                          className="text-xs py-1 px-2 text-red-400 hover:text-red-300 border border-red-500/20 rounded-lg hover:bg-red-500/10 transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </form>
+                      <ConfirmDeleteButton action={deleteProject} id={project.id} label="project" />
                     </div>
                   </td>
                 </tr>

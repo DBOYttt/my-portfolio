@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import ConfirmDeleteButton from "@/components/admin/ConfirmDeleteButton";
 
 export const metadata: Metadata = { title: "Blog" };
 
@@ -26,6 +28,9 @@ export default async function BlogAdminPage() {
     const id = formData.get("id") as string;
     if (!id) return;
     await prisma.post.delete({ where: { id } });
+    revalidatePath("/admin/blog");
+    revalidatePath("/blog");
+    revalidatePath("/");
   }
 
   return (
@@ -106,15 +111,7 @@ export default async function BlogAdminPage() {
                       >
                         Edit
                       </Link>
-                      <form action={deletePost}>
-                        <input type="hidden" name="id" value={post.id} />
-                        <button
-                          type="submit"
-                          className="text-xs py-1 px-2 text-red-400 hover:text-red-300 border border-red-500/20 rounded-lg hover:bg-red-500/10 transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </form>
+                      <ConfirmDeleteButton action={deletePost} id={post.id} label="post" />
                     </div>
                   </td>
                 </tr>
