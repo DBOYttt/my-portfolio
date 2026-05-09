@@ -4,6 +4,8 @@ import { SectionHead } from "@/components/ui/hand-drawn";
 export default async function ExperienceSection() {
   const experience = await getExperience();
 
+  if (!experience || experience.length === 0) return null;
+
   return (
     <section id="experience" className="logbook-section">
       <SectionHead
@@ -37,10 +39,9 @@ export default async function ExperienceSection() {
               className="exp-row"
             >
               <span
-                className="mono"
+                className="mono exp-date"
                 style={{
                   fontSize: 12,
-                  color: "var(--ink-faint)",
                   letterSpacing: "0.04em",
                 }}
               >
@@ -86,7 +87,7 @@ export default async function ExperienceSection() {
           ))}
         </ol>
       </div>
-      <style>{`@media (max-width:760px){ .exp-row { grid-template-columns: 1fr !important; } .exp-row .mono { color: var(--accent) !important; } }`}</style>
+      <style>{`.exp-date { color: var(--accent); } @media (max-width:760px){ .exp-row { grid-template-columns: 1fr !important; } }`}</style>
     </section>
   );
 }
