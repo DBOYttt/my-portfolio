@@ -40,7 +40,7 @@ Built to help the owner get hired. Every decision should serve that goal first.
 - Admin routes (`/admin/*`, `/api/admin/*`) must always be protected by session checks.
 - Contact form API must always have rate limiting applied.
 - New API routes default to auth-required unless they are explicitly public.
-- API routes that use Prisma, `@react-pdf/renderer`, or `bcryptjs` must declare `export const runtime = "nodejs"` — these packages are incompatible with the Edge runtime.
+- API routes that use Prisma or `bcryptjs` must declare `export const runtime = "nodejs"` — these packages are incompatible with the Edge runtime.
 
 ---
 
@@ -169,7 +169,7 @@ All public sections, admin CRUD, seven AI agents, career-ops integration, securi
 ### Deployment: `192.168.0.104`
 - **Stack:** Docker Compose — `my-portfolio-app-1` (Next.js, port 3000 internal), `my-portfolio-db-1` (PostgreSQL 16, `127.0.0.1:5432`), `my-portfolio-nginx-1` (port 80, LAN HTTP), `career-ops` (port 4200 internal, `career-ops-internal` network)
 - **Config:** `nginx/portfolio-lan.conf` via `docker-compose.override.yml` (HTTP only, no TLS)
-- **Cron agents:** 7 jobs in `diboy`'s crontab at `/home/diboy/projects/my-portfolio`, logs → `~/logs/` (cv-generator and opportunity-watcher removed — superseded by career-ops)
+- **Cron agents:** 5 jobs in `diboy`'s crontab at `/home/diboy/projects/my-portfolio`, logs → `~/logs/` (github-summarizer, skills-inference, blog-suggester, robotics-news, brand-monitor); career-ops job evaluation is triggered manually via the admin Career panel, not cron
 - **Auto-deploy:** `.github/workflows/deploy.yml` wired via Twingate + SSH — pending Twingate service account `github-actions-deploy` to activate
 - **Owner action required:** Fill `career-ops/config/profile.yml` and `career-ops/cv.md`, then run `npm run setup:career-ops`
 

@@ -122,6 +122,15 @@ Nginx (port 80/443)
     │
     ├──► Next.js app (port 3000, Docker)
     │      └── PostgreSQL (port 5432, Docker, internal only)
+    │      └── career-ops-server (port 4200, internal only — via career-ops-internal network)
+    │
+    ├──► career-ops-server (Docker, isolated)
+    │      Port 4200 — not exposed to LAN; reachable only by Next.js app
+    │      Network: career-ops-internal bridge (no access to PostgreSQL)
+    │      Volume: cv_output (shared with Next.js app for PDF hand-off)
+    │      Receives HTTP trigger requests via CAREER_OPS_INTERNAL_URL
+    │      Exposes: POST /evaluate, GET /status/:jobId, POST /cv/master,
+    │               GET /pipeline, POST /sync, GET /health
     │
     └──► n8n (port 5678) — ONLY via IP allowlist or VPN
          Never exposed publicly without auth gate

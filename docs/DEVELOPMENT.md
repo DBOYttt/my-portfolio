@@ -32,6 +32,7 @@ cp .env.example .env
 
 npm run db:push    # Apply schema (use db:push, not migrate dev — see note below)
 npm run db:seed    # Create admin user
+npm run setup:career-ops  # Init career-ops submodule, install deps, scaffold config
 npm run dev        # Now runs against real DB
 ```
 
@@ -57,10 +58,8 @@ npx tsx agents/github-summarizer.ts
 npx tsx agents/robotics-news.ts
 npx tsx agents/blog-suggester.ts
 npx tsx agents/brand-monitor.ts
-npx tsx agents/opportunity-watcher.ts
 npx tsx agents/skills-inference.ts           # seeds DB row on first run
 npx tsx agents/github-project-importer.ts    # seeds DB row on first run
-npx tsx agents/cv-generator.ts               # seeds DB row on first run
 npx tsx agents/platform-sync.ts              # seeds DB row on first run
 
 # MCP Server

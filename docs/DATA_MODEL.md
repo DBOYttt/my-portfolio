@@ -17,9 +17,7 @@ Single admin user. No registration flow — created via `npm run db:seed`.
 | email | String (unique) | Login credential |
 | passwordHash | String | bcrypt hash, cost factor 12 |
 | name | String? | Display name in admin |
-| cvGeneratedAt | DateTime? | Timestamp of last successful AI CV generation |
-| cvSource | String | `"generated"` or `"manual"` — controls whether AI regeneration is active |
-| cvContent | Json? | Structured CV JSON from last AI generation (summary, skills, experience, projects) |
+| careerConfig | Json? | Stores career profile configuration (contact info, compensation, narrative, etc.) |
 | createdAt | DateTime | |
 | updatedAt | DateTime | |
 
@@ -164,10 +162,8 @@ Configuration record for each agent type. One row per agent type in the DB.
 - `BRAND_MONITOR` — Web mentions of owner name/projects
 - `ROBOTICS_NEWS` — Weekly RSS digest from robotics feeds
 - `BLOG_SUGGESTER` — Monthly content ideas
-- `OPPORTUNITY_WATCHER` — Job listing monitor
 - `SKILLS_INFERENCE` — GitHub/project/post analysis → skill diff (owner-approved)
 - `GITHUB_PROJECT_IMPORTER` — Auto-create draft Project rows from new public repos
-- `CV_GENERATOR` — AI-written CV rendered to `public/cv.pdf`
 - `PLATFORM_SYNC` — Combined GitHub + Twitter profile report
 
 ### AgentReport

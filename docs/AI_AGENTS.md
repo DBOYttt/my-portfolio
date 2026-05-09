@@ -37,10 +37,8 @@ agents/
 ├── robotics-news.ts           ← Weekly RSS digest (robotics/tech feeds)
 ├── blog-suggester.ts          ← Monthly content ideas
 ├── brand-monitor.ts           ← Web mention monitoring
-├── opportunity-watcher.ts     ← Job listing monitor
 ├── skills-inference.ts        ← GitHub/project/post analysis → skill diff
 ├── github-project-importer.ts ← Auto-create project drafts from GitHub repos
-├── cv-generator.ts            ← AI-written CV → public/cv.pdf
 └── platform-sync.ts           ← GitHub profile + Twitter combined report
 ```
 
@@ -171,18 +169,6 @@ Use `claude-haiku-4-5-20251001` for agents — it's cheap and fast for summariza
 
 ---
 
-### Career Opportunity Watcher (`agents/opportunity-watcher.ts`)
-
-**Purpose:** Surface relevant job postings automatically.
-
-**Data source:** Remotive API (`remotive.com/api/remote-jobs`) — fully public, no auth required
-**Output:** New matching listings with title, company, link, location, LLM fit score
-**Schedule:** `0 9 * * 1,4` (Monday and Thursday 9am)
-
-**Important:** Do NOT implement LinkedIn scraping — ToS violation, IP ban risk.
-
----
-
 ### Skills Inference (`agents/skills-inference.ts`)
 
 **Purpose:** Keep the Skills section evidence-based and up to date without manual editing.
@@ -205,16 +191,6 @@ Use `claude-haiku-4-5-20251001` for agents — it's cheap and fast for summariza
 
 ---
 
-### CV Generator (`agents/cv-generator.ts`)
-
-**Purpose:** Keep `public/cv.pdf` current without manual document editing.
-
-**Process:** Read DB (User, Skill, Experience, Project) → Claude haiku writes structured JSON → `@react-pdf/renderer` renders PDF → written to `public/cv.pdf`
-**Fallback:** If `ANTHROPIC_API_KEY` absent or LLM parse fails, builds PDF directly from raw DB data
-**Admin UI:** `/admin/cv` page — generated date, Open PDF link, Run now button, `CvEditor` for inline corrections
-
----
-
 ### Platform Sync (`agents/platform-sync.ts`)
 
 **Purpose:** Combined GitHub profile + X/Twitter snapshot report.
@@ -222,6 +198,14 @@ Use `claude-haiku-4-5-20251001` for agents — it's cheap and fast for summariza
 **Sources:** GitHub `/users/{username}` profile API + Twitter API v2 (graceful null if `TWITTER_BEARER_TOKEN` unset)
 **Output:** Markdown report combining both platform summaries
 **Admin UI:** Admin dashboard "Platform Connections" card shows status of each platform integration
+
+---
+
+## Career-Ops Integration
+
+Career-ops is an isolated Docker service (not a portfolio agent) that handles job evaluation and CV targeting using Claude Code CLI. It is triggered via the admin Career panel, not cron. The admin can submit a job URL for evaluation, view the scored pipeline, and publish the resulting master CV to `public/cv.pdf`. The `career-ops-server` wrapper exposes HTTP endpoints: `POST /evaluate`, `GET /status/:jobId`, `POST /cv/master`, `GET /pipeline`, `POST /sync`, `GET /health`. Communication uses a shared bearer secret (`CAREER_OPS_INTERNAL_SECRET`).
+
+The service runs in a `career-ops-internal` bridge network that has no access to PostgreSQL — only the Next.js app can reach it. A shared `cv_output` Docker volume is used for PDF hand-off: career-ops writes `master.pdf` there; the portfolio admin panel publishes it to `public/cv.pdf` via `POST /api/admin/career/cv/publish`.
 
 ---
 
@@ -233,10 +217,8 @@ npx tsx agents/github-summarizer.ts
 npx tsx agents/robotics-news.ts
 npx tsx agents/blog-suggester.ts
 npx tsx agents/brand-monitor.ts
-npx tsx agents/opportunity-watcher.ts
 npx tsx agents/skills-inference.ts           # seeds DB row on first run
 npx tsx agents/github-project-importer.ts    # seeds DB row on first run
-npx tsx agents/cv-generator.ts               # seeds DB row on first run
 npx tsx agents/platform-sync.ts              # seeds DB row on first run
 ```
 

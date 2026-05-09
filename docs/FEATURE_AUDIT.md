@@ -231,21 +231,32 @@ This document is the QA reference for Milestone 4.12. Every interactive element,
 
 ### `/admin/cv`
 
+CV generation via `@react-pdf/renderer` has been removed. The `/api/admin/cv/run` and `/api/admin/cv/render` routes no longer exist. The CV page now shows a simple manual upload interface only. CV generation and targeting is handled by the career-ops service via `/admin/career`.
+
 | Element | Expected outcome |
 |---|---|
-| Status badge | Shows "AI-generated" (cyan) or "Manual upload" (slate) with last generated date |
 | "Open PDF" button | Opens `/cv.pdf` in new tab (only visible if file exists) |
-| RunAgentButton ("Run now") | POST `/api/admin/cv/run`; generates PDF via AI + DB data; on success redirects to agent report |
-| CvEditor — Summary textarea | Editable free text; saves to `cvContent.summary` |
-| CvEditor — Skills section | Read-only display; edit via `/admin/skills` |
-| CvEditor — Experience section | Inline editable fields |
-| CvEditor — Projects checkboxes | Check/uncheck to include in CV |
-| "Save & Render PDF" button | PUT `/api/admin/cv` (save content) + POST `/api/admin/cv/render` (re-render PDF); success → green status |
-| "Upload manual PDF" (collapsible) | Expands upload section |
+| "Upload manual PDF" section | Upload interface for placing a PDF directly at `public/cv.pdf` |
 | Manual PDF file input | Accepts `.pdf` only; max 5 MB |
-| Manual "Upload" button | POST `/api/admin/cv/upload`; writes to `public/cv.pdf`; sets `cvSource = "manual"` |
+| Manual "Upload" button | POST `/api/admin/cv/upload`; writes to `public/cv.pdf` |
 | Manual upload — file > 5 MB | Returns 400; error shown |
 | Manual upload — non-PDF | Returns 400; error shown |
+
+---
+
+## Admin Surface — Career
+
+### `/admin/career`
+
+| Element | Expected outcome |
+|---|---|
+| Profile editor — 5 collapsible sections | Contact info, compensation, narrative, target roles, and preferences; changes auto-saved with debounce |
+| Job URL input field | Paste any job posting URL |
+| "Evaluate" button | POST `/api/admin/career/evaluate`; triggers career-ops evaluation; returns jobId immediately |
+| Evaluation status | Polls `GET /api/admin/career/status/:jobId`; shows live status until complete |
+| Pipeline table | Lists all evaluated jobs from `GET /api/admin/career/pipeline`; shows score, status, and link |
+| "Publish master CV" button | POST `/api/admin/career/cv/publish`; copies `cv_output/master.pdf` to `public/cv.pdf`; confirms success |
+| "Sync" button | POST `/api/admin/career/sync`; pushes current profile config + CV markdown to career-ops-server |
 
 ---
 
