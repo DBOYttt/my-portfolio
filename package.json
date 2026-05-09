@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "mcp:stdio": "npx tsx mcp-server/index.ts",
-    "mcp:http": "npx tsx mcp-server/index.ts --http"
+    "mcp:http": "npx tsx mcp-server/index.ts --http",
+    "setup:career-ops": "bash scripts/setup-career-ops.sh"
   },
   "keywords": [],
   "author": "",
@@ -26,7 +27,6 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
-    "@react-pdf/renderer": "^4.4.1",
     "@uiw/react-md-editor": "^4.1.0",
     "bcryptjs": "^3.0.3",
     "next": "^14.2.35",

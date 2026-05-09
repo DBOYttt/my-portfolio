@@ -103,11 +103,20 @@ my-portfolio/
 │   ├── robotics-news.ts
 │   ├── blog-suggester.ts
 │   ├── brand-monitor.ts
-│   ├── opportunity-watcher.ts
-│   ├── skills-inference.ts
-│   ├── github-project-importer.ts
-│   ├── cv-generator.ts
-│   └── platform-sync.ts
+│   ├── skills-inference.ts    ← seeds DB row on first run
+│   ├── github-project-importer.ts ← seeds DB row on first run
+│   └── platform-sync.ts       ← seeds DB row on first run
+├── career-ops/                ← git submodule (santifer/career-ops) — job evaluation + CV targeting
+├── career-ops-server/         ← Minimal Express HTTP trigger wrapper for career-ops CLI
+│   ├── server.ts              ← 5 endpoints (evaluate, status, cv/master, pipeline, health)
+│   └── Dockerfile             ← node:22-slim + Claude Code CLI + Playwright/Chromium
+├── mcp-server/                ← Standalone MCP server (stdio + HTTP transports)
+│   ├── server.ts              ← Server bootstrap
+│   ├── tools.ts               ← 14 MCP tools
+│   ├── resources.ts           ← 9 read-only resources
+│   ├── auth.ts                ← MCP auth helpers
+│   ├── http.ts                ← HTTP/SSE transport
+│   └── index.ts               ← Entry point
 └── nginx/
     └── portfolio.conf         ← Nginx reverse proxy config
 ```
@@ -148,32 +157,32 @@ async function getData() {
 
 ---
 
-## Current State (post-Milestone 7)
+## Current State (post-Milestone 7.5)
 
-All public sections, admin CRUD, nine AI agents, CV generation, security audit, and 79 Vitest tests are complete and deployed. The Engineering Logbook redesign (M5.5) is live. M6.5 (Admin Panel Audit & Bug Fixes) is complete. M7 (MCP Server) is complete — 14 MCP tools, 9 read-only resources, stdio + HTTP/SSE transports, AuditLog integration, and `/admin/mcp` status page. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx, port 80).
+All public sections, admin CRUD, seven AI agents, career-ops integration, security audit, and 67 Vitest tests are complete. The Engineering Logbook redesign (M5.5) is live. M6.5 (Admin Panel Audit & Bug Fixes) is complete. M7 (MCP Server) is complete — 14 MCP tools, 9 read-only resources, stdio + HTTP/SSE transports, AuditLog integration, and `/admin/mcp` status page. M7.5 (Career-Ops Integration) is complete — career-ops runs as an isolated Docker service, admin Career panel triggers job evaluations and publishes master CV to `public/cv.pdf`. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx + career-ops, port 80).
 
 **Next milestones:**
-- **M7.5 — Career-Ops Integration** — Ship [career-ops](https://github.com/santifer/career-ops) as a git submodule (`career-ops/`). Claude Code drives it inside an isolated Docker service (`career-ops-internal` network, `ANTHROPIC_API_KEY` only — no DB access). Portfolio admin gets a Career section to trigger evaluations and publish the master CV to `public/cv.pdf` via a shared `cv_output` volume. Replaces `cv-generator` and `opportunity-watcher` agents entirely.
 - **M8 — Cloudflare Zero Trust Tunnel** — Expose homelab to public internet at `diboy.dev` via `cloudflared`. Requires DNS migration from name.com to Cloudflare nameservers first. See `docs/IMPLEMENTATION_PLAN.md` for the 6-phase checklist.
 - **M9 — Open Source Preparation** — Audit hardcoded personal data, rewrite README for external users, add `LICENSE`, `CONTRIBUTING.md`, issue/PR templates, then make repo public.
 - **M10 — Growth Features** ⏸ — Deferred until site is live and generating traffic.
 
 ### Deployment: `192.168.0.104`
-- **Stack:** Docker Compose — `my-portfolio-app-1` (Next.js, port 3000 internal), `my-portfolio-db-1` (PostgreSQL 16, `127.0.0.1:5432`), `my-portfolio-nginx-1` (port 80, LAN HTTP)
+- **Stack:** Docker Compose — `my-portfolio-app-1` (Next.js, port 3000 internal), `my-portfolio-db-1` (PostgreSQL 16, `127.0.0.1:5432`), `my-portfolio-nginx-1` (port 80, LAN HTTP), `career-ops` (port 4200 internal, `career-ops-internal` network)
 - **Config:** `nginx/portfolio-lan.conf` via `docker-compose.override.yml` (HTTP only, no TLS)
-- **Cron agents:** 9 jobs in `diboy`'s crontab at `/home/diboy/projects/my-portfolio`, logs → `~/logs/`
+- **Cron agents:** 7 jobs in `diboy`'s crontab at `/home/diboy/projects/my-portfolio`, logs → `~/logs/` (cv-generator and opportunity-watcher removed — superseded by career-ops)
 - **Auto-deploy:** `.github/workflows/deploy.yml` wired via Twingate + SSH — pending Twingate service account `github-actions-deploy` to activate
+- **Owner action required:** Fill `career-ops/config/profile.yml` and `career-ops/cv.md`, then run `npm run setup:career-ops`
 
 ### Key architectural facts worth knowing
 - Admin route groups: `(auth)/` — login page only, no shell. `(panel)/` — all authenticated pages; `layout.tsx` calls `auth()` and redirects if no session.
 - `src/middleware.ts` is Edge-only and checks only for cookie *presence* — not validity. Real auth is enforced server-side by `auth()` in `(panel)/layout.tsx` and `requireAdminSession()` in every `/api/admin/*` route.
 - Agent run API: `POST /api/admin/agents/[id]/run` uses an atomic `updateMany` lock — only one run at a time; concurrent callers get 409.
 - Skills Inference results are **never auto-applied** — owner must approve each diff on the report detail page.
-- CV PDF is written to `public/cv.pdf`; `cvSource` field on `User` tracks `"ai"` vs `"manual"`.
+- CV PDF is written to `public/cv.pdf` by career-ops via the shared `cv_output` Docker volume; published to `public/cv.pdf` via `POST /api/admin/career/cv/publish`.
 - `Agent.config Json?` stores per-agent persistent state (seenUrls, keywords, repoSnapshot, etc.). Runners return `_updatedConfig` in `AgentRunResult`; the run API persists it after success.
 - Build without a real DB: `DATABASE_URL="prisma+postgres://ci" npm run build` — forces `isMock()` true so all pages use mock data. Used in CI.
 - `src/app/page.tsx` and `src/app/blog/page.tsx` declare `export const dynamic = "force-dynamic"` — required because both pages were being pre-rendered as static HTML at build time (with mock data), bypassing the real DB at runtime.
-- Test suite: `npm test` runs 79 Vitest tests across 8 files (unit, integration, structural scan). `npm run test:watch` for TDD.
+- Test suite: `npm test` runs 67 Vitest tests across 7 files. Locations: `src/lib/__tests__/` (data, rate-limit, admin-auth), `src/lib/agents/__tests__/` (skills-inference), `src/app/api/__tests__/` (admin-routes-guard, agents-run). `npm run test:watch` for TDD.
 - CI/CD pipeline: `.github/workflows/ci.yml` runs lint → type-check → test → build on every push. `.github/workflows/deploy.yml` SSH-deploys via Twingate when CI passes on `main`. Requires `TWINGATE_SERVICE_KEY`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` in GitHub repo secrets.
 - Public portfolio CSS: logbook CSS custom properties (`--paper`, `--ink`, `--accent`, etc.) in `src/app/globals.css`. Admin uses Tailwind explicit hex values — `:root` changes don't affect admin. Theme toggle writes `data-theme` attribute on `<html>` + `localStorage['logbook-theme']`.
 - `src/components/ui/hand-drawn.tsx` — SVG primitives (HandRule, HandUnderline, HandArrow, SectionHead, SketchPlaceholder). All use `useMemo` for path computation and `suppressHydrationWarning` on `<path>` elements to handle PRNG SSR/hydration differences.
@@ -197,6 +206,8 @@ Key variables:
 - `GITHUB_TOKEN` / `GITHUB_USERNAME` — Used by GitHub Summarizer and Skills Inference agents; token is optional but increases rate limits and enables GraphQL.
 - `NEXT_PUBLIC_BASE_URL` — Canonical site URL used in sitemap and JSON-LD schemas.
 - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` — Cloudflare R2 storage for admin media uploads (optional).
+- `CAREER_OPS_INTERNAL_SECRET` — Shared secret between `app` and `career-ops` services; generate with `openssl rand -base64 32`.
+- `CAREER_OPS_INTERNAL_URL` — Internal Docker URL for the career-ops-server (`http://career-ops:4200`); override for local dev without Docker.
 
 ---
 
@@ -264,7 +275,7 @@ npm run dev          # Start dev server (works without DB — mock mode)
 npm run build        # Production build
 npm run lint         # ESLint via Next.js
 npx tsc --noEmit     # Type-check without emitting (run before committing)
-npm test                         # Vitest — 79 tests across 8 files (unit, integration, structural)
+npm test                         # Vitest — 67 tests across 7 files (unit, integration, structural)
 npm run test:watch               # Vitest watch mode for TDD
 npm run test:coverage            # Vitest with V8 coverage report
 npx vitest run <pattern>         # Run a single test file, e.g. npx vitest run admin-routes
@@ -273,17 +284,9 @@ npm run db:push      # Apply schema to DB — use this locally (migrate dev unsu
 npm run db:migrate   # Apply schema with migration history — use in production only
 npm run db:seed      # Create admin user
 npm run db:studio    # Open Prisma Studio (DB browser)
-npx tsx agents/github-summarizer.ts          # Run agent manually
-npx tsx agents/robotics-news.ts              # Run agent manually
-npx tsx agents/blog-suggester.ts             # Run agent manually
-npx tsx agents/brand-monitor.ts              # Run agent manually
-npx tsx agents/opportunity-watcher.ts        # Run agent manually
-npx tsx agents/skills-inference.ts           # Run agent manually (seeds DB row on first run)
-npx tsx agents/github-project-importer.ts    # Run agent manually (seeds DB row on first run)
-npx tsx agents/cv-generator.ts               # Run agent manually (seeds DB row on first run)
-npx tsx agents/platform-sync.ts              # Run agent manually (seeds DB row on first run)
-npm run mcp:stdio                             # Start MCP server (stdio transport)
-npm run mcp:http                              # Start MCP server (HTTP transport, port MCP_SERVER_PORT)
+npx tsx agents/<name>.ts     # Run any agent manually (requires DATABASE_URL inline or in .env)
+npm run mcp:stdio            # Start MCP server (stdio transport)
+npm run mcp:http             # Start MCP server (HTTP transport, port MCP_SERVER_PORT)
 ```
 
 > **Important:** All CLI runners import `{ prisma }` from `src/lib/prisma` (not `new PrismaClient()`).
@@ -296,6 +299,4 @@ The Docker container exposes PostgreSQL on `127.0.0.1:5432` (via `docker-compose
 DATABASE_URL="postgres://portfolio:POSTGRES_PASSWORD@127.0.0.1:5432/portfolio_db"
 ```
 Pass inline: `DATABASE_URL="postgres://..." npm run db:seed`
-All 9 agent scripts require `DATABASE_URL` inline or from `.env` (tsx does not auto-load `.env`).
-
-Do **not** modify `prisma/schema.prisma` without running `npm run db:push` and committing the change.
+Agent scripts require `DATABASE_URL` inline or in `.env` (tsx does not auto-load `.env`).

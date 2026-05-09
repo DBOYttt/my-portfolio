@@ -94,29 +94,6 @@ interface ProjectCreatedRawData {
   skipped: number;
 }
 
-interface CvContentRawData {
-  summary: string;
-  skills: { category: string; items: string[] }[];
-  experience: { company: string; role: string; period: string; description: string; type: string }[];
-  projects: { title: string; summary: string; tech: string[] }[];
-  contact: { email: string; github?: string; website?: string };
-}
-
-interface CvTargetedVariant {
-  summary: string;
-  skills: { category: string; items: string[] }[];
-  experience: { company: string; role: string; period: string; description: string; type: string }[];
-  projects: { title: string; summary: string; tech: string[] }[];
-  contact: { email: string; github?: string; website?: string };
-}
-
-interface CvTargetedRawData {
-  type: "CV_TARGETED";
-  variants: { robotics: CvTargetedVariant; software: CvTargetedVariant };
-  targetedPdfPaths: { robotics: string; software: string };
-  atsKeywordGap: { present: string[]; absent: string[] };
-}
-
 interface BrandMonitorRawData {
   githubDelta: GithubRepoStat[];
   googleAlerts: GoogleAlertItem[];
@@ -127,35 +104,6 @@ interface BlogSuggesterRawData {
   suggestions: BlogSuggestion[];
   series?: BlogSeries[];
   existingTopics: number;
-}
-
-interface OpportunityJob {
-  title: string;
-  company: string;
-  url: string;
-  location: string;
-  source: string;
-  description?: string;
-  score?: number;
-  rationale?: string;
-}
-
-interface OWSourceResult {
-  name: string;
-  jobCount: number;
-  error?: string;
-}
-
-interface OpportunityWatcherRawData {
-  sources?: OWSourceResult[];
-  newJobCount?: number;
-  totalMatchCount?: number;
-  seenCount?: number;
-  keywords?: string[];
-  jobs?: OpportunityJob[];
-  // legacy flat shape
-  matched?: number;
-  total?: number;
 }
 
 function ActivityBadge({ level }: { level: ActivityLevel }) {
@@ -219,47 +167,15 @@ export default async function ReportDetailPage({
   const session = await auth();
   if (!session) redirect("/admin/login");
 
-  const [report, currentSkills, currentProjects, recentOWReports] = await Promise.all([
+  const [report, currentSkills, currentProjects] = await Promise.all([
     prisma.agentReport.findUnique({
       where: { id: params.reportId },
       include: { agent: true },
     }),
     prisma.skill.findMany({ select: { name: true } }),
     prisma.project.findMany({ select: { slug: true, githubUrl: true } }),
-    // SI-C: fetch recent OW reports, pick the first one that actually has jobs
-    prisma.agentReport.findMany({
-      where: { agent: { type: "OPPORTUNITY_WATCHER" } },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      select: { rawData: true },
-    }),
   ]);
   if (!report) notFound();
-
-  // SI-C: build a map of skill name (lower) → count of OW job listings mentioning it
-  // Use the most recent OW report that actually contains jobs (dedup runs return empty arrays)
-  const owJobListingText = (() => {
-    const owReportWithJobs = recentOWReports.find((r) => {
-      if (!r.rawData) return false;
-      const d = r.rawData as Record<string, unknown>;
-      return Array.isArray(d.jobs) && (d.jobs as unknown[]).length > 0;
-    });
-    if (!owReportWithJobs?.rawData) return "";
-    const owRaw = owReportWithJobs.rawData as Record<string, unknown>;
-    const jobs = Array.isArray(owRaw.jobs) ? (owRaw.jobs as Array<{ title?: string; description?: string; rationale?: string }>) : [];
-    return jobs
-      .map((j) => `${j.title ?? ""} ${j.description ?? ""} ${j.rationale ?? ""}`)
-      .join(" ")
-      .toLowerCase();
-  })();
-
-  function countJobMentions(skillName: string): number {
-    if (!owJobListingText) return 0;
-    const lower = skillName.toLowerCase();
-    // count non-overlapping occurrences
-    const regex = new RegExp(lower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-    return (owJobListingText.match(regex) ?? []).length;
-  }
 
   const appliedSkillNames = new Set(currentSkills.map((s) => s.name.toLowerCase()));
   const existingProjectSlugs = new Set(currentProjects.map((p) => p.slug.toLowerCase()));
@@ -489,15 +405,6 @@ export default async function ReportDetailPage({
   const isProjectSyncDiff =
     report.agent.type === "GITHUB_PROJECT_IMPORTER" && rawDataType === "PROJECT_SYNC_DIFF";
 
-  const isCvContent =
-    report.agent.type === "CV_GENERATOR" &&
-    rawData !== null &&
-    rawDataType !== "CV_TARGETED" &&
-    typeof (rawData as Record<string, unknown>).summary === "string";
-
-  const isCvTargeted =
-    report.agent.type === "CV_GENERATOR" && rawDataType === "CV_TARGETED";
-
   const isGitHubAudit =
     report.agent.type === "GITHUB_SUMMARIZER" && rawDataType === "GITHUB_AUDIT";
 
@@ -507,8 +414,6 @@ export default async function ReportDetailPage({
     ("githubDelta" in (rawData as Record<string, unknown>) ||
       "googleAlerts" in (rawData as Record<string, unknown>) ||
       "devToMentions" in (rawData as Record<string, unknown>));
-
-  const isOpportunityWatcher = report.agent.type === "OPPORTUNITY_WATCHER";
 
   const isBlogSuggester =
     report.agent.type === "BLOG_SUGGESTER" &&
@@ -533,11 +438,8 @@ export default async function ReportDetailPage({
   const projectSyncDiff = isProjectSyncDiff
     ? (rawData as unknown as ProjectSyncDiffRawData)
     : null;
-  const cvContentData = isCvContent ? (rawData as unknown as CvContentRawData) : null;
-  const cvTargetedData = isCvTargeted ? (rawData as unknown as CvTargetedRawData) : null;
   const githubAudit = isGitHubAudit ? (rawData as unknown as GitHubAuditRawData) : null;
   const brandMonitorData = isBrandMonitor ? (rawData as unknown as BrandMonitorRawData) : null;
-  const owData = isOpportunityWatcher ? (rawData as unknown as OpportunityWatcherRawData) : null;
   const blogSuggesterData = isBlogSuggester
     ? (rawData as unknown as BlogSuggesterRawData)
     : null;
@@ -633,17 +535,10 @@ export default async function ReportDetailPage({
                 <tbody>
                   {skillsDiff.add.map((s, i) => {
                     const isApplied = appliedSkillNames.has(s.name.toLowerCase());
-                    // SI-C: job market relevance count
-                    const jobMentions = countJobMentions(s.name);
                     return (
                       <tr key={i} className="border-b border-[#2a2d3a] last:border-0">
                         <td className="px-4 py-2.5">
                           <span className="text-slate-100 font-medium">{s.name}</span>
-                          {jobMentions > 0 && (
-                            <span className="ml-2 text-xs px-1.5 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 font-mono">
-                              {jobMentions} job{jobMentions !== 1 ? "s" : ""}
-                            </span>
-                          )}
                         </td>
                         <td className="px-4 py-2.5 text-slate-400 font-mono text-xs">{s.category}</td>
                         <td className="px-4 py-2.5 text-slate-400 font-mono text-xs">{s.level}</td>
@@ -939,74 +834,15 @@ export default async function ReportDetailPage({
         </div>
       )}
 
-      {/* CV Content Preview */}
-      {cvContentData && (
-        <div className="mb-6 space-y-4">
-          <p className="text-slate-100 text-sm font-medium">CV Preview</p>
-          {cvContentData.summary && (
-            <div className="card p-4">
-              <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Profile</p>
-              <p className="text-sm text-slate-300 leading-relaxed">{cvContentData.summary}</p>
-            </div>
-          )}
-          {cvContentData.skills.length > 0 && (
-            <div className="card p-4">
-              <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-3">Skills</p>
-              <dl className="space-y-1.5">
-                {cvContentData.skills.filter((group: { items: unknown[] }) => group.items.length > 0).map((group, i) => (
-                  <div key={i} className="flex gap-3 text-sm">
-                    <dt className="text-slate-400 w-40 flex-shrink-0 font-medium">{group.category}</dt>
-                    <dd className="text-slate-500">{group.items.join(", ")}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          )}
-          {cvContentData.experience.length > 0 && (
-            <div className="card p-4">
-              <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-3">Experience</p>
-              <div className="space-y-4">
-                {cvContentData.experience.map((exp, i) => (
-                  <div key={i}>
-                    <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-sm font-semibold text-slate-200">{exp.role}</p>
-                      <span className="text-xs text-slate-500 font-mono flex-shrink-0">{exp.period}</span>
-                    </div>
-                    <p className="text-xs text-slate-400 mb-1">{exp.company} · {exp.type}</p>
-                    <p className="text-xs text-slate-500 whitespace-pre-line">{exp.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {cvContentData.projects.length > 0 && (
-            <div className="card p-4">
-              <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-3">Projects</p>
-              <div className="space-y-3">
-                {cvContentData.projects.map((proj, i) => (
-                  <div key={i}>
-                    <p className="text-sm font-semibold text-slate-200">{proj.title}</p>
-                    {proj.tech.length > 0 && (
-                      <p className="text-xs text-cyan-400 font-mono mb-1">{proj.tech.join(" · ")}</p>
-                    )}
-                    <p className="text-xs text-slate-500">{proj.summary}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* CV Targeted Report (CV-B/C/E/F) */}
-      {cvTargetedData && (
+      {/* CV Targeted Report removed — superseded by career-ops */}
+      {false && (
         <div className="mb-6 space-y-4">
           <p className="text-slate-100 text-sm font-medium">Targeted CV Report</p>
 
           {/* PDF download links */}
           <div className="card p-4 flex flex-wrap gap-3 items-center">
             <a
-              href={cvTargetedData.targetedPdfPaths.robotics}
+              href={""}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary text-xs py-1.5 px-3"
@@ -1014,7 +850,7 @@ export default async function ReportDetailPage({
               Robotics-heavy PDF
             </a>
             <a
-              href={cvTargetedData.targetedPdfPaths.software}
+              href={""}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary text-xs py-1.5 px-3"
@@ -1022,129 +858,6 @@ export default async function ReportDetailPage({
               Software-heavy PDF
             </a>
           </div>
-
-          {/* ATS Keyword Gap */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="card p-4">
-              <p className="text-xs text-emerald-400 font-medium uppercase tracking-widest mb-3">
-                Present in CV ({cvTargetedData.atsKeywordGap.present.length})
-              </p>
-              <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
-                {cvTargetedData.atsKeywordGap.present.map((kw) => (
-                  <span
-                    key={kw}
-                    className="text-xs px-1.5 py-0.5 rounded border text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-                  >
-                    {kw}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="card p-4">
-              <p className="text-xs text-amber-400 font-medium uppercase tracking-widest mb-3">
-                Missing from CV ({cvTargetedData.atsKeywordGap.absent.length})
-              </p>
-              <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
-                {cvTargetedData.atsKeywordGap.absent.map((kw) => (
-                  <span
-                    key={kw}
-                    className="text-xs px-1.5 py-0.5 rounded border text-amber-400 bg-amber-500/10 border-amber-500/20"
-                  >
-                    {kw}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Variant previews */}
-          <details className="card overflow-hidden">
-            <summary className="px-4 py-3 cursor-pointer select-none border-b border-[#2a2d3a] text-sm text-slate-300 font-medium">
-              Robotics-heavy variant — full preview
-            </summary>
-            <div className="p-4 space-y-4">
-              {cvTargetedData.variants.robotics.summary && (
-                <div>
-                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-1">Profile</p>
-                  <p className="text-xs text-slate-400 leading-relaxed">{cvTargetedData.variants.robotics.summary}</p>
-                </div>
-              )}
-              {cvTargetedData.variants.robotics.skills.filter((group: { items: unknown[] }) => group.items.length > 0).length > 0 && (
-                <div>
-                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Skills</p>
-                  <dl className="space-y-1">
-                    {cvTargetedData.variants.robotics.skills.filter((group: { items: unknown[] }) => group.items.length > 0).map((group, i) => (
-                      <div key={i} className="flex gap-3 text-xs">
-                        <dt className="text-slate-400 w-36 flex-shrink-0 font-medium">{group.category}</dt>
-                        <dd className="text-slate-500">{group.items.join(", ")}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-              )}
-              {cvTargetedData.variants.robotics.experience.length > 0 && (
-                <div>
-                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Experience</p>
-                  <div className="space-y-3">
-                    {cvTargetedData.variants.robotics.experience.map((exp, i) => (
-                      <div key={i}>
-                        <div className="flex items-baseline justify-between gap-2">
-                          <p className="text-xs font-semibold text-slate-200">{exp.role}</p>
-                          <span className="text-xs text-slate-500 font-mono flex-shrink-0">{exp.period}</span>
-                        </div>
-                        <p className="text-xs text-slate-400 mb-1">{exp.company} · {exp.type}</p>
-                        <p className="text-xs text-slate-500 whitespace-pre-line">{exp.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </details>
-
-          <details className="card overflow-hidden">
-            <summary className="px-4 py-3 cursor-pointer select-none border-b border-[#2a2d3a] text-sm text-slate-300 font-medium">
-              Software-heavy variant — full preview
-            </summary>
-            <div className="p-4 space-y-4">
-              {cvTargetedData.variants.software.summary && (
-                <div>
-                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-1">Profile</p>
-                  <p className="text-xs text-slate-400 leading-relaxed">{cvTargetedData.variants.software.summary}</p>
-                </div>
-              )}
-              {cvTargetedData.variants.software.skills.filter((group: { items: unknown[] }) => group.items.length > 0).length > 0 && (
-                <div>
-                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Skills</p>
-                  <dl className="space-y-1">
-                    {cvTargetedData.variants.software.skills.filter((group: { items: unknown[] }) => group.items.length > 0).map((group, i) => (
-                      <div key={i} className="flex gap-3 text-xs">
-                        <dt className="text-slate-400 w-36 flex-shrink-0 font-medium">{group.category}</dt>
-                        <dd className="text-slate-500">{group.items.join(", ")}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-              )}
-              {cvTargetedData.variants.software.experience.length > 0 && (
-                <div>
-                  <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-2">Experience</p>
-                  <div className="space-y-3">
-                    {cvTargetedData.variants.software.experience.map((exp, i) => (
-                      <div key={i}>
-                        <div className="flex items-baseline justify-between gap-2">
-                          <p className="text-xs font-semibold text-slate-200">{exp.role}</p>
-                          <span className="text-xs text-slate-500 font-mono flex-shrink-0">{exp.period}</span>
-                        </div>
-                        <p className="text-xs text-slate-400 mb-1">{exp.company} · {exp.type}</p>
-                        <p className="text-xs text-slate-500 whitespace-pre-line">{exp.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </details>
         </div>
       )}
 
@@ -1373,122 +1086,6 @@ export default async function ReportDetailPage({
                 </table>
               </div>
             </details>
-          )}
-        </div>
-      )}
-
-      {/* Opportunity Watcher UI */}
-      {owData && (
-        <div className="space-y-4 mb-6">
-          {/* Stats header */}
-          <div className="flex flex-wrap gap-3">
-            {typeof owData.newJobCount === "number" && (
-              <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
-                {owData.newJobCount} new job{owData.newJobCount !== 1 ? "s" : ""}
-              </span>
-            )}
-            {typeof owData.seenCount === "number" && owData.seenCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-slate-600/50 bg-slate-700/20 text-slate-400">
-                {owData.seenCount} already seen
-              </span>
-            )}
-            {typeof owData.totalMatchCount === "number" && (
-              <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-[#2a2d3a] text-slate-500">
-                {owData.totalMatchCount} total matched
-              </span>
-            )}
-          </div>
-
-          {/* Source breakdown */}
-          {owData.sources && owData.sources.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {owData.sources.map((src, i) => (
-                <span
-                  key={i}
-                  className={`text-xs px-2 py-1 rounded border font-mono ${
-                    src.error
-                      ? "border-red-500/20 bg-red-500/5 text-red-400"
-                      : "border-[#2a2d3a] text-slate-400"
-                  }`}
-                  title={src.error}
-                >
-                  {src.name}: {src.jobCount} jobs{src.error ? " (error)" : ""}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Job listings with scores */}
-          {owData.jobs && owData.jobs.length > 0 && (
-            <div className="card overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#2a2d3a]">
-                <p className="text-slate-100 text-sm font-medium">
-                  Matched Jobs ({owData.jobs.length})
-                </p>
-              </div>
-              <ul className="divide-y divide-[#2a2d3a]">
-                {owData.jobs.map((job, i) => {
-                  const score = job.score ?? 0;
-                  const isStrongMatch = score >= 8;
-                  return (
-                    <li key={i} className="px-4 py-3 flex flex-col gap-1">
-                      <div className="flex items-start gap-3 flex-wrap">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <a
-                              href={job.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-slate-100 font-medium text-sm hover:text-cyan-400 transition-colors"
-                            >
-                              {job.title}
-                            </a>
-                            {isStrongMatch && (
-                              <span className="text-xs px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-                                Strong match
-                              </span>
-                            )}
-                            {score > 0 && (
-                              <span
-                                className={`text-xs px-1.5 py-0.5 rounded border font-mono ${
-                                  score >= 8
-                                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                                    : score >= 6
-                                    ? "border-amber-500/20 bg-amber-500/10 text-amber-400"
-                                    : "border-slate-600/40 bg-slate-700/20 text-slate-400"
-                                }`}
-                              >
-                                {score}/10
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-slate-400 text-xs mt-0.5">
-                            {job.company || job.source} · {job.location}
-                            <span className="ml-2 text-slate-600 font-mono">{job.source}</span>
-                          </p>
-                        </div>
-                      </div>
-                      {job.rationale && (
-                        <p className="text-slate-500 text-xs italic">{job.rationale}</p>
-                      )}
-                      {job.description && !job.rationale && (
-                        <p className="text-slate-600 text-xs line-clamp-2">{job.description}</p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-
-          {/* Keywords used */}
-          {owData.keywords && owData.keywords.length > 0 && (
-            <div className="flex flex-wrap gap-1 items-center">
-              <span className="text-slate-500 text-xs font-mono mr-1">keywords:</span>
-              {owData.keywords.map((kw) => (
-                <span key={kw} className="tag text-xs">{kw}</span>
-              ))}
-            </div>
           )}
         </div>
       )}

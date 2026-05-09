@@ -8,7 +8,6 @@
  *     so only the exported ReadmeScore interface shape is verified structurally.
  *   - classifyActivity (github-summarizer) — the function is module-private (not
  *     exported), so only the exported ActivityLevel union type is verified.
- *   - JobListing (opportunity-watcher) — exported interface structural check.
  *   - DigestItem / RoboticsDigestRawData (robotics-news) — exported interface
  *     structural checks.
  *
@@ -21,7 +20,6 @@ import { describe, it, expect } from 'vitest'
 import { normaliseCategoryEnum } from '../skills-inference'
 import type { ActivityLevel } from '../github-summarizer'
 import type { ReadmeScore } from '../github-project-importer'
-import type { JobListing } from '../opportunity-watcher'
 import type { DigestItem, RoboticsDigestRawData } from '../robotics-news'
 
 // ─── normaliseCategoryEnum — edge cases ───────────────────────────────────────
@@ -103,48 +101,6 @@ describe('ReadmeScore — exported interface shape', () => {
   it('score is a number', () => {
     const result: ReadmeScore = { score: 3, note: null }
     expect(typeof result.score).toBe('number')
-  })
-})
-
-// ─── JobListing — exported interface structural check ────────────────────────
-
-describe('JobListing — exported interface shape', () => {
-  it('accepts a minimal job with required fields', () => {
-    const job: JobListing = {
-      title: 'Robotics Engineer',
-      company: 'AcmeCorp',
-      url: 'https://example.com/jobs/123',
-      location: 'Remote',
-      source: 'Remotive',
-    }
-    expect(job.title).toBe('Robotics Engineer')
-    expect(job.source).toBe('Remotive')
-  })
-
-  it('accepts a job with optional score and rationale', () => {
-    const job: JobListing = {
-      title: 'Embedded Systems Dev',
-      company: 'RoboTech',
-      url: 'https://example.com/jobs/456',
-      location: 'Berlin, DE',
-      source: 'HackerNews Who\'s Hiring',
-      score: 9,
-      rationale: 'Strong match for robotics background.',
-    }
-    expect(job.score).toBe(9)
-    expect(job.rationale).toContain('robotics')
-  })
-
-  it('accepts a job with optional description field', () => {
-    const job: JobListing = {
-      title: 'Software Engineer',
-      company: '',
-      url: 'https://hn.algolia.com/item?id=99',
-      location: 'Remote/Various',
-      source: 'HackerNews Who\'s Hiring',
-      description: 'We need someone who knows ROS...',
-    }
-    expect(job.description).toMatch(/ROS/)
   })
 })
 
