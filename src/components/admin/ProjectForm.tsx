@@ -25,7 +25,7 @@ interface ProjectFormData {
 }
 
 interface ProjectFormProps {
-  initialData?: Partial<ProjectFormData> & { id?: string; publishedAt?: string | Date | null };
+  initialData?: Omit<Partial<ProjectFormData>, "publishedAt"> & { id?: string; publishedAt?: string | Date | null };
   projectId?: string;
 }
 
