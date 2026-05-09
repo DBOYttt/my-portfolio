@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { ErrorParamCleaner } from "./ErrorParamCleaner";
 
 export const metadata: Metadata = { title: "Report" };
 import { prisma } from "@/lib/prisma";
@@ -172,12 +173,13 @@ export default async function ReportDetailPage({
       where: { id: params.reportId },
       include: { agent: true },
     }),
-    prisma.skill.findMany({ select: { name: true } }),
+    prisma.skill.findMany({ select: { id: true, name: true } }),
     prisma.project.findMany({ select: { slug: true, githubUrl: true } }),
   ]);
   if (!report) notFound();
 
   const appliedSkillNames = new Set(currentSkills.map((s) => s.name.toLowerCase()));
+  const skillIdByName = new Map(currentSkills.map((s) => [s.name.toLowerCase(), s.id]));
   const existingProjectSlugs = new Set(currentProjects.map((p) => p.slug.toLowerCase()));
   const existingProjectGithubUrls = new Set(
     currentProjects.map((p) => p.githubUrl?.toLowerCase()).filter(Boolean)
@@ -200,17 +202,13 @@ export default async function ReportDetailPage({
     const category = formData.get("category") as SkillCategory;
     const level = formData.get("level") as SkillLevel;
     if (!name || !category || !level) return;
-    try {
-      await prisma.skill.upsert({
-        where: { name },
-        update: {},
-        create: { name, category, level, order: 0 },
-      });
-      revalidatePath("/admin/skills");
-      revalidatePath(`/admin/agents/reports/${reportId}`);
-    } catch {
-      // silently swallow — UI unchanged, user can retry
-    }
+    await prisma.skill.upsert({
+      where: { name },
+      update: {},
+      create: { name, category, level, order: 0 },
+    });
+    revalidatePath("/admin/skills");
+    revalidatePath(`/admin/agents/reports/${reportId}`);
   }
 
   async function applyAllSkillAdditions(formData: FormData) {
@@ -223,21 +221,17 @@ export default async function ReportDetailPage({
     } catch {
       return;
     }
-    try {
-      await prisma.skill.createMany({
-        data: items.map((i) => ({
-          name: i.name,
-          category: i.category as SkillCategory,
-          level: (i.level ?? "FAMILIAR") as SkillLevel,
-          order: 0,
-        })),
-        skipDuplicates: true,
-      });
-      revalidatePath("/admin/skills");
-      revalidatePath(`/admin/agents/reports/${reportId}`);
-    } catch {
-      // silently swallow — UI unchanged, user can retry
-    }
+    await prisma.skill.createMany({
+      data: items.map((i) => ({
+        name: i.name,
+        category: i.category as SkillCategory,
+        level: (i.level ?? "FAMILIAR") as SkillLevel,
+        order: 0,
+      })),
+      skipDuplicates: true,
+    });
+    revalidatePath("/admin/skills");
+    revalidatePath(`/admin/agents/reports/${reportId}`);
   }
 
   async function applySkillUpgrade(formData: FormData) {
@@ -245,18 +239,23 @@ export default async function ReportDetailPage({
     const name = formData.get("name") as string;
     const level = formData.get("level") as SkillLevel;
     if (!name || !level) return;
-    try {
-      const skill = await prisma.skill.findFirst({
-        where: { name: { equals: name, mode: "insensitive" } },
-      });
-      if (skill) {
-        await prisma.skill.update({ where: { id: skill.id }, data: { level } });
-      }
-      revalidatePath("/admin/skills");
-      revalidatePath(`/admin/agents/reports/${reportId}`);
-    } catch {
-      // silently swallow — UI unchanged, user can retry
+    const skill = await prisma.skill.findFirst({
+      where: { name: { equals: name, mode: "insensitive" } },
+    });
+    if (skill) {
+      await prisma.skill.update({ where: { id: skill.id }, data: { level } });
     }
+    revalidatePath("/admin/skills");
+    revalidatePath(`/admin/agents/reports/${reportId}`);
+  }
+
+  async function dismissStaleSkill(formData: FormData) {
+    "use server";
+    const id = formData.get("id") as string;
+    if (!id) return;
+    await prisma.skill.delete({ where: { id } });
+    revalidatePath("/admin/agents/reports");
+    revalidatePath("/");
   }
 
   async function createProjectDraft(formData: FormData) {
@@ -298,26 +297,22 @@ export default async function ReportDetailPage({
     const field = formData.get("field") as string;
     const suggestedValue = formData.get("suggestedValue") as string;
     if (!slug || !field || !suggestedValue) return;
-    try {
-      const project = await prisma.project.findUnique({ where: { slug } });
-      if (!project) return;
-      if (field === "summary") {
-        await prisma.project.update({ where: { id: project.id }, data: { summary: suggestedValue } });
-      } else if (field === "type") {
-        await prisma.project.update({
-          where: { id: project.id },
-          data: { type: suggestedValue as "SOFTWARE" | "ROBOTICS" | "HARDWARE" | "RESEARCH" },
-        });
-      } else if (field === "techTags") {
-        let tags: string[] = [];
-        try { tags = JSON.parse(suggestedValue) as string[]; } catch { /* leave empty */ }
-        await prisma.project.update({ where: { id: project.id }, data: { techTags: tags } });
-      }
-      revalidatePath("/admin/projects");
-      revalidatePath(`/admin/agents/reports/${reportId}`);
-    } catch {
-      // silently swallow — user can retry
+    const project = await prisma.project.findUnique({ where: { slug } });
+    if (!project) return;
+    if (field === "summary") {
+      await prisma.project.update({ where: { id: project.id }, data: { summary: suggestedValue } });
+    } else if (field === "type") {
+      await prisma.project.update({
+        where: { id: project.id },
+        data: { type: suggestedValue as "SOFTWARE" | "ROBOTICS" | "HARDWARE" | "RESEARCH" },
+      });
+    } else if (field === "techTags") {
+      let tags: string[] = [];
+      try { tags = JSON.parse(suggestedValue) as string[]; } catch { /* leave empty */ }
+      await prisma.project.update({ where: { id: project.id }, data: { techTags: tags } });
     }
+    revalidatePath("/admin/projects");
+    revalidatePath(`/admin/agents/reports/${reportId}`);
   }
 
   async function createSeriesDrafts(formData: FormData) {
@@ -385,7 +380,7 @@ export default async function ReportDetailPage({
     } catch (e: unknown) {
       const isRedirect =
         e instanceof Error && e.message === "NEXT_REDIRECT";
-      if (!isRedirect) return;
+      if (isRedirect) throw e;
       throw e;
     }
   }
@@ -450,9 +445,12 @@ export default async function ReportDetailPage({
     ? (rawData as unknown as PlatformSyncRawData)
     : null;
 
+  const errorParam = searchParams.error;
+
   return (
     <div className="max-w-4xl">
-      {searchParams.error === "slug-exists" && (
+      <ErrorParamCleaner hasError={!!errorParam} />
+      {errorParam === "slug-exists" && (
         <div className="mb-4 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm">
           A project with this slug already exists — edit the slug in the{" "}
           <a href="/admin/projects" className="underline hover:text-red-300">
@@ -627,12 +625,26 @@ export default async function ReportDetailPage({
                 </p>
               </div>
               <ul className="divide-y divide-[#2a2d3a]">
-                {skillsDiff.stale.map((s, i) => (
-                  <li key={i} className="px-4 py-2.5 flex items-start gap-3">
-                    <span className="text-slate-100 text-sm font-medium min-w-32">{s.name}</span>
-                    <span className="text-slate-500 text-xs">{s.reason}</span>
-                  </li>
-                ))}
+                {skillsDiff.stale.map((s, i) => {
+                  const skillId = skillIdByName.get(s.name.toLowerCase());
+                  return (
+                    <li key={i} className="px-4 py-2.5 flex items-center gap-3">
+                      <span className="text-slate-100 text-sm font-medium min-w-32">{s.name}</span>
+                      <span className="text-slate-500 text-xs flex-1">{s.reason}</span>
+                      {skillId && (
+                        <form action={dismissStaleSkill} className="flex-shrink-0">
+                          <input type="hidden" name="id" value={skillId} />
+                          <button
+                            type="submit"
+                            className="text-xs py-1 px-2.5 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </form>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
