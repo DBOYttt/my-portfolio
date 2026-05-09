@@ -26,22 +26,32 @@ export async function PUT(
 
   const body = await req.json();
 
-  const project = await prisma.project.update({
-    where: { id: params.id },
-    data: {
-      ...(body.title !== undefined && { title: body.title }),
-      ...(body.slug !== undefined && { slug: body.slug }),
-      ...(body.summary !== undefined && { summary: body.summary }),
-      ...(body.content !== undefined && { content: body.content }),
-      ...(body.type !== undefined && { type: body.type }),
-      ...(body.techTags !== undefined && { techTags: body.techTags }),
-      ...(body.githubUrl !== undefined && { githubUrl: body.githubUrl }),
-      ...(body.liveUrl !== undefined && { liveUrl: body.liveUrl }),
-      ...(body.featured !== undefined && { featured: body.featured }),
-      ...(body.order !== undefined && { order: body.order }),
-      ...(body.coverImage !== undefined && { coverImage: body.coverImage }),
-    },
-  });
+  let project;
+  try {
+    project = await prisma.project.update({
+      where: { id: params.id },
+      data: {
+        ...(body.title !== undefined && { title: body.title }),
+        ...(body.slug !== undefined && { slug: body.slug }),
+        ...(body.summary !== undefined && { summary: body.summary }),
+        ...(body.content !== undefined && { content: body.content }),
+        ...(body.type !== undefined && { type: body.type }),
+        ...(body.techTags !== undefined && { techTags: body.techTags }),
+        ...(body.githubUrl !== undefined && { githubUrl: body.githubUrl }),
+        ...(body.liveUrl !== undefined && { liveUrl: body.liveUrl }),
+        ...(body.featured !== undefined && { featured: body.featured }),
+        ...(body.order !== undefined && { order: body.order }),
+        ...(body.coverImage !== undefined && { coverImage: body.coverImage }),
+        publishedAt: body.publishedAt ?? null,
+      },
+    });
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    if (code === "P2002") {
+      return NextResponse.json({ error: "a project with this slug already exists" }, { status: 409 });
+    }
+    throw err;
+  }
 
   await prisma.auditLog.create({
     data: {
