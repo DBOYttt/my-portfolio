@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import RunAgentButton from "@/components/admin/RunAgentButton";
+import ConfirmDeleteButton from "@/components/admin/ConfirmDeleteButton";
 
 export const metadata: Metadata = { title: "Skills" };
 
@@ -151,18 +152,18 @@ export default async function SkillsAdminPage() {
                         ✓
                       </button>
                     </form>
-                    <form action={deleteSkill}>
-                      <input type="hidden" name="id" value={skill.id} />
-                      <button type="submit" className="text-xs text-red-400 hover:text-red-300">
-                        Remove
-                      </button>
-                    </form>
+                    <ConfirmDeleteButton action={deleteSkill} id={skill.id} label="skill" />
                   </div>
                 ))}
               </div>
             </div>
           );
         })}
+        {grouped.size === 0 && (
+          <div className="card p-8 text-center">
+            <p className="text-slate-400 text-sm font-mono">No skills yet — add your first skill above.</p>
+          </div>
+        )}
       </div>
     </div>
   );

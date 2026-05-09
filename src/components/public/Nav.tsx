@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const SECTIONS = [
   { num: "01", id: "about",      label: "About" },
@@ -13,14 +13,34 @@ const SECTIONS = [
 ];
 
 export default function Nav() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark" | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("logbook-theme") as "light" | "dark" | null;
     const attr = document.documentElement.getAttribute("data-theme") as "light" | "dark" | null;
     setTheme(stored ?? attr ?? "light");
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen || !drawerRef.current) return;
+    const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [menuOpen]);
 
   function toggle() {
     const next = theme === "dark" ? "light" : "dark";
@@ -32,14 +52,22 @@ export default function Nav() {
   return (
     <nav className="logbook-nav">
       {menuOpen && (
-        <div className="nav-mobile-drawer">
-          {SECTIONS.map((s) => (
-            <a key={s.id} href={`/#${s.id}`} onClick={() => setMenuOpen(false)}>
-              <span className="nav-num">{s.num}</span>
-              {s.label}
-            </a>
-          ))}
-        </div>
+        <>
+          <div
+            className="fixed inset-0"
+            style={{ zIndex: 39 }}
+            onClick={() => setMenuOpen(false)}
+            aria-hidden="true"
+          />
+          <div ref={drawerRef} className="nav-mobile-drawer" style={{ zIndex: 40 }}>
+            {SECTIONS.map((s) => (
+              <a key={s.id} href={`/#${s.id}`} onClick={() => setMenuOpen(false)}>
+                <span className="nav-num">{s.num}</span>
+                {s.label}
+              </a>
+            ))}
+          </div>
+        </>
       )}
       <div className="logbook-nav-inner">
         <a href="/#top" className="nav-brand">
@@ -65,14 +93,25 @@ export default function Nav() {
           >
             {menuOpen ? "✕" : "≡"}
           </button>
-          <button
-            className="theme-toggle"
-            onClick={toggle}
-            aria-label="Toggle theme"
-            suppressHydrationWarning
-          >
-            {theme === "dark" ? "☾  dark" : "☀  light"}
-          </button>
+          {theme === null ? (
+            <button
+              className="theme-toggle"
+              aria-label="Toggle theme"
+              suppressHydrationWarning
+              style={{ visibility: "hidden" }}
+            >
+              <span>{"☀  light"}</span>
+            </button>
+          ) : (
+            <button
+              className="theme-toggle"
+              onClick={toggle}
+              aria-label="Toggle theme"
+              suppressHydrationWarning
+            >
+              {theme === "dark" ? "☾  dark" : "☀  light"}
+            </button>
+          )}
         </div>
       </div>
     </nav>

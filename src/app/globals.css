@@ -304,7 +304,8 @@ section.logbook-section:first-of-type { padding-top: 32px; }
   display: inline-flex;
   align-items: baseline;
   gap: 8px;
-  font-family: var(--font-inter-tight, "Inter Tight", sans-serif);
+  font-family: var(--font-newsreader, Georgia, serif);
+  font-style: italic;
   font-size: 15px;
   font-weight: 500;
   color: var(--ink);
@@ -314,6 +315,13 @@ section.logbook-section:first-of-type { padding-top: 32px; }
   cursor: pointer;
   position: relative;
   padding: 0;
+}
+.btn-link-mono {
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  font-style: normal;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 .btn-link .arr {
   font-family: var(--font-mono, "JetBrains Mono", monospace);

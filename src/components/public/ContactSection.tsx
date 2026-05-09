@@ -42,6 +42,7 @@ export default function ContactSection() {
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(false);
+  const [rateLimited, setRateLimited] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [touched, setTouched] = useState({ name: false, email: false, message: false });
   const [honeypot, setHoneypot] = useState("");
@@ -57,6 +58,7 @@ export default function ContactSection() {
     }
     setSending(true);
     setSendError(false);
+    setRateLimited(false);
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
@@ -65,6 +67,8 @@ export default function ContactSection() {
       });
       if (res.ok) {
         setSent(true);
+      } else if (res.status === 429) {
+        setRateLimited(true);
       } else {
         setSendError(true);
       }
@@ -167,6 +171,11 @@ export default function ContactSection() {
                 />
               </Field>
 
+              {rateLimited && (
+                <p className="mono" style={{ fontSize: 12, color: "var(--accent)", letterSpacing: "0.04em" }}>
+                  Too many messages — please wait an hour and try again.
+                </p>
+              )}
               {sendError && (
                 <p className="mono" style={{ fontSize: 12, color: "var(--accent)", letterSpacing: "0.04em" }}>
                   Something went wrong. Email me directly at {OWNER.email}.
@@ -181,7 +190,7 @@ export default function ContactSection() {
                   type="submit"
                   disabled={sending}
                   className="btn-link"
-                  style={{ fontFamily: "var(--font-newsreader, Georgia, serif)", fontSize: 19, fontStyle: "italic", opacity: sending ? 0.6 : 1 }}
+                  style={{ fontSize: 19, fontStyle: "italic", opacity: sending ? 0.6 : 1 }}
                 >
                   {sending ? "Sending…" : "Send entry"} <span className="arr">→</span>
                 </button>

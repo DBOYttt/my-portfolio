@@ -55,35 +55,40 @@ export default function RunAgentButton({
   }
 
   return (
-    <button
-      onClick={handleRun}
-      disabled={disabled}
-      title={lastResult === "error" ? (errorMsg ?? "Run failed") : undefined}
-      className={`text-xs py-1.5 px-3 rounded border transition-colors ${
-        lastResult === "error"
-          ? "text-red-400 border-red-500/30 bg-red-500/10"
-          : lastResult === "ok"
-          ? "text-green-400 border-green-500/30 bg-green-500/10"
-          : "btn-secondary"
-      } disabled:opacity-40 disabled:cursor-not-allowed`}
-    >
-      {loading ? (
-        <span className="flex items-center gap-1.5">
-          <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          Running…
-        </span>
-      ) : lastResult === "error" ? (
-        "Failed"
-      ) : lastResult === "ok" ? (
-        "Done ✓"
-      ) : agentStatus === "running" ? (
-        "Running…"
-      ) : (
-        label ?? "Run now"
+    <div>
+      <button
+        onClick={handleRun}
+        disabled={disabled}
+        title={lastResult === "error" ? (errorMsg ?? "Run failed") : undefined}
+        className={`text-xs py-1.5 px-3 rounded border transition-colors ${
+          lastResult === "error"
+            ? "text-slate-300 border-slate-500/30 bg-slate-500/10"
+            : lastResult === "ok"
+            ? "text-cyan-400 border-cyan-500/30 bg-cyan-500/10"
+            : "btn-secondary"
+        } disabled:opacity-40 disabled:cursor-not-allowed`}
+      >
+        {loading ? (
+          <span className="flex items-center gap-1.5">
+            <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Running…
+          </span>
+        ) : lastResult === "error" ? (
+          "Failed"
+        ) : lastResult === "ok" ? (
+          "Done ✓"
+        ) : agentStatus === "running" ? (
+          "Running…"
+        ) : (
+          label ?? "Run now"
+        )}
+      </button>
+      {lastResult === "error" && (
+        <p className="text-xs text-slate-400 mt-1">{errorMsg ?? "Run failed"}</p>
       )}
-    </button>
+    </div>
   );
 }

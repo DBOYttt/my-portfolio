@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -21,10 +21,11 @@ interface ProjectFormData {
   featured: boolean;
   order: number;
   coverImage: string;
+  publishedAt: string | null;
 }
 
 interface ProjectFormProps {
-  initialData?: Partial<ProjectFormData> & { id?: string };
+  initialData?: Omit<Partial<ProjectFormData>, "publishedAt"> & { id?: string; publishedAt?: string | Date | null };
   projectId?: string;
 }
 
@@ -42,6 +43,17 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
   const [error, setError] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!projectId);
+  const [coverImageValid, setCoverImageValid] = useState(
+    initialData?.coverImage ? /^https?:\/\/.+\..+/.test(initialData.coverImage) : false
+  );
+  const isDirty = useRef(false);
+
+  const initialPublishedAt =
+    initialData?.publishedAt != null
+      ? typeof initialData.publishedAt === "string"
+        ? initialData.publishedAt
+        : (initialData.publishedAt as Date).toISOString()
+      : null;
 
   const [form, setForm] = useState<ProjectFormData>({
     title: initialData?.title ?? "",
@@ -55,18 +67,32 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
     featured: initialData?.featured ?? false,
     order: initialData?.order ?? 0,
     coverImage: initialData?.coverImage ?? "",
+    publishedAt: initialPublishedAt,
   });
 
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!isDirty.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
   function set<K extends keyof ProjectFormData>(key: K, value: ProjectFormData[K]) {
+    isDirty.current = true;
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   function handleTitleChange(value: string) {
+    isDirty.current = true;
     set("title", value);
     if (!slugManuallyEdited) set("slug", toSlug(value));
   }
 
   function addTag() {
+    isDirty.current = true;
     const tag = tagInput.trim();
     if (tag && !form.techTags.includes(tag)) {
       set("techTags", [...form.techTags, tag]);
@@ -75,6 +101,7 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
   }
 
   function removeTag(tag: string) {
+    isDirty.current = true;
     set("techTags", form.techTags.filter((t) => t !== tag));
   }
 
@@ -88,13 +115,14 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
         {
           method: projectId ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...form, order: Number(form.order) }),
+          body: JSON.stringify({ ...form, order: Number(form.order), publishedAt: form.publishedAt }),
         }
       );
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error ?? "Failed to save");
       }
+      isDirty.current = false;
       setSaved(true);
       setTimeout(() => {
         router.push("/admin/projects");
@@ -258,23 +286,76 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
         <input
           type="text"
           value={form.coverImage}
-          onChange={(e) => set("coverImage", e.target.value)}
+          onChange={(e) => {
+            isDirty.current = true;
+            const value = e.target.value;
+            setForm((prev) => ({ ...prev, coverImage: value }));
+            setCoverImageValid(/^https?:\/\/.+\..+/.test(value));
+          }}
           placeholder="/uploads/my-image.jpg"
           className="w-full bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-cyan-500"
         />
+        {form.coverImage && coverImageValid && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={form.coverImage}
+            alt="Cover preview"
+            className="mt-2 rounded border border-[#2a2d3a] max-h-32 object-cover w-full"
+            onError={() => setCoverImageValid(false)}
+          />
+        )}
+        {form.coverImage && !coverImageValid && (
+          <p className="text-red-400 text-xs mt-1">Invalid URL</p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm text-slate-400 mb-1">Status</label>
+        <div className="flex items-center gap-3">
+          <select
+            value={form.publishedAt ? "PUBLISHED" : "DRAFT"}
+            onChange={(e) => {
+              isDirty.current = true;
+              if (e.target.value === "PUBLISHED") {
+                setForm((prev) => ({ ...prev, publishedAt: prev.publishedAt ?? new Date().toISOString() }));
+              } else {
+                setForm((prev) => ({ ...prev, publishedAt: null }));
+              }
+            }}
+            className="bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-cyan-500"
+          >
+            <option value="DRAFT">Draft</option>
+            <option value="PUBLISHED">Published</option>
+          </select>
+          {form.publishedAt ? (
+            <span className="text-xs px-2 py-0.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
+              Published
+            </span>
+          ) : (
+            <span className="text-xs px-2 py-0.5 rounded-full border border-slate-600/50 bg-slate-700/20 text-slate-400">
+              Draft
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-3 pt-2">
         <button
           type="submit"
           disabled={saving || saved}
-          className={`btn-primary transition-colors ${saved ? "bg-emerald-500 border-emerald-500 hover:bg-emerald-500" : ""}`}
+          className={`btn-primary transition-colors ${saved ? "bg-cyan-600 border-cyan-600 hover:bg-cyan-600" : ""}`}
         >
           {saved ? "Saved ✓" : saving ? "Saving…" : projectId ? "Update project" : "Create project"}
         </button>
         <button
           type="button"
-          onClick={() => router.push("/admin/projects")}
+          onClick={(e) => {
+            if (isDirty.current && !window.confirm("Discard unsaved changes?")) {
+              e.preventDefault();
+              return;
+            }
+            router.push("/admin/projects");
+          }}
           className="btn-secondary"
         >
           Cancel

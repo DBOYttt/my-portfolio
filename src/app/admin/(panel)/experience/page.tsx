@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import ConfirmDeleteButton from "@/components/admin/ConfirmDeleteButton";
 
 export const metadata: Metadata = { title: "Experience" };
 
@@ -121,12 +122,9 @@ export default async function ExperienceAdminPage() {
                         <p className="text-slate-500 text-xs mt-1.5 line-clamp-2">{item.description}</p>
                       )}
                     </div>
-                    <form action={deleteExperience} className="ml-4 flex-shrink-0">
-                      <input type="hidden" name="id" value={item.id} />
-                      <button type="submit" className="text-xs text-red-400 hover:text-red-300">
-                        Remove
-                      </button>
-                    </form>
+                    <div className="ml-4 flex-shrink-0">
+                      <ConfirmDeleteButton action={deleteExperience} id={item.id} label="experience entry" />
+                    </div>
                   </div>
                 </div>
                 <div className="border-t border-[#2a2d3a] px-4 py-3">

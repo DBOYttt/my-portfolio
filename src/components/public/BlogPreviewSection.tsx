@@ -90,13 +90,7 @@ export default async function BlogPreviewSection() {
           <div style={{ marginTop: 24, paddingTop: 16 }}>
             <Link
               href="/blog"
-              className="btn-link"
-              style={{
-                fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-                fontSize: 12,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-              }}
+              className="btn-link btn-link-mono"
             >
               All entries <span className="arr">→</span>
             </Link>
