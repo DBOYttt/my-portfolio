@@ -11,7 +11,7 @@ const TYPE_DISPLAY: Record<string, string> = {
   RESEARCH: "Research",
 };
 
-const FILTERS = ["All", "Software", "Robotics", "Hardware"];
+const FILTERS = ["All", "Software", "Robotics", "Hardware", "Research"];
 
 function ProjectEntry({ p, num }: { p: ProjectSummary; num: string }) {
   const [open, setOpen] = useState(false);
