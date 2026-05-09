@@ -296,6 +296,7 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
           className="w-full bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-cyan-500"
         />
         {form.coverImage && coverImageValid && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={form.coverImage}
             alt="Cover preview"
