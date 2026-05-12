@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useUnsavedChanges } from "./UnsavedChangesContext";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
@@ -38,6 +39,7 @@ function toSlug(s: string) {
 
 export default function ProjectForm({ initialData, projectId }: ProjectFormProps) {
   const router = useRouter();
+  const { setDirty } = useUnsavedChanges();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -82,17 +84,20 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
 
   function set<K extends keyof ProjectFormData>(key: K, value: ProjectFormData[K]) {
     isDirty.current = true;
+    setDirty(true);
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   function handleTitleChange(value: string) {
     isDirty.current = true;
+    setDirty(true);
     set("title", value);
     if (!slugManuallyEdited) set("slug", toSlug(value));
   }
 
   function addTag() {
     isDirty.current = true;
+    setDirty(true);
     const tag = tagInput.trim();
     if (tag && !form.techTags.includes(tag)) {
       set("techTags", [...form.techTags, tag]);
@@ -102,6 +107,7 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
 
   function removeTag(tag: string) {
     isDirty.current = true;
+    setDirty(true);
     set("techTags", form.techTags.filter((t) => t !== tag));
   }
 
@@ -123,6 +129,7 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
         throw new Error(data.error ?? "Failed to save");
       }
       isDirty.current = false;
+      setDirty(false);
       setSaved(true);
       setTimeout(() => {
         router.push("/admin/projects");
@@ -288,6 +295,7 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
           value={form.coverImage}
           onChange={(e) => {
             isDirty.current = true;
+            setDirty(true);
             const value = e.target.value;
             setForm((prev) => ({ ...prev, coverImage: value }));
             setCoverImageValid(/^https?:\/\/.+\..+/.test(value));
@@ -316,6 +324,7 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
             value={form.publishedAt ? "PUBLISHED" : "DRAFT"}
             onChange={(e) => {
               isDirty.current = true;
+              setDirty(true);
               if (e.target.value === "PUBLISHED") {
                 setForm((prev) => ({ ...prev, publishedAt: prev.publishedAt ?? new Date().toISOString() }));
               } else {

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import AgentSuggestPanel from "./AgentSuggestPanel";
+import { useUnsavedChanges } from "./UnsavedChangesContext";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
@@ -55,6 +56,7 @@ function toDatetimeLocal(value: Date | string | null): string {
 
 export default function PostForm({ initialData, postId }: PostFormProps) {
   const router = useRouter();
+  const { setDirty } = useUnsavedChanges();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -91,17 +93,20 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
 
   function set(key: keyof PostFormData, value: string | string[]) {
     isDirty.current = true;
+    setDirty(true);
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   function handleTitleChange(value: string) {
     isDirty.current = true;
+    setDirty(true);
     set("title", value);
     if (!slugManuallyEdited) set("slug", toSlug(value));
   }
 
   function addTag() {
     isDirty.current = true;
+    setDirty(true);
     const tag = tagInput.trim();
     if (tag && !form.tags.includes(tag)) {
       set("tags", [...form.tags, tag]);
@@ -111,6 +116,7 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
 
   function removeTag(tag: string) {
     isDirty.current = true;
+    setDirty(true);
     set("tags", form.tags.filter((t) => t !== tag));
   }
 
@@ -184,6 +190,7 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
         throw new Error(data.error ?? "Failed to save");
       }
       isDirty.current = false;
+      setDirty(false);
       setSaved(true);
       setTimeout(() => {
         router.push("/admin/blog");
@@ -480,7 +487,9 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
               ? "Saving…"
               : form.status === "PUBLISHED"
                 ? (postId ? "Save & publish" : "Publish")
-                : (postId ? "Update post" : "Create post")}
+                : form.status === "SCHEDULED"
+                  ? (postId ? "Update scheduled post" : "Schedule post")
+                  : (postId ? "Update post" : "Create post")}
         </button>
         <button
           type="button"

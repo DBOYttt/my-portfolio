@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUnsavedChanges } from "./UnsavedChangesContext";
 
 const navLinks = [
   { label: "Dashboard", href: "/admin" },
@@ -22,6 +23,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { isDirty, setDirty } = useUnsavedChanges();
   return (
     <>
       {/* Mobile overlay */}
@@ -49,7 +51,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <Link
                 key={href}
                 href={href}
-                onClick={onClose}
+                onClick={(e) => {
+                  if (isDirty) {
+                    if (!window.confirm("You have unsaved changes. Leave without saving?")) {
+                      e.preventDefault();
+                      return;
+                    }
+                    setDirty(false);
+                  }
+                  onClose?.();
+                }}
                 className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
                   active
                     ? "text-cyan-400 bg-cyan-500/10 font-medium"

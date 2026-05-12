@@ -50,6 +50,12 @@ export default async function BlogAdminPage() {
       {posts.length === 0 ? (
         <div className="card p-8 text-center">
           <p className="text-slate-500 font-mono text-sm">No posts yet.</p>
+          <Link
+            href="/admin/blog/new"
+            className="mt-2 inline-block text-sm text-cyan-400 hover:underline"
+          >
+            Create your first →
+          </Link>
         </div>
       ) : (
         <div className="card overflow-x-auto">

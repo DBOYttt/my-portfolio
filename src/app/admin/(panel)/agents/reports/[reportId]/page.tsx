@@ -255,6 +255,7 @@ export default async function ReportDetailPage({
     if (!id) return;
     await prisma.skill.delete({ where: { id } });
     revalidatePath("/admin/agents/reports");
+    revalidatePath(`/admin/agents/reports/${reportId}`);
     revalidatePath("/");
   }
 
