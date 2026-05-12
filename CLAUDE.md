@@ -75,7 +75,10 @@ my-portfolio/
 │   ├── SECURITY.md            ← Security model and rules
 │   ├── MCP_SETUP.md           ← MCP server setup guide (Claude Desktop, Claude Code, n8n)
 │   ├── FEATURE_AUDIT.md       ← Feature completeness audit
-│   └── AGENT_IMPROVEMENTS.md  ← Agent improvement notes
+│   ├── AGENT_IMPROVEMENTS.md  ← Agent improvement notes
+│   ├── AUDIT_REPORT.md        ← Pre-M8 bug/UX/design audit — source of truth for what must be fixed before going public
+│   ├── MILESTONE_4.12_BUG_LIST.md      ← Bug list from M4.12 E2E walkthrough
+│   └── MILESTONE_4.12_E2E_TEST_RESULTS.md ← E2E test run results from M4.12
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx           ← Homepage — imports section components
@@ -157,9 +160,11 @@ async function getData() {
 
 ---
 
-## Current State (post-Milestone 7.5)
+## Current State (post-Milestone 7.5, pre-M8 audit fixes in progress)
 
 All public sections, admin CRUD, seven AI agents, career-ops integration, security audit, and 67 Vitest tests are complete. The Engineering Logbook redesign (M5.5) is live. M6.5 (Admin Panel Audit & Bug Fixes) is complete. M7 (MCP Server) is complete — 14 MCP tools, 9 read-only resources, stdio + HTTP/SSE transports, AuditLog integration, and `/admin/mcp` status page. M7.5 (Career-Ops Integration) is complete — career-ops runs as an isolated Docker service, admin Career panel triggers job evaluations and publishes master CV to `public/cv.pdf`. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx + career-ops, port 80).
+
+**Active branch:** `fix/audit-report` — working through the pre-M8 bug/UX/design issues found in the 2026-05-09 three-agent audit. `docs/AUDIT_REPORT.md` is the canonical checklist; check it before picking the next fix.
 
 **Next milestones:**
 - **M8 — Cloudflare Zero Trust Tunnel** — Expose homelab to public internet at `diboy.dev` via `cloudflared`. Requires DNS migration from name.com to Cloudflare nameservers first. See `docs/IMPLEMENTATION_PLAN.md` for the 6-phase checklist.

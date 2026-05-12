@@ -14,3 +14,8 @@ services:
   db:
     ports:
       - "127.0.0.1:5432:5432"
+
+  # Expose career-ops to localhost so the host-side dev server (npm run dev) can reach it.
+  career-ops:
+    ports:
+      - "127.0.0.1:4200:4200"
