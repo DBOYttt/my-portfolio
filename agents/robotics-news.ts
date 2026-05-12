@@ -11,6 +11,7 @@
  * for programmatic consumption. No scraping, no ToS violation.
  */
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "../src/lib/prisma";
 import { runRoboticsNews } from "../src/lib/agents/robotics-news";
 
@@ -54,7 +55,7 @@ async function run() {
   if (result._updatedConfig) {
     await prisma.agent.update({
       where: { id: agent.id },
-      data: { config: result._updatedConfig },
+      data: { config: result._updatedConfig as Prisma.InputJsonValue },
     });
   }
 

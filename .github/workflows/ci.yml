@@ -33,8 +33,17 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Type check
+      - name: Type check (Next.js app)
         run: npx tsc --noEmit
+
+      - name: Type check (agents)
+        run: npx tsc --noEmit --project tsconfig.agents.json
+
+      - name: Type check (mcp-server)
+        run: npx tsc --noEmit --project tsconfig.mcp-server.json
+
+      - name: Type check (career-ops-server)
+        run: npm ci --prefix career-ops-server && npx tsc --noEmit --project career-ops-server/tsconfig.json
 
       - name: Test
         run: npm test

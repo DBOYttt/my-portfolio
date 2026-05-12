@@ -51,7 +51,7 @@ export function registerResources(server: McpServer): void {
     "portfolio://cv",
     { description: "Current CV content and metadata", mimeType: "application/json" },
     async (_uri) => {
-      const data = await prisma.user.findFirst({ select: { cvContent: true, cvGeneratedAt: true } });
+      const data = await prisma.user.findFirst({ select: { name: true, careerConfig: true } });
       return { contents: [{ uri: "portfolio://cv", mimeType: "application/json", text: JSON.stringify(data) }] };
     }
   );
