@@ -75,7 +75,10 @@ my-portfolio/
 │   ├── SECURITY.md            ← Security model and rules
 │   ├── MCP_SETUP.md           ← MCP server setup guide (Claude Desktop, Claude Code, n8n)
 │   ├── FEATURE_AUDIT.md       ← Feature completeness audit
-│   └── AGENT_IMPROVEMENTS.md  ← Agent improvement notes
+│   ├── AGENT_IMPROVEMENTS.md  ← Agent improvement notes
+│   ├── AUDIT_REPORT.md        ← Earlier audit (2026-05-09); superseded by PRE_M8_ASSESSMENT.md
+│   ├── MILESTONE_4.12_BUG_LIST.md      ← Bug list from M4.12 E2E walkthrough
+│   └── MILESTONE_4.12_E2E_TEST_RESULTS.md ← E2E test run results from M4.12
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx           ← Homepage — imports section components
@@ -157,14 +160,17 @@ async function getData() {
 
 ---
 
-## Current State (post-Milestone 7.5)
+## Current State (post-Milestone 7.5, pre-M8 audit fixes in progress)
 
 All public sections, admin CRUD, seven AI agents, career-ops integration, security audit, and 67 Vitest tests are complete. The Engineering Logbook redesign (M5.5) is live. M6.5 (Admin Panel Audit & Bug Fixes) is complete. M7 (MCP Server) is complete — 14 MCP tools, 9 read-only resources, stdio + HTTP/SSE transports, AuditLog integration, and `/admin/mcp` status page. M7.5 (Career-Ops Integration) is complete — career-ops runs as an isolated Docker service, admin Career panel triggers job evaluations and publishes master CV to `public/cv.pdf`. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx + career-ops, port 80).
 
+**Active branch:** `fix/audit-report` — working through the pre-M8 bug/UX/design issues found in the 2026-05-12 three-agent audit. `docs/PRE_M8_ASSESSMENT.md` is the canonical checklist (21 findings, 4 hard blockers); check it before picking the next fix.
+
 **Next milestones:**
-- **M8 — Cloudflare Zero Trust Tunnel** — Expose homelab to public internet at `diboy.dev` via `cloudflared`. Requires DNS migration from name.com to Cloudflare nameservers first. See `docs/IMPLEMENTATION_PLAN.md` for the 6-phase checklist.
-- **M9 — Open Source Preparation** — Audit hardcoded personal data, rewrite README for external users, add `LICENSE`, `CONTRIBUTING.md`, issue/PR templates, then make repo public.
-- **M10 — Growth Features** ⏸ — Deferred until site is live and generating traffic.
+- **M8 — Pre-Launch Audit Fix Sprint** — Address all findings from `docs/PRE_M8_ASSESSMENT.md` before going public. 4 hard blockers in Group 1 (`fix/pre-m8-blockers`); career-ops reliability + admin polish in Group 2 (`fix/pre-traffic-polish`).
+- **M9 — Cloudflare Zero Trust Tunnel** — Expose homelab to public internet at `diboy.dev` via `cloudflared`. Requires DNS migration from name.com to Cloudflare nameservers first. See `docs/IMPLEMENTATION_PLAN.md` for the 6-phase checklist.
+- **M10 — Open Source Preparation** — Audit hardcoded personal data, rewrite README for external users, add `LICENSE`, `CONTRIBUTING.md`, issue/PR templates, then make repo public.
+- **M11 — Growth Features** ⏸ — Deferred until site is live and generating traffic.
 
 ### Deployment: `192.168.0.104`
 - **Stack:** Docker Compose — `my-portfolio-app-1` (Next.js, port 3000 internal), `my-portfolio-db-1` (PostgreSQL 16, `127.0.0.1:5432`), `my-portfolio-nginx-1` (port 80, LAN HTTP), `career-ops` (port 4200 internal, `career-ops-internal` network)
@@ -281,12 +287,13 @@ npm run test:coverage            # Vitest with V8 coverage report
 npx vitest run <pattern>         # Run a single test file, e.g. npx vitest run admin-routes
 npm run db:generate  # Re-generate Prisma client after schema changes
 npm run db:push      # Apply schema to DB — use this locally (migrate dev unsupported with Prisma dev proxy)
-npm run db:migrate   # Apply schema with migration history — use in production only
+npm run db:migrate   # Apply schema with migration history — use in production only (requires direct postgres:// URL, not prisma+proxy)
 npm run db:seed      # Create admin user
 npm run db:studio    # Open Prisma Studio (DB browser)
 npx tsx agents/<name>.ts     # Run any agent manually (requires DATABASE_URL inline or in .env)
 npm run mcp:stdio            # Start MCP server (stdio transport)
 npm run mcp:http             # Start MCP server (HTTP transport, port MCP_SERVER_PORT)
+npm run setup:career-ops     # First-time career-ops setup (fill career-ops/config/profile.yml and career-ops/cv.md first)
 ```
 
 > **Important:** All CLI runners import `{ prisma }` from `src/lib/prisma` (not `new PrismaClient()`).

@@ -952,7 +952,48 @@ Career-ops is designed for interactive Claude Code sessions. We need a thin wrap
 
 ---
 
-## Milestone 8 — Cloudflare Zero Trust Tunnel (diboy.dev) ⬜
+## Milestone 8 — Pre-Launch Audit Fix Sprint ⬜
+
+**Goal:** Address all findings from the 2026-05-12 three-agent assessment (`docs/PRE_M8_ASSESSMENT.md`) before the Cloudflare tunnel opens. Group 1 items are hard blockers — the tunnel must not open until they are fixed.
+
+### Group 1 — Hard Blockers (must fix before tunnel opens)
+**Branch:** `fix/pre-m8-blockers`
+
+- ⬜ **F-01** [S] — POST `/api/admin/projects` silently drops `publishedAt` — add `publishedAt: body.publishedAt ?? null` to `prisma.project.create()` data in `src/app/api/admin/projects/route.ts` (mirror the PUT handler)
+- ⬜ **F-02** [M] — Add `Content-Security-Policy` header to the security headers block in `next.config.ts`; start with `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'` and tighten after verifying no breakage
+- ⬜ **F-03** [S] — Set `NEXT_PUBLIC_BASE_URL=https://diboy.dev` in production `.env` before starting the tunnel (sitemap and robots.txt currently use `yourdomain.com` placeholder)
+- ⬜ **F-10** [S] — Fix `entry-head` mobile grid defect (≤760px): `.entry-meta-right` auto-flows into the 40px column, clipping date/type metadata on `/blog` and `/projects`; add `grid-column: 1 / -1` to `.entry-meta-right` at the 760px breakpoint in `src/app/globals.css` (~line 454)
+
+### Group 2 — Pre-Traffic Polish (fix before real visitors arrive)
+**Branch:** `fix/pre-traffic-polish`
+
+#### Career-ops reliability
+- ⬜ **F-04** [S] — Polling interval leaks on unmount: add `useEffect(() => { return () => stopPolling(); }, [stopPolling])` in `src/components/admin/CareerEvaluateForm.tsx`
+- ⬜ **F-05** [S] — Pipeline table doesn't refresh after evaluation: call `router.refresh()` inside `pollStatus` when status reaches `"done"` or `"error"` (`src/components/admin/CareerEvaluateForm.tsx` ~lines 195–200)
+- ⬜ **F-06** [S] — Auto-save errors silently swallowed: replace `// silent — not critical` catch block with a persistent error indicator that clears on next successful save (`src/components/admin/CareerEvaluateForm.tsx` ~lines 90–92)
+- ⬜ **F-07** [S] — No cancel during evaluation: add Cancel button calling `stopPolling()` and resetting `evaluating` + `jobStatus` state (`src/components/admin/CareerEvaluateForm.tsx` ~lines 514–531)
+- ⬜ **F-08** [S] — CV publish 404 shows raw volume path: map to "No CV has been generated yet. Run a job evaluation first." (`src/components/admin/CareerEvaluateForm.tsx` ~lines 263–265)
+- ⬜ **F-14** [S] — `portfolio_url` hardcoded as `""` in sync payload: derive from `NEXT_PUBLIC_BASE_URL` or add a form field (`src/app/api/admin/career/sync/route.ts` ~line 73)
+- ⬜ **F-15** [S] — Twitter field label/validation mismatch: rename to "Twitter / X handle" and strip leading `@` before storing (`src/components/admin/CareerEvaluateForm.tsx` ~lines 316–321)
+
+#### Admin panel polish
+- ⬜ **F-09** [M] — Sidebar `<Link>` bypasses `beforeunload` unsaved-changes guard: implement router-event detection or a dirty-flag context that intercepts Next.js client navigation in `PostForm.tsx` and `ProjectForm.tsx`
+- ⬜ **F-11** [S] — Skills API error message lists non-existent enum values: update hardcoded list in `src/app/api/admin/skills/route.ts` (~line 36) to `LANGUAGE, FRAMEWORK, TOOL, ROBOTICS, EMBEDDED, DATABASE, OTHER`
+- ⬜ **F-12** [S] — Escape key doesn't close mobile nav drawer: add `key === "Escape"` handler in `src/components/public/Nav.tsx` (~lines 33–43)
+- ⬜ **F-13** [S] — `dismissStaleSkill` doesn't revalidate current report page: add `revalidatePath(\`/admin/agents/reports/${reportId}\`)` in `src/app/admin/(panel)/agents/reports/[reportId]/page.tsx` (~lines 252–259)
+- ⬜ **F-17** [S] — Experience and Writing sections hidden when DB is empty: render section shell with empty-state placeholder so `/#experience` and `/#writing` nav anchors remain valid (`src/app/page.tsx`)
+- ⬜ **F-18** [S] — PostForm SCHEDULED state submit button reads "Create post": change to "Schedule post" (`src/components/admin/PostForm.tsx` ~lines 479–483)
+- ⬜ **F-20** [S] — Admin empty states have no inline CTA: add "Create your first post →" link inside the empty-state card in `src/app/admin/(panel)/blog/page.tsx` (~lines 50–53) and the equivalent in projects
+
+### Group 3 — Deferred to M12 Growth Features
+- F-16 — Blog search and tag filtering
+- F-19 — RSS/Atom feed at `/blog/feed.xml`
+- F-21 — "Back to top" button on blog post detail
+- Blog pagination (plan before post count exceeds ~20)
+
+---
+
+## Milestone 9 — Cloudflare Zero Trust Tunnel (diboy.dev) ⬜
 
 **Goal:** Expose the homelab server at `192.168.0.104` to the public internet on `diboy.dev` via Cloudflare Zero Trust Tunnel. No open router ports. Cloudflare handles HTTPS automatically.
 
@@ -988,7 +1029,7 @@ Career-ops is designed for interactive Claude Code sessions. We need a thin wrap
 
 ---
 
-## Milestone 9 — Open Source Preparation ⬜
+## Milestone 10 — Open Source Preparation ⬜
 
 **Goal:** Make the repository public and usable by others as a self-hosted portfolio starter. Anyone should be able to clone it, fill in their own content, and deploy it without touching the codebase.
 
@@ -1019,7 +1060,7 @@ Career-ops is designed for interactive Claude Code sessions. We need a thin wrap
 
 ---
 
-## Milestone 10 — Growth Features ⏸ (Deferred)
+## Milestone 11 — Growth Features ⏸ (Deferred)
 
 Defer until site is live and generating traffic.
 

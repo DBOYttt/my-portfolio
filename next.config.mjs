@@ -30,6 +30,8 @@ const nextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-XSS-Protection", value: "1; mode=block" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // CSP is set by Nginx in production (single source of truth).
+          // See nginx/portfolio.conf and nginx/portfolio-lan.conf.
         ],
       },
     ];
