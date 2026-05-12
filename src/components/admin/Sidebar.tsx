@@ -52,7 +52,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 key={href}
                 href={href}
                 onClick={(e) => {
-                  if (isDirty) {
+                  if (isDirty && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
                     if (!window.confirm("You have unsaved changes. Leave without saving?")) {
                       e.preventDefault();
                       return;

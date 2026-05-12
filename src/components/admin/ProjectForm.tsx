@@ -89,15 +89,11 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
   }
 
   function handleTitleChange(value: string) {
-    isDirty.current = true;
-    setDirty(true);
     set("title", value);
     if (!slugManuallyEdited) set("slug", toSlug(value));
   }
 
   function addTag() {
-    isDirty.current = true;
-    setDirty(true);
     const tag = tagInput.trim();
     if (tag && !form.techTags.includes(tag)) {
       set("techTags", [...form.techTags, tag]);
@@ -106,8 +102,6 @@ export default function ProjectForm({ initialData, projectId }: ProjectFormProps
   }
 
   function removeTag(tag: string) {
-    isDirty.current = true;
-    setDirty(true);
     set("techTags", form.techTags.filter((t) => t !== tag));
   }
 

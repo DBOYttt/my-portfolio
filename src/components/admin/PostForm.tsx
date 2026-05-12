@@ -98,15 +98,11 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
   }
 
   function handleTitleChange(value: string) {
-    isDirty.current = true;
-    setDirty(true);
     set("title", value);
     if (!slugManuallyEdited) set("slug", toSlug(value));
   }
 
   function addTag() {
-    isDirty.current = true;
-    setDirty(true);
     const tag = tagInput.trim();
     if (tag && !form.tags.includes(tag)) {
       set("tags", [...form.tags, tag]);
@@ -115,8 +111,6 @@ export default function PostForm({ initialData, postId }: PostFormProps) {
   }
 
   function removeTag(tag: string) {
-    isDirty.current = true;
-    setDirty(true);
     set("tags", form.tags.filter((t) => t !== tag));
   }
 

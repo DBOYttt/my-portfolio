@@ -84,11 +84,15 @@ export default function CareerEvaluateForm() {
     if (debounceRef.current !== null) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        await fetch("/api/admin/career/config", {
+        const res = await fetch("/api/admin/career/config", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updated),
         });
+        if (!res.ok) {
+          setSaveError(true);
+          return;
+        }
         setSaveError(false);
         setSavedIndicator(true);
         setTimeout(() => setSavedIndicator(false), 2000);
