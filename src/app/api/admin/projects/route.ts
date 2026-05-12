@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
       featured: featured ?? false,
       order: order ?? 0,
       coverImage: coverImage ?? null,
+      publishedAt: body.publishedAt ? new Date(body.publishedAt) : null,
     },
   });
 

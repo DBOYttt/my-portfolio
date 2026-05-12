@@ -454,6 +454,7 @@ section.logbook-section:first-of-type { padding-top: 32px; }
   .entry-head { grid-template-columns: 40px 1fr; }
   .entry-body { grid-template-columns: 1fr; gap: 0; }
   .entry-title { font-size: 22px; }
+  .entry-meta-right { grid-column: 1 / -1; }
 }
 
 /* ── Sketch / placeholder frame ─────────────────────────────────────────────── */
