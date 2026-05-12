@@ -70,7 +70,7 @@ export async function POST(): Promise<NextResponse<SyncResponse>> {
       phone: cfg.contact?.phone ?? "",
       location: cfg.contact?.location ?? OWNER.location,
       linkedin: linkedinLink ?? "",
-      portfolio_url: "",
+      portfolio_url: process.env.NEXT_PUBLIC_BASE_URL ?? "",
       github: githubLink ?? "",
       ...(twitterLink ? { twitter: twitterLink } : {}),
     },
