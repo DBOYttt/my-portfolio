@@ -96,30 +96,30 @@ These are scope gaps identified during the audit — not bugs, but notable absen
 ### Group 1 — Must fix before M8 goes live
 **Branch:** `fix/pre-m8-blockers`
 
-- [ ] **F-01** [S] Add `publishedAt: body.publishedAt ?? null` to `prisma.project.create()` data in `src/app/api/admin/projects/route.ts` (mirror the PUT handler)
-- [ ] **F-02** [M] Add `Content-Security-Policy` header — start with `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'` in `next.config.ts` or Nginx config; tighten after verifying no breakage
-- [ ] **F-03** [S] Set `NEXT_PUBLIC_BASE_URL=https://diboy.dev` in production `.env` before starting the Cloudflare tunnel
-- [ ] **F-10** [S] Add `grid-column: 1 / -1` to `.entry-meta-right` at the 760px breakpoint in `src/app/globals.css` line ~454
+- [x] **F-01** [S] Add `publishedAt: body.publishedAt ?? null` to `prisma.project.create()` data in `src/app/api/admin/projects/route.ts` (mirror the PUT handler)
+- [x] **F-02** [M] Add `Content-Security-Policy` header — start with `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'` in `next.config.ts` or Nginx config; tighten after verifying no breakage
+- [ ] **F-03** [S] Set `NEXT_PUBLIC_BASE_URL=https://diboy.dev` in production `.env` before starting the Cloudflare tunnel *(deployment action — set on server before M9 tunnel opens)*
+- [x] **F-10** [S] Add `grid-column: 1 / -1` to `.entry-meta-right` at the 760px breakpoint in `src/app/globals.css` line ~454
 
 ---
 
 ### Group 2 — Fix before site gets real traffic
 **Branch:** `fix/pre-traffic-polish`
 
-- [ ] **F-04** [S] Add `useEffect` cleanup in `src/components/admin/CareerEvaluateForm.tsx` — return `() => stopPolling()` to prevent interval leak on unmount
-- [ ] **F-05** [S] Call `router.refresh()` inside `pollStatus` when status reaches `"done"` or `"error"` in `src/components/admin/CareerEvaluateForm.tsx` lines ~195-200
-- [ ] **F-06** [S] Replace silent catch block in auto-save with a persistent error indicator (e.g. a small red dot on the save status label) that clears on next successful save — `src/components/admin/CareerEvaluateForm.tsx` lines ~90-92
-- [ ] **F-07** [S] Add Cancel button in evaluation in-progress state calling `stopPolling()` and resetting form state — `src/components/admin/CareerEvaluateForm.tsx` lines ~514-531
-- [ ] **F-08** [S] Map 404 from CV publish endpoint to "No CV has been generated yet. Run a job evaluation first." — `src/components/admin/CareerEvaluateForm.tsx` lines ~263-265
-- [ ] **F-09** [M] Implement router-event-based unsaved-changes guard using `next/navigation` `beforePopState` or a custom navigation prompt hook; update `src/components/admin/PostForm.tsx` and `src/components/admin/ProjectForm.tsx`
-- [ ] **F-11** [S] Update hardcoded enum list in `src/app/api/admin/skills/route.ts` line ~36 to match schema: `LANGUAGE, FRAMEWORK, TOOL, ROBOTICS, EMBEDDED, DATABASE, OTHER`
-- [ ] **F-12** [S] Add `key === "Escape"` handler to close mobile nav in `src/components/public/Nav.tsx` lines ~33-43
-- [ ] **F-13** [S] Add `revalidatePath(\`/admin/agents/reports/${reportId}\`)` after `dismissStaleSkill` in `src/app/admin/(panel)/agents/reports/[reportId]/page.tsx` lines ~252-259
-- [ ] **F-14** [S] Add `portfolio_url` field (or derive from `NEXT_PUBLIC_BASE_URL`) in career-ops sync payload — `src/app/api/admin/career/sync/route.ts` line ~73
-- [ ] **F-15** [S] Update Twitter field label in `src/components/admin/CareerEvaluateForm.tsx` lines ~316-321 to "Twitter handle" and strip leading `@` on save; or accept full URL and store consistently
-- [ ] **F-17** [S] Render Experience and Writing sections with a placeholder message when DB returns empty arrays, so nav anchors remain valid
-- [ ] **F-18** [S] Change submit button label for SCHEDULED state in `src/components/admin/PostForm.tsx` lines ~479-483 from "Create post" to "Schedule post"
-- [ ] **F-20** [S] Add inline "Create your first post →" link to empty state in `src/app/admin/(panel)/blog/page.tsx` lines ~50-53
+- [x] **F-04** [S] Add `useEffect` cleanup in `src/components/admin/CareerEvaluateForm.tsx` — return `() => stopPolling()` to prevent interval leak on unmount
+- [x] **F-05** [S] Call `router.refresh()` inside `pollStatus` when status reaches `"done"` or `"error"` in `src/components/admin/CareerEvaluateForm.tsx` lines ~195-200
+- [x] **F-06** [S] Replace silent catch block in auto-save with a persistent error indicator (e.g. a small red dot on the save status label) that clears on next successful save — `src/components/admin/CareerEvaluateForm.tsx` lines ~90-92
+- [x] **F-07** [S] Add Cancel button in evaluation in-progress state calling `stopPolling()` and resetting form state — `src/components/admin/CareerEvaluateForm.tsx` lines ~514-531
+- [x] **F-08** [S] Map 404 from CV publish endpoint to "No CV has been generated yet. Run a job evaluation first." — `src/components/admin/CareerEvaluateForm.tsx` lines ~263-265
+- [x] **F-09** [M] Implement router-event-based unsaved-changes guard using `next/navigation` `beforePopState` or a custom navigation prompt hook; update `src/components/admin/PostForm.tsx` and `src/components/admin/ProjectForm.tsx`
+- [x] **F-11** [S] Update hardcoded enum list in `src/app/api/admin/skills/route.ts` line ~36 to match schema: `LANGUAGE, FRAMEWORK, TOOL, ROBOTICS, EMBEDDED, DATABASE, OTHER`
+- [x] **F-12** [S] Add `key === "Escape"` handler to close mobile nav in `src/components/public/Nav.tsx` lines ~33-43
+- [x] **F-13** [S] Add `revalidatePath(\`/admin/agents/reports/${reportId}\`)` after `dismissStaleSkill` in `src/app/admin/(panel)/agents/reports/[reportId]/page.tsx` lines ~252-259
+- [x] **F-14** [S] Add `portfolio_url` field (or derive from `NEXT_PUBLIC_BASE_URL`) in career-ops sync payload — `src/app/api/admin/career/sync/route.ts` line ~73
+- [x] **F-15** [S] Update Twitter field label in `src/components/admin/CareerEvaluateForm.tsx` lines ~316-321 to "Twitter handle" and strip leading `@` on save; or accept full URL and store consistently
+- [x] **F-17** [S] Render Experience and Writing sections with a placeholder message when DB returns empty arrays, so nav anchors remain valid
+- [x] **F-18** [S] Change submit button label for SCHEDULED state in `src/components/admin/PostForm.tsx` lines ~479-483 from "Create post" to "Schedule post"
+- [x] **F-20** [S] Add inline "Create your first post →" link to empty state in `src/app/admin/(panel)/blog/page.tsx` lines ~50-53
 
 ---
 
