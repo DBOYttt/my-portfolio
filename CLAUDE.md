@@ -167,9 +167,10 @@ All public sections, admin CRUD, seven AI agents, career-ops integration, securi
 **Active branch:** `fix/audit-report` — working through the pre-M8 bug/UX/design issues found in the 2026-05-09 three-agent audit. `docs/AUDIT_REPORT.md` is the canonical checklist; check it before picking the next fix.
 
 **Next milestones:**
-- **M8 — Cloudflare Zero Trust Tunnel** — Expose homelab to public internet at `diboy.dev` via `cloudflared`. Requires DNS migration from name.com to Cloudflare nameservers first. See `docs/IMPLEMENTATION_PLAN.md` for the 6-phase checklist.
-- **M9 — Open Source Preparation** — Audit hardcoded personal data, rewrite README for external users, add `LICENSE`, `CONTRIBUTING.md`, issue/PR templates, then make repo public.
-- **M10 — Growth Features** ⏸ — Deferred until site is live and generating traffic.
+- **M8 — Pre-Launch Audit Fix Sprint** — Address all findings from `docs/PRE_M8_ASSESSMENT.md` before going public. 4 hard blockers in Group 1 (`fix/pre-m8-blockers`); career-ops reliability + admin polish in Group 2 (`fix/pre-traffic-polish`).
+- **M9 — Cloudflare Zero Trust Tunnel** — Expose homelab to public internet at `diboy.dev` via `cloudflared`. Requires DNS migration from name.com to Cloudflare nameservers first. See `docs/IMPLEMENTATION_PLAN.md` for the 6-phase checklist.
+- **M10 — Open Source Preparation** — Audit hardcoded personal data, rewrite README for external users, add `LICENSE`, `CONTRIBUTING.md`, issue/PR templates, then make repo public.
+- **M11 — Growth Features** ⏸ — Deferred until site is live and generating traffic.
 
 ### Deployment: `192.168.0.104`
 - **Stack:** Docker Compose — `my-portfolio-app-1` (Next.js, port 3000 internal), `my-portfolio-db-1` (PostgreSQL 16, `127.0.0.1:5432`), `my-portfolio-nginx-1` (port 80, LAN HTTP), `career-ops` (port 4200 internal, `career-ops-internal` network)
