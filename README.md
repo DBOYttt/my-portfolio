@@ -200,9 +200,10 @@ Add to `.mcp.json` at the project root for Claude Code integration — see `docs
 - **Milestone 6.5** — Admin panel audit & bug fixes ✅
 - **Milestone 7** — MCP server (stdio + HTTP/SSE, 14 tools, Claude Desktop + n8n) ✅
 - **Milestone 7.5** — Career-ops integration: isolated Docker service, admin Career panel, job evaluation pipeline, CV publishing ✅
-- **Milestone 8** — Cloudflare Zero Trust Tunnel → `diboy.dev` (public internet, no port forwarding) ⬜
-- **Milestone 9** — Open source preparation: licence, docs, mock-data cleanup, public repo ⬜
-- **Milestone 10** — Growth features: analytics, newsletter, 2FA (deferred) ⏸
+- **Milestone 8** — Pre-Launch Audit Fix Sprint: 21 UX/bug findings from the 2026-05-12 three-agent assessment — `publishedAt` drop, CSP, mobile grid, unsaved-changes guard, career-ops reliability, admin polish ✅
+- **Milestone 9** — Cloudflare Zero Trust Tunnel → `diboy.dev` (public internet, no port forwarding) ⬜
+- **Milestone 10** — Open source preparation: licence, docs, mock-data cleanup, public repo ⬜
+- **Milestone 11** — Growth features: analytics, newsletter, 2FA (deferred) ⏸
 
 ## Security Notes
 

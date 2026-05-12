@@ -160,14 +160,11 @@ async function getData() {
 
 ---
 
-## Current State (post-Milestone 7.5, pre-M8 audit fixes in progress)
+## Current State (post-Milestone 8, M9 Cloudflare Tunnel next)
 
-All public sections, admin CRUD, seven AI agents, career-ops integration, security audit, and 67 Vitest tests are complete. The Engineering Logbook redesign (M5.5) is live. M6.5 (Admin Panel Audit & Bug Fixes) is complete. M7 (MCP Server) is complete — 14 MCP tools, 9 read-only resources, stdio + HTTP/SSE transports, AuditLog integration, and `/admin/mcp` status page. M7.5 (Career-Ops Integration) is complete — career-ops runs as an isolated Docker service, admin Career panel triggers job evaluations and publishes master CV to `public/cv.pdf`. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx + career-ops, port 80).
-
-**Active branch:** `fix/audit-report` — working through the pre-M8 bug/UX/design issues found in the 2026-05-12 three-agent audit. `docs/PRE_M8_ASSESSMENT.md` is the canonical checklist (21 findings, 4 hard blockers); check it before picking the next fix.
+All public sections, admin CRUD, seven AI agents, career-ops integration, security audit, and 67 Vitest tests are complete. The Engineering Logbook redesign (M5.5) is live. M6.5 (Admin Panel Audit & Bug Fixes) is complete. M7 (MCP Server) is complete — 14 MCP tools, 9 read-only resources, stdio + HTTP/SSE transports, AuditLog integration, and `/admin/mcp` status page. M7.5 (Career-Ops Integration) is complete — career-ops runs as an isolated Docker service, admin Career panel triggers job evaluations and publishes master CV to `public/cv.pdf`. M8 (Pre-Launch Audit Fix Sprint) is complete — all 18 in-scope findings from `docs/PRE_M8_ASSESSMENT.md` addressed across two branches (`fix/pre-m8-blockers` and `fix/pre-traffic-polish`), merged to `main`. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx + career-ops, port 80).
 
 **Next milestones:**
-- **M8 — Pre-Launch Audit Fix Sprint** — Address all findings from `docs/PRE_M8_ASSESSMENT.md` before going public. 4 hard blockers in Group 1 (`fix/pre-m8-blockers`); career-ops reliability + admin polish in Group 2 (`fix/pre-traffic-polish`).
 - **M9 — Cloudflare Zero Trust Tunnel** — Expose homelab to public internet at `diboy.dev` via `cloudflared`. Requires DNS migration from name.com to Cloudflare nameservers first. See `docs/IMPLEMENTATION_PLAN.md` for the 6-phase checklist.
 - **M10 — Open Source Preparation** — Audit hardcoded personal data, rewrite README for external users, add `LICENSE`, `CONTRIBUTING.md`, issue/PR templates, then make repo public.
 - **M11 — Growth Features** ⏸ — Deferred until site is live and generating traffic.
