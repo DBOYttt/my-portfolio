@@ -85,11 +85,20 @@ info "Removing existing portfolio-agent cron entries (if any)..."
 
 EXISTING_CRON=$(crontab -l 2>/dev/null || true)
 
-# Strip lines between the start and end markers (inclusive)
+# Strip old and new portfolio-agent blocks.
+# Handles two formats:
+#   New (this script): block between "# ── Portfolio Agents" and "# ── End Portfolio Agents"
+#   Old (pre-scripts): "# ── Portfolio AI Agents" block without an end marker (remove known lines)
 CLEANED_CRON=$(echo "$EXISTING_CRON" | awk '
-  /# ── Portfolio Agents/ { skip=1 }
+  /# ── Portfolio Agents/    { skip=1 }
   skip && /# ── End Portfolio Agents/ { skip=0; next }
-  !skip
+  skip { next }
+  /PORTFOLIO_DB=/  { next }
+  /PORTFOLIO_DIR=/ { next }
+  /run-agent\.sh/  { next }
+  /agents\/(github-summarizer|skills-inference|github-project-importer|blog-suggester|robotics-news|brand-monitor|platform-sync|opportunity-watcher|cv-generator|platform-sync)\.ts/ { next }
+  /# (GitHub Summarizer|Skills Inference|GitHub Project Importer|Blog Suggester|Robotics News|Brand Monitor|Platform Sync|Opportunity Watcher|CV Generator|Platform Sync) —/ { next }
+  { print }
 ')
 
 # Write new crontab
