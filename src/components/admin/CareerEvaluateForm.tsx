@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 type JobStatus = "pending" | "running" | "done" | "error";
 
@@ -59,9 +60,12 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 }
 
 export default function CareerEvaluateForm() {
+  const router = useRouter();
+
   // ── Career profile state ──────────────────────────────────────────────────
   const [config, setConfig] = useState<CareerConfig>({});
   const [savedIndicator, setSavedIndicator] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ ok: boolean; message: string } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -80,15 +84,20 @@ export default function CareerEvaluateForm() {
     if (debounceRef.current !== null) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        await fetch("/api/admin/career/config", {
+        const res = await fetch("/api/admin/career/config", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updated),
         });
+        if (!res.ok) {
+          setSaveError(true);
+          return;
+        }
+        setSaveError(false);
         setSavedIndicator(true);
         setTimeout(() => setSavedIndicator(false), 2000);
       } catch {
-        // silent — not critical
+        setSaveError(true);
       }
     }, 800);
   }, []);
@@ -161,6 +170,10 @@ export default function CareerEvaluateForm() {
     }
   }, []);
 
+  useEffect(() => {
+    return () => stopPolling();
+  }, [stopPolling]);
+
   const POLL_MAX = 100;
 
   const pollStatus = useCallback(
@@ -196,21 +209,24 @@ export default function CareerEvaluateForm() {
             if (status === "done" || status === "error") {
               stopPolling();
               setEvaluating(false);
+              router.refresh();
             }
           } else if (data.status) {
             stopPolling();
             setEvaluating(false);
             setJobStatus("error");
             setLogLines((prev) => [...prev, `\nUnexpected status: ${data.status}`]);
+            router.refresh();
           }
         } catch {
           stopPolling();
           setEvaluating(false);
           setJobStatus("error");
+          router.refresh();
         }
       }, 3000);
     },
-    [stopPolling]
+    [stopPolling, router]
   );
 
   async function handleEvaluate(e: React.FormEvent<HTMLFormElement>) {
@@ -260,7 +276,11 @@ export default function CareerEvaluateForm() {
           message: `Published at ${data.publishedAt ? new Date(data.publishedAt).toLocaleString() : "—"}`,
         });
       } else {
-        setPublishResult({ ok: false, message: data.error ?? "Publish failed" });
+        const message =
+          res.status === 404
+            ? "No CV found. Run a job evaluation first."
+            : data.error ?? "Publish failed";
+        setPublishResult({ ok: false, message });
       }
     } catch {
       setPublishResult({ ok: false, message: "Network error — could not publish CV" });
@@ -275,11 +295,19 @@ export default function CareerEvaluateForm() {
       <div className="card p-4 mb-6">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-slate-100 font-semibold">Career Profile</h2>
-          {savedIndicator && (
-            <span className="text-green-400 text-xs font-mono flex items-center gap-1">
-              <span>&#10003;</span> Saved
-            </span>
-          )}
+          <span className="flex items-center gap-1">
+            {savedIndicator && (
+              <span className="text-green-400 text-xs font-mono flex items-center gap-1">
+                <span>&#10003;</span> Saved
+              </span>
+            )}
+            {saveError && (
+              <span
+                title="Auto-save failed — check your session"
+                className="inline-block w-2 h-2 rounded-full bg-red-500 ml-1 align-middle"
+              />
+            )}
+          </span>
         </div>
         <p className="text-slate-500 text-xs font-mono mb-4">
           Stored in your user record — auto-synced to career-ops on demand
@@ -310,11 +338,11 @@ export default function CareerEvaluateForm() {
                   onChange={(e) => setContact({ location: e.target.value })}
                 />
               </FieldGroup>
-              <FieldGroup label="Twitter URL">
+              <FieldGroup label="Twitter handle">
                 <input
                   type="text"
                   className={INPUT_CLS}
-                  placeholder="https://x.com/yourhandle"
+                  placeholder="@yourhandle"
                   value={config.contact?.twitter ?? ""}
                   onChange={(e) => setContact({ twitter: e.target.value })}
                 />
@@ -528,6 +556,20 @@ export default function CareerEvaluateForm() {
           >
             {evaluating ? "Running…" : "Evaluate"}
           </button>
+          {evaluating && (
+            <button
+              type="button"
+              onClick={() => {
+                stopPolling();
+                setEvaluating(false);
+                setJobStatus(null);
+                setLogLines([]);
+              }}
+              className="px-4 py-2 rounded border border-slate-600 text-slate-300 text-sm hover:bg-[#2a2d3a] transition-colors flex-shrink-0"
+            >
+              Cancel
+            </button>
+          )}
         </form>
 
         {jobStatus && (

@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
     if (err.message?.toLowerCase().includes("invalid") || err.message?.toLowerCase().includes("enum")) {
       return NextResponse.json(
-        { error: "invalid category — valid values: FRONTEND, BACKEND, LANGUAGE, TOOL, DATABASE, DEVOPS, OTHER" },
+        { error: "invalid category — valid values: LANGUAGE, FRAMEWORK, TOOL, ROBOTICS, EMBEDDED, DATABASE, OTHER" },
         { status: 400 }
       );
     }

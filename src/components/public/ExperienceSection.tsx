@@ -4,7 +4,22 @@ import { SectionHead } from "@/components/ui/hand-drawn";
 export default async function ExperienceSection() {
   const experience = await getExperience();
 
-  if (!experience || experience.length === 0) return null;
+  if (!experience || experience.length === 0) {
+    return (
+      <section id="experience" className="logbook-section">
+        <SectionHead
+          num="05"
+          kicker="Experience"
+          meta="Roles, places, durations"
+          title={<>The <em>record</em>.</>}
+        />
+        <div className="logbook-row">
+          <aside className="margin" />
+          <p style={{ color: "var(--ink-faint)", fontSize: "0.875rem" }}>No entries yet.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="experience" className="logbook-section">

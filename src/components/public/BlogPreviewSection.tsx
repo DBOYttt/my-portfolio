@@ -5,7 +5,22 @@ import { SectionHead } from "@/components/ui/hand-drawn";
 export default async function BlogPreviewSection() {
   const allPosts = await getBlogPosts();
   const posts = allPosts.slice(0, 3);
-  if (posts.length === 0) return null;
+  if (posts.length === 0) {
+    return (
+      <section id="writing" className="logbook-section">
+        <SectionHead
+          num="06"
+          kicker="Writing"
+          meta="Long-form notes from the workbench"
+          title={<>Recent <em>dispatches.</em></>}
+        />
+        <div className="logbook-row">
+          <aside className="margin" />
+          <p style={{ color: "var(--ink-faint)", fontSize: "0.875rem" }}>No posts yet.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="writing" className="logbook-section">

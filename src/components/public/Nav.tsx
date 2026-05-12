@@ -31,6 +31,10 @@ export default function Nav() {
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        return;
+      }
       if (e.key !== "Tab") return;
       if (e.shiftKey) {
         if (document.activeElement === first) { e.preventDefault(); last?.focus(); }
