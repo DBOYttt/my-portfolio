@@ -29,7 +29,8 @@ die()     { echo -e "${RED}✗ $*${RESET}" >&2; exit 1; }
 step()    { echo -e "\n${BOLD}${CYAN}════ $* ════${RESET}"; }
 prompt()  { echo -e "${YELLOW}$*${RESET}"; }
 
-REPO_URL="git@github.com:DBOYttt/my-portfolio.git"
+REPO_URL_SSH="git@github.com:DBOYttt/my-portfolio.git"
+REPO_URL_HTTPS="https://github.com/DBOYttt/my-portfolio.git"
 DEFAULT_INSTALL_DIR="$HOME/projects/my-portfolio"
 
 # ── Help ──────────────────────────────────────────────────────────────────────
@@ -139,6 +140,13 @@ else
   success "git installed: $(git --version)"
 fi
 
+# openssl (needed for secret generation in Step 4)
+if ! command -v openssl &>/dev/null; then
+  info "Installing openssl..."
+  sudo apt-get update -qq && sudo apt-get install -y openssl
+fi
+success "openssl: $(openssl version | head -1)"
+
 # Docker
 if command -v docker &>/dev/null; then
   success "Docker: $(docker --version | head -1)"
@@ -175,14 +183,14 @@ else
 fi
 
 # Docker Compose (v2 plugin check)
-if ! docker compose version &>/dev/null 2>&1; then
+if ! $DOCKER_CMD compose version &>/dev/null 2>&1; then
   info "Docker Compose plugin not found, installing..."
   sudo apt-get install -y docker-compose-plugin
 fi
-success "Docker Compose: $(docker compose version | head -1)"
+success "Docker Compose: $($DOCKER_CMD compose version | head -1)"
 
 # Ensure Docker daemon is running
-if ! docker info &>/dev/null 2>&1; then
+if ! $DOCKER_CMD info &>/dev/null 2>&1; then
   info "Starting Docker daemon..."
   sudo systemctl enable docker --now
 fi
@@ -226,7 +234,8 @@ else
     success "Repository updated."
   else
     info "Cloning repository to $INSTALL_DIR..."
-    git clone "$REPO_URL" --recurse-submodules "$INSTALL_DIR"
+    git clone "$REPO_URL_SSH" --recurse-submodules "$INSTALL_DIR" 2>/dev/null \
+      || git clone "$REPO_URL_HTTPS" --recurse-submodules "$INSTALL_DIR"
     success "Repository cloned."
   fi
 fi
@@ -408,7 +417,8 @@ CURRENT=$(env_get "NEXT_PUBLIC_BASE_URL" "http://${DEFAULT_IP}")
 prompt "Public base URL (for sitemap/SEO) [default: $CURRENT]:"
 read -r INPUT; BASE_URL="${INPUT:-$CURRENT}"
 env_set "NEXT_PUBLIC_BASE_URL" "$BASE_URL"
-success "NEXT_PUBLIC_BASE_URL = $BASE_URL"
+env_set "NEXT_PUBLIC_SITE_URL" "$BASE_URL"
+success "NEXT_PUBLIC_BASE_URL = $BASE_URL (also set NEXT_PUBLIC_SITE_URL)"
 
 # CAREER_OPS_INTERNAL_SECRET
 CURRENT=$(env_get "CAREER_OPS_INTERNAL_SECRET" "")
@@ -464,15 +474,15 @@ info "Installing host npm dependencies (for npx prisma)..."
 npm install --prefer-offline 2>/dev/null || npm install
 
 info "Building Docker images (this takes several minutes on first run)..."
-docker compose build
+$DOCKER_CMD compose build
 
 info "Starting database..."
-docker compose up -d db
+$DOCKER_CMD compose up -d db
 info "Waiting for database to be ready (up to 60s)..."
 ELAPSED=0
 DB_USER=$(grep -E "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "portfolio")
 [[ -z "$DB_USER" ]] && DB_USER="portfolio"
-while ! docker compose exec -T db pg_isready -U "$DB_USER" &>/dev/null 2>&1; do
+while ! $DOCKER_CMD compose exec -T db pg_isready -U "$DB_USER" &>/dev/null 2>&1; do
   if [[ $ELAPSED -ge 60 ]]; then die "Database did not become ready in 60s."; fi
   echo -ne "\r  waiting... ${ELAPSED}s"
   sleep 2; ELAPSED=$((ELAPSED + 2))
@@ -480,21 +490,27 @@ done
 echo ""; success "Database is ready."
 
 info "Applying database schema..."
-docker compose run --rm app npx prisma db push --skip-generate
+$DOCKER_CMD compose run --rm app npx prisma db push --skip-generate
 success "Schema applied."
 
 info "Creating admin user..."
-docker compose run --rm app npm run db:seed
+$DOCKER_CMD compose run --rm app npm run db:seed
 success "Admin user created."
 
 info "Starting all services..."
-docker compose up -d
+$DOCKER_CMD compose up -d
 
 info "Waiting for app to become healthy (up to 90s)..."
 ELAPSED=0
 while true; do
-  STATUS=$(docker compose ps --format json 2>/dev/null \
-    | python3 -c "import sys,json; data=[json.loads(l) for l in sys.stdin if l.strip()]; app=[s for s in data if 'app' in s.get('Name','')]; print(app[0].get('Health','') if app else 'missing')" 2>/dev/null || echo "checking")
+  _APP_CID=$($DOCKER_CMD compose ps -q app 2>/dev/null | head -1)
+  if [[ -z "$_APP_CID" ]]; then
+    STATUS="missing"
+  else
+    STATUS=$($DOCKER_CMD inspect --format \
+      '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
+      "$_APP_CID" 2>/dev/null || echo "checking")
+  fi
   [[ "$STATUS" == "healthy" ]] && { success "App is healthy."; break; }
   if [[ $ELAPSED -ge 90 ]]; then
     warn "App health timeout — it may still be starting. Check: docker compose logs app --tail 50"
