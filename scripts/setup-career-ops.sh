@@ -35,9 +35,11 @@ info "Installing career-ops npm dependencies..."
 success "npm install done."
 
 info "Installing Playwright Chromium (downloads ~150 MB, may take a few minutes)..."
-(cd career-ops && npx playwright install chromium --with-deps) \
-  || { warn "Playwright install failed — career-ops CV publish may not work."; }
-success "Playwright Chromium installed."
+if (cd career-ops && npx playwright install chromium --with-deps); then
+  success "Playwright Chromium installed."
+else
+  warn "Playwright install failed — career-ops CV publish may not work."
+fi
 
 if [[ ! -f "career-ops/config/profile.yml" ]]; then
   if [[ -f "career-ops/config/profile.example.yml" ]]; then
