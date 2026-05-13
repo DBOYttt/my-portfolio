@@ -50,6 +50,11 @@ fi
 # Ensure run-agent.sh is executable
 chmod +x "$RUN_AGENT"
 
+# Guard: crontab env assignments do not support quoted paths
+if [[ "$PORTFOLIO_DIR" =~ [[:space:]] ]]; then
+  die "PORTFOLIO_DIR must not contain spaces for crontab compatibility: $PORTFOLIO_DIR"
+fi
+
 # ── Create log directory ──────────────────────────────────────────────────────
 mkdir -p "$HOME/logs"
 success "Log directory: ~/logs"
