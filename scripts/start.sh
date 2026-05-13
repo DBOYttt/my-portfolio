@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# start.sh — Start all portfolio Docker services and wait for healthy status.
+#
+# Usage: scripts/start.sh [--build]
+#   --build   Rebuild images before starting
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; RESET='\033[0m'
+info()    { echo -e "${CYAN}$*${RESET}"; }
+success() { echo -e "${GREEN}✓ $*${RESET}"; }
+warn()    { echo -e "${YELLOW}⚠ $*${RESET}"; }
+die()     { echo -e "${RED}✗ $*${RESET}" >&2; exit 1; }
+step()    { echo -e "\n${CYAN}── $* ──────────────────────────────────────${RESET}"; }
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  echo "Usage: scripts/start.sh [--build]"
+  echo ""
+  echo "Starts all portfolio services (app, db, nginx, career-ops) via Docker Compose."
+  echo "Waits up to 90 seconds for the app service to report healthy."
+  echo ""
+  echo "Options:"
+  echo "  --build   Rebuild Docker images before starting"
+  exit 0
+fi
+
+BUILD_FLAG=""
+if [[ "${1:-}" == "--build" ]]; then
+  BUILD_FLAG="--build"
+fi
+
+cd "$REPO_DIR"
+
+# ── Checks ────────────────────────────────────────────────────────────────────
+if [[ ! -f ".env" ]]; then
+  die ".env not found. Run scripts/install.sh first."
+fi
+
+if ! command -v docker &>/dev/null; then
+  die "docker not found. Run scripts/install.sh to install prerequisites."
+fi
+
+if ! docker info &>/dev/null; then
+  die "Docker daemon is not running. Start it with: sudo systemctl start docker"
+fi
+
+# ── Start ─────────────────────────────────────────────────────────────────────
+step "Starting services"
+if [[ -n "$BUILD_FLAG" ]]; then
+  info "Building images first..."
+  docker compose build
+fi
+
+docker compose up -d
+
+# ── Wait for app health ───────────────────────────────────────────────────────
+step "Waiting for app to become healthy"
+TIMEOUT=90
+ELAPSED=0
+while true; do
+  _APP_CID=$(docker compose ps -q app 2>/dev/null | head -1)
+  if [[ -z "$_APP_CID" ]]; then
+    STATUS="missing"
+  else
+    STATUS=$(docker inspect --format \
+      '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
+      "$_APP_CID" 2>/dev/null || echo "checking")
+  fi
+
+  if [[ "$STATUS" == "healthy" ]]; then
+    success "App is healthy"
+    break
+  fi
+
+  if [[ $ELAPSED -ge $TIMEOUT ]]; then
+    warn "App did not reach healthy state after ${TIMEOUT}s (current: $STATUS)"
+    echo "Check logs with: docker compose logs app --tail 50"
+    break
+  fi
+
+  echo -ne "\r  waiting... ${ELAPSED}s (status: ${STATUS})   "
+  sleep 3
+  ELAPSED=$((ELAPSED + 3))
+done
+echo ""
+
+# ── Status table ──────────────────────────────────────────────────────────────
+step "Service status"
+docker compose ps
+echo ""
+
+# Quick HTTP check — detect nginx port from override file
+NGINX_PORT="80"
+if [[ -f "$REPO_DIR/docker-compose.override.yml" ]]; then
+  OVERRIDE_PORT=$(grep -A3 "nginx:" "$REPO_DIR/docker-compose.override.yml" \
+    | grep -o '"[0-9]*:80"' | head -1 | grep -o '^"[0-9]*' | tr -d '"' || echo "")
+  [[ -n "$OVERRIDE_PORT" ]] && NGINX_PORT="$OVERRIDE_PORT"
+fi
+HTTP=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${NGINX_PORT}/" 2>/dev/null || echo "000")
+if [[ "$HTTP" == "200" ]]; then
+  success "Homepage responding: HTTP $HTTP"
+else
+  warn "Homepage check: HTTP $HTTP (services may still be starting)"
+fi
