@@ -59,8 +59,14 @@ step "Waiting for app to become healthy"
 TIMEOUT=90
 ELAPSED=0
 while true; do
-  STATUS=$(docker compose ps --format json 2>/dev/null \
-    | python3 -c "import sys,json; data=[json.loads(l) for l in sys.stdin if l.strip()]; app=[s for s in data if 'app' in s.get('Name','')]; print(app[0].get('Health','') if app else 'missing')" 2>/dev/null || echo "checking")
+  _APP_CID=$(docker compose ps -q app 2>/dev/null | head -1)
+  if [[ -z "$_APP_CID" ]]; then
+    STATUS="missing"
+  else
+    STATUS=$(docker inspect --format \
+      '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
+      "$_APP_CID" 2>/dev/null || echo "checking")
+  fi
 
   if [[ "$STATUS" == "healthy" ]]; then
     success "App is healthy"
@@ -84,8 +90,14 @@ step "Service status"
 docker compose ps
 echo ""
 
-# Quick HTTP check
-HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/ 2>/dev/null || echo "000")
+# Quick HTTP check — detect nginx port from override file
+NGINX_PORT="80"
+if [[ -f "$REPO_DIR/docker-compose.override.yml" ]]; then
+  OVERRIDE_PORT=$(grep -A3 "nginx:" "$REPO_DIR/docker-compose.override.yml" \
+    | grep -o '"[0-9]*:80"' | head -1 | grep -o '^"[0-9]*' | tr -d '"' || echo "")
+  [[ -n "$OVERRIDE_PORT" ]] && NGINX_PORT="$OVERRIDE_PORT"
+fi
+HTTP=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${NGINX_PORT}/" 2>/dev/null || echo "000")
 if [[ "$HTTP" == "200" ]]; then
   success "Homepage responding: HTTP $HTTP"
 else
