@@ -50,21 +50,12 @@ echo ""
 # Collect container health statuses
 check_container_health() {
   local name="$1"
-  local status
-  status=$(docker compose ps --format json 2>/dev/null \
-    | python3 -c "
-import sys, json
-for line in sys.stdin:
-  line = line.strip()
-  if not line: continue
-  try:
-    s = json.loads(line)
-    if '$name' in s.get('Name', ''):
-      print(s.get('Health', s.get('State', 'unknown')))
-      break
-  except: pass
-" 2>/dev/null || echo "unknown")
-  echo "$status"
+  local cid
+  cid=$(docker compose ps -q "$name" 2>/dev/null | head -1)
+  if [[ -z "$cid" ]]; then echo "unknown"; return; fi
+  docker inspect --format \
+    '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
+    "$cid" 2>/dev/null || echo "unknown"
 }
 
 for SVC in app db nginx career-ops; do
@@ -100,12 +91,20 @@ check_http() {
   fi
 }
 
-check_http "http://localhost/"          "200" "Homepage       GET /"
-check_http "http://localhost/admin"     "307" "Admin redirect  GET /admin"
-check_http "http://localhost/api/contact" "405" "API guard       GET /api/contact"
+NGINX_PORT="80"
+if [[ -f "$REPO_DIR/docker-compose.override.yml" ]]; then
+  OVERRIDE_PORT=$(grep -A3 "nginx:" "$REPO_DIR/docker-compose.override.yml" \
+    | grep -o '"[0-9]*:80"' | head -1 | grep -o '^"[0-9]*' | tr -d '"' || echo "")
+  [[ -n "$OVERRIDE_PORT" ]] && NGINX_PORT="$OVERRIDE_PORT"
+fi
+BASE_URL="http://localhost:${NGINX_PORT}"
+
+check_http "${BASE_URL}/"          "200" "Homepage       GET /"
+check_http "${BASE_URL}/admin"     "307" "Admin redirect  GET /admin"
+check_http "${BASE_URL}/api/contact" "405" "API guard       GET /api/contact"
 
 # Robots check
-ROBOTS=$(curl -s --max-time 5 http://localhost/robots.txt 2>/dev/null || true)
+ROBOTS=$(curl -s --max-time 5 "${BASE_URL}/robots.txt" 2>/dev/null || true)
 if echo "$ROBOTS" | grep -q "Disallow: /admin"; then
   success "robots.txt: /admin is disallowed"
 else
@@ -131,7 +130,15 @@ fi
 
 # ── career-ops health ─────────────────────────────────────────────────────────
 step "career-ops service"
-CAREER_HEALTH=$(docker compose exec -T career-ops curl -s --max-time 3 http://localhost:4200/health 2>/dev/null || echo "unreachable")
+CAREER_HEALTH=$(docker compose exec -T career-ops \
+  node -e "
+    const http = require('http');
+    const req = http.get('http://localhost:4200/health', r => {
+      let d=''; r.on('data',c=>d+=c); r.on('end',()=>{ process.stdout.write(d); process.exit(0); });
+    });
+    req.on('error', () => { process.stdout.write('unreachable'); process.exit(0); });
+    req.setTimeout(3000, () => { process.stdout.write('unreachable'); process.exit(0); });
+  " 2>/dev/null || echo "unreachable")
 if echo "$CAREER_HEALTH" | grep -qi "ok\|healthy\|running"; then
   success "career-ops health: $CAREER_HEALTH"
 else
