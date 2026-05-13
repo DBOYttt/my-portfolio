@@ -52,15 +52,25 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
-# Load environment variables from .env
-set -a
-# shellcheck source=/dev/null
-source "$ENV_FILE"
-set +a
+# Load environment variables from .env — safe KEY=VALUE-only parser (no shell execution)
+while IFS='=' read -r _key _rest; do
+  [[ -z "$_key" || "$_key" == \#* ]] && continue
+  [[ "$_key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+  _val="${_rest%\"}"
+  _val="${_val#\"}"
+  _val="${_val%\'}"
+  _val="${_val#\'}"
+  export "$_key=$_val"
+done < "$ENV_FILE"
 
 if [[ -z "${DATABASE_URL:-}" ]]; then
   echo "Error: DATABASE_URL is not set in .env" >&2
   exit 1
 fi
 
-exec npx tsx "$AGENT_FILE"
+TSX_BIN="$REPO_DIR/node_modules/.bin/tsx"
+if [[ -x "$TSX_BIN" ]]; then
+  exec "$TSX_BIN" "$AGENT_FILE"
+else
+  exec npx --no-install tsx "$AGENT_FILE"
+fi
