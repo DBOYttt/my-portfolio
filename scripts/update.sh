@@ -100,7 +100,7 @@ if [[ "$NO_BUILD" == "false" ]]; then
 fi
 
 # ── Apply schema changes ──────────────────────────────────────────────────────
-if [[ "$SCHEMA_BEFORE" != "$SCHEMA_AFTER" && -n "$SCHEMA_BEFORE" ]]; then
+if [[ "$SCHEMA_BEFORE" != "$SCHEMA_AFTER" && -n "$SCHEMA_AFTER" ]]; then
   step "Schema changed — applying db push"
   warn "prisma/schema.prisma changed. Running db push..."
   docker compose run --rm app npx prisma db push
@@ -117,8 +117,14 @@ if [[ "$NO_BUILD" == "false" ]]; then
   ELAPSED=0
   info "Waiting for app to become healthy..."
   while true; do
-    STATUS=$(docker compose ps --format json 2>/dev/null \
-      | python3 -c "import sys,json; data=[json.loads(l) for l in sys.stdin if l.strip()]; app=[s for s in data if 'app' in s.get('Name','')]; print(app[0].get('Health','') if app else 'missing')" 2>/dev/null || echo "checking")
+    _APP_CID=$(docker compose ps -q app 2>/dev/null | head -1)
+    if [[ -z "$_APP_CID" ]]; then
+      STATUS="missing"
+    else
+      STATUS=$(docker inspect --format \
+        '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
+        "$_APP_CID" 2>/dev/null || echo "checking")
+    fi
     if [[ "$STATUS" == "healthy" ]]; then
       success "App is healthy."
       break
