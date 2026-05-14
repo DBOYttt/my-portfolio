@@ -15,11 +15,6 @@ import type {
   ActivityLevel,
 } from "@/lib/agents/github-summarizer";
 import type {
-  GoogleAlertItem,
-  GithubRepoStat,
-  DevToMention,
-} from "@/lib/agents/brand-monitor";
-import type {
   ProjectSyncUpdate,
   ProjectSyncDiffRawData,
 } from "@/lib/agents/github-project-importer";
@@ -28,84 +23,18 @@ import type {
   PlatformSyncRawData,
 } from "@/lib/agents/platform-sync";
 import type {
-  BlogSuggestion,
-  BlogSeries,
-} from "@/lib/agents/blog-suggester";
-import type {
   DigestItem,
   RoboticsDigestRawData,
 } from "@/lib/agents/robotics-news";
-
-interface SkillAddSuggestion {
-  name: string;
-  category: SkillCategory;
-  level: SkillLevel;
-  evidence: string;
-}
-
-interface SkillUpgradeSuggestion {
-  name: string;
-  currentLevel: string;
-  suggestedLevel: string;
-  evidence: string;
-}
-
-interface SkillStaleSuggestion {
-  name: string;
-  reason: string;
-}
-
-interface SkillsDiffRawData {
-  type: "SKILLS_DIFF";
-  add: SkillAddSuggestion[];
-  upgrade: SkillUpgradeSuggestion[];
-  stale: SkillStaleSuggestion[];
-}
-
-interface ProjectSuggestion {
-  title: string;
-  slug: string;
-  summary: string;
-  content: string;
-  type: "SOFTWARE" | "ROBOTICS" | "HARDWARE" | "RESEARCH";
-  techTags: string[];
-  githubUrl: string;
-}
-
-// Legacy rawData shape (old reports)
-interface ProjectSuggestionsRawData {
-  type: "PROJECT_SUGGESTIONS";
-  suggestions: ProjectSuggestion[];
-  existingCount: number;
-}
-
-interface CreatedProject {
-  id: string;
-  title: string;
-  slug: string;
-  type: string;
-  githubUrl: string;
-  readmeScore?: number;
-  readmeNote?: string | null;
-}
-
-interface ProjectCreatedRawData {
-  type: "PROJECT_CREATED";
-  created: CreatedProject[];
-  skipped: number;
-}
-
-interface BrandMonitorRawData {
-  githubDelta: GithubRepoStat[];
-  googleAlerts: GoogleAlertItem[];
-  devToMentions: DevToMention[];
-}
-
-interface BlogSuggesterRawData {
-  suggestions: BlogSuggestion[];
-  series?: BlogSeries[];
-  existingTopics: number;
-}
+import {
+  isRecord,
+  type SkillsDiffRawData,
+  type ProjectSuggestion,
+  type ProjectSuggestionsRawData,
+  type ProjectCreatedRawData,
+  type BrandMonitorRawData,
+  type BlogSuggesterRawData,
+} from "@/types/agent-reports";
 
 function ActivityBadge({ level }: { level: ActivityLevel }) {
   if (level === "active") {
@@ -386,8 +315,8 @@ export default async function ReportDetailPage({
     }
   }
 
-  const rawData = report.rawData as Record<string, unknown> | null;
-  const rawDataType = rawData && typeof rawData === "object" ? rawData.type : null;
+  const rawData = isRecord(report.rawData) ? report.rawData : null;
+  const rawDataType = rawData ? rawData.type : null;
 
   const isSkillsDiff =
     report.agent.type === "SKILLS_INFERENCE" && rawDataType === "SKILLS_DIFF";
@@ -407,14 +336,12 @@ export default async function ReportDetailPage({
   const isBrandMonitor =
     report.agent.type === "BRAND_MONITOR" &&
     rawData !== null &&
-    ("githubDelta" in (rawData as Record<string, unknown>) ||
-      "googleAlerts" in (rawData as Record<string, unknown>) ||
-      "devToMentions" in (rawData as Record<string, unknown>));
+    ("githubDelta" in rawData || "googleAlerts" in rawData || "devToMentions" in rawData);
 
   const isBlogSuggester =
     report.agent.type === "BLOG_SUGGESTER" &&
     rawData !== null &&
-    Array.isArray((rawData as Record<string, unknown>).suggestions);
+    Array.isArray(rawData.suggestions);
 
   const isRoboticsDigest =
     report.agent.type === "ROBOTICS_NEWS" && rawDataType === "ROBOTICS_DIGEST";
@@ -422,7 +349,7 @@ export default async function ReportDetailPage({
   const isPlatformSync =
     report.agent.type === "PLATFORM_SYNC" &&
     rawData !== null &&
-    "configuredPlatforms" in (rawData as Record<string, unknown>);
+    "configuredPlatforms" in rawData;
 
   const skillsDiff = isSkillsDiff ? (rawData as unknown as SkillsDiffRawData) : null;
   const projectSuggestions = isProjectSuggestions
