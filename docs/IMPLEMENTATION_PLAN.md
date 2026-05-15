@@ -650,11 +650,10 @@ curl -I http://192.168.0.104/api/contact             # 405 (not POST)
 # Log into admin → run one agent → verify report appears
 ```
 
-- ✅ Curl smoke tests pass (200, 307→login, 405, robots.txt, sitemap.xml)
+- ✅ Curl smoke tests pass (200, 307→login, 405, robots.txt)
 - ✅ Admin login works (`AUTH_URL=http://192.168.0.104`, admin: `andrzejcn041@gmail.com`)
-- ✅ All 9 agents visible in `/admin/agents` with initial reports
-- ✅ GitHub Summarizer ran — first audit report saved
-- ✅ Nikto scan — no critical findings
+- ✅ All 4 services healthy (app, db, nginx, career-ops)
+- ✅ 7 AI agent cron jobs installed via `scripts/setup-cron.sh`
 - ⬜ Browser walkthrough: public sections load with real data (pending after skills/experience added)
 - ⬜ CV PDF generated and downloadable (run via `/admin/cv`)
 - ⬜ Contact form sends email (requires `RESEND_API_KEY` in `.env`)
