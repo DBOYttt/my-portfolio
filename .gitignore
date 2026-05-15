@@ -40,3 +40,6 @@ public/uploads/
 
 career-ops/node_modules/
 career-ops/.env
+
+# MCP config (may contain real DB credentials)
+.mcp.json
