@@ -1,5 +1,6 @@
+import Image from "next/image";
 import { OWNER } from "@/lib/mock-data";
-import { SectionHead, SketchPlaceholder } from "@/components/ui/hand-drawn";
+import { SectionHead } from "@/components/ui/hand-drawn";
 
 function Field({ k, v }: { k: string; v: string }) {
   return (
@@ -49,12 +50,18 @@ export default function AboutSection() {
             &ldquo;Builds things, breaks things, learns the difference.&rdquo;
           </span>
           <div style={{ marginTop: 18 }}>
-            <SketchPlaceholder
-              label="PORTRAIT — to be supplied"
-              topLeft="PHOTO"
-              topRight="REV. —"
-              bottomRight="placeholder"
-              aspect="3 / 4"
+            <Image
+              src="/profile.png"
+              alt={OWNER.name}
+              width={240}
+              height={320}
+              style={{
+                width: "100%",
+                height: "auto",
+                display: "block",
+                border: "1px solid var(--hairline)",
+              }}
+              priority
             />
           </div>
         </aside>
