@@ -19,6 +19,11 @@ COPY . .
 ARG DATABASE_URL=prisma+postgres://build-placeholder
 ENV DATABASE_URL=${DATABASE_URL}
 
+# NEXT_PUBLIC_BASE_URL is inlined by the SWC compiler into sitemap.ts, robots.ts, and
+# layout.tsx at build time — runtime env alone is not enough.
+ARG NEXT_PUBLIC_BASE_URL=https://yourdomain.com
+ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+
 RUN npx prisma generate
 
 RUN npm run build
