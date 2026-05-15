@@ -1,13 +1,13 @@
-# LAN/homelab override — HTTP only, no TLS certs required.
-# Used automatically by `docker compose up` when this file is present.
-# Remove or rename this file when deploying with a real domain + HTTPS.
+# Production override — Cloudflare Tunnel deployment.
+# Nginx listens on port 80; cloudflared connects to http://localhost:80.
+# Cloudflare handles TLS — nginx stays HTTP-only internally.
 
 services:
   nginx:
     ports:
       - "80:80"
     volumes:
-      - ./nginx/portfolio-lan.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/portfolio-cf.conf:/etc/nginx/conf.d/default.conf:ro
 
   # Expose postgres to localhost so migrations can be run from the host with npx prisma.
   # Remove this block once the schema is stable and you no longer need host access.
