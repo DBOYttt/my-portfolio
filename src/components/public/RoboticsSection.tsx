@@ -15,7 +15,45 @@ export default function RoboticsSection() {
         }
         sub="Four years on a competitive robotics team taught me more about engineering trade-offs than any course could. Here are the parts that stuck."
       />
-      <div className="logbook-row">
+      {/* Full-width 3D model embed */}
+      <div className="logbook-row" style={{ display: "block", paddingBottom: 0 }}>
+        <div style={{ paddingLeft: "calc(120px + 48px)" }} className="robotics-embed-wrap">
+          <div style={{ marginBottom: 8, display: "flex", alignItems: "baseline", gap: 12 }}>
+            <span
+              className="mono"
+              style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.06em" }}
+            >
+              FIG. 01
+            </span>
+            <span
+              style={{
+                fontSize: 13,
+                fontStyle: "italic",
+                color: "var(--ink-soft)",
+                fontFamily: "var(--font-newsreader, Georgia, serif)",
+              }}
+            >
+              Team 9155 · FRC robot · Autodesk Fusion 360
+            </span>
+          </div>
+          <iframe
+            src="https://gmail3794190.autodesk360.com/g/shares/SH28cd1QT2badd0ea72b8f1306dfff8cf9d2"
+            title="FRC Robot — Autodesk Fusion 360"
+            style={{
+              width: "100%",
+              height: 520,
+              border: "1px solid var(--hairline)",
+              borderRadius: 2,
+              display: "block",
+            }}
+            allowFullScreen
+            loading="lazy"
+          />
+        </div>
+      </div>
+
+      {/* Highlights grid */}
+      <div className="logbook-row" style={{ paddingTop: 0 }}>
         <aside className="margin">
           <span
             className="meta"
@@ -28,19 +66,9 @@ export default function RoboticsSection() {
               fontFamily: "var(--font-newsreader, Georgia, serif)",
             }}
           >
-            Team 9155 · FRC · 2020–2024
+            2020–2024
           </span>
-          <div style={{ marginTop: 14 }}>
-            <iframe
-              src="https://gmail3794190.autodesk360.com/g/shares/SH28cd1QT2badd0ea72b8f1306dfff8cf9d2"
-              title="FRC Robot — Autodesk Fusion 360"
-              style={{ width: "100%", aspectRatio: "1 / 1", border: "1px solid var(--hairline)", borderRadius: 2 }}
-              allowFullScreen
-              loading="lazy"
-            />
-          </div>
         </aside>
-
         <div
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 36px" }}
           className="robotics-grid"
@@ -55,11 +83,7 @@ export default function RoboticsSection() {
               >
                 <span
                   className="mono"
-                  style={{
-                    fontSize: 11,
-                    color: "var(--ink-faint)",
-                    letterSpacing: "0.06em",
-                  }}
+                  style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.06em" }}
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
@@ -81,7 +105,12 @@ export default function RoboticsSection() {
           ))}
         </div>
       </div>
-      <style>{`@media (max-width:760px){ .robotics-grid { grid-template-columns: 1fr !important; } }`}</style>
+      <style>{`
+        @media (max-width:760px){
+          .robotics-grid { grid-template-columns: 1fr !important; }
+          .robotics-embed-wrap { padding-left: 0 !important; }
+        }
+      `}</style>
     </section>
   );
 }
