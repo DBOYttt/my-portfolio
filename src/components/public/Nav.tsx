@@ -20,7 +20,7 @@ export default function Nav() {
   useEffect(() => {
     const stored = localStorage.getItem("logbook-theme") as "light" | "dark" | null;
     const attr = document.documentElement.getAttribute("data-theme") as "light" | "dark" | null;
-    setTheme(stored ?? attr ?? "light");
+    setTheme(stored ?? attr ?? "dark");
   }, []);
 
   useEffect(() => {

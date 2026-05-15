@@ -52,13 +52,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${newsreader.variable} ${interTight.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" data-theme="dark" className={`${newsreader.variable} ${interTight.variable} ${jetbrainsMono.variable}`}>
       <body>
         <Script
           id="logbook-theme-init"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('logbook-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('logbook-theme');document.documentElement.setAttribute('data-theme',t||'dark');}catch(e){}})()`,
           }}
         />
         {children}
