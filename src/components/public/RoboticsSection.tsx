@@ -1,5 +1,5 @@
 import { ROBOTICS_HIGHLIGHTS } from "@/lib/mock-data";
-import { SectionHead, SketchPlaceholder } from "@/components/ui/hand-drawn";
+import { SectionHead } from "@/components/ui/hand-drawn";
 
 export default function RoboticsSection() {
   return (
@@ -31,12 +31,12 @@ export default function RoboticsSection() {
             Team 9155 · FRC · 2020–2024
           </span>
           <div style={{ marginTop: 14 }}>
-            <SketchPlaceholder
-              label="ROBOT — competition photo"
-              aspect="1 / 1"
-              topLeft="IMG"
-              topRight="REV. —"
-              bottomRight="placeholder"
+            <iframe
+              src="https://gmail3794190.autodesk360.com/g/shares/SH28cd1QT2badd0ea72b8f1306dfff8cf9d2"
+              title="FRC Robot — Autodesk Fusion 360"
+              style={{ width: "100%", aspectRatio: "1 / 1", border: "1px solid var(--hairline)", borderRadius: 2 }}
+              allowFullScreen
+              loading="lazy"
             />
           </div>
         </aside>
