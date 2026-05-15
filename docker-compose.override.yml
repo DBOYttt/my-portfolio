@@ -5,7 +5,7 @@
 services:
   nginx:
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
       - ./nginx/portfolio-lan.conf:/etc/nginx/conf.d/default.conf:ro
 
