@@ -13,7 +13,7 @@ export const OWNER = {
     "My background spans Python, C++ and C#, with hands-on experience in .NET, Next.js, PostgreSQL, and Linux (Ubuntu, Debian, CentOS). I automate workflows with n8n and AI agents, and have built full web applications from design to deployment.",
     "Outside of engineering I'm interested in machine learning and automation, and I explore the impact of emerging technology on everyday life.",
   ],
-  email: "andrzejcn041@gmail.com",
+  email: "andrzejczn@diboy.dev",
   github: "https://github.com/DBOYttt",
   linkedin: "https://www.linkedin.com/in/andrzej-nazim-290a451b4/",
   location: "Kraków, Poland",
