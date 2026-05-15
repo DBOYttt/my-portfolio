@@ -1034,6 +1034,57 @@ Career-ops is designed for interactive Claude Code sessions. We need a thin wrap
 
 ---
 
+## Milestone 9.5 — Content Population & Post-Launch Polish ✅
+
+**Goal:** Fill the live site with real content, fix post-launch operational issues, and polish the public presentation.
+
+### Admin & Auth
+- ✅ Admin credentials updated: email → `andrzejczn@diboy.dev`, password changed
+- ✅ Re-seeded admin user via `npx tsx prisma/seed.ts` on server
+
+### Theme
+- ✅ Dark mode set as default — `data-theme="dark"` on `<html>` SSR, FOUC script defaults to dark, Nav client fallback updated
+
+### Infrastructure Fixes
+- ✅ `scripts/run-agent.sh` — translates `@db:5432` → `@127.0.0.1:5432` so cron agent runs work from the host
+- ✅ `.mcp.json` — removed from git tracking, added to `.gitignore` (contains real DB credentials); local copy configured for Claude Code MCP access
+- ✅ SSH tunnel pattern established: `ssh -f -N -L 5432:127.0.0.1:5432 diboy@192.168.0.104` enables MCP tools from dev machine
+
+### Skills (DB)
+- ✅ 21 skills seeded via MCP `add_skill` tool across 6 categories:
+  - Languages: C#, C++, Python, TypeScript, JavaScript, Java
+  - Frameworks: .NET, Next.js, Prisma, Node.js, Three.js
+  - Robotics: Arduino, WPILib, CAD, Fusion 360
+  - Tools: Docker, Git, Linux, n8n
+  - Database: PostgreSQL
+  - Other: PyTorch, scikit-learn, Matplotlib
+
+### Experience (DB)
+- ✅ 4 entries seeded via MCP `add_experience` tool:
+  - NewTech — Database Administration Intern (2021–2023)
+  - Team 9155 FRC — Member & Team Captain (2020–2024)
+  - Fundacja IB Polska & Chorągiew Krakowska ZHP — Volunteer (2024)
+  - JCC Krakow — Volunteer (2021–2022)
+
+### Projects (DB)
+- ✅ GitHub Project Importer agent ran and created 3 draft projects from public repos
+- ✅ Personal Portfolio Platform added manually via MCP `create_project` (title, summary, full content, tech tags, live URL)
+
+### Blog
+- ✅ 1 post published: "Building a Self-Hosted Portfolio with AI Agents" — real technical content about the platform architecture
+
+### Public Sections
+- ✅ Profile photo added at `public/profile.png` — studio portrait, displayed in About section margin
+- ✅ Autodesk Fusion 360 robot model embedded in Robotics section (full-width iframe, 520px tall, above highlights grid)
+- ✅ nginx CSP updated to allow `frame-src https://gmail3794190.autodesk360.com`
+- ✅ Contact email updated in `mock-data.ts`: `andrzejczn@diboy.dev`
+
+### Branch Cleanup
+- ✅ `feat/cli-scripts` deleted (local + remote) — scripts merged into main
+- ✅ `feat/m9-cloudflare-tunnel` deleted (local + remote) — merged into main
+
+---
+
 ## Milestone 10 — Open Source Preparation ⬜
 
 **Goal:** Make the repository public and usable by others as a self-hosted portfolio starter. Anyone should be able to clone it, fill in their own content, and deploy it without touching the codebase.

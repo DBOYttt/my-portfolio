@@ -1,14 +1,18 @@
 # Personal Portfolio Platform
 
-A full-stack personal portfolio and admin platform built with Next.js 14, PostgreSQL, and Prisma.
+**Live at [diboy.dev](https://diboy.dev)**
+
+A full-stack personal portfolio and admin platform built with Next.js 14, PostgreSQL, and Prisma. Self-hosted on a homelab server, exposed via Cloudflare Zero Trust Tunnel.
 
 ## What this is
 
 A two-layer platform:
-- **Public portfolio** — professional presentation for employers: projects, skills, experience, robotics work, blog, contact
-- **Private admin** — content management, blog editor, AI agent intelligence feeds, shortcuts to self-hosted tools (n8n, etc.)
+- **Public portfolio** — Engineering Logbook aesthetic (dark mode default, bone-paper/serif design). Sections: About, Skills, Projects, Robotics (Fusion 360 embed), Experience, Blog, Contact
+- **Private admin** — full content CRUD, markdown blog editor, 7 AI agents, career-ops CV pipeline, MCP server status
 
 ## Tech Stack
+
+**Live deployment:** `https://diboy.dev` — home server at `192.168.0.104`, Docker Compose (Next.js + PostgreSQL 16 + Nginx + career-ops), Cloudflare Zero Trust Tunnel (no open router ports).
 
 | Layer | Technology |
 |---|---|
@@ -62,7 +66,7 @@ Before the site is fully functional you must supply the following. The site runs
 | Item | What to do |
 |---|---|
 | Personal info | Edit the `OWNER` object in `src/lib/mock-data.ts` — name, title, bio, social links |
-| Photo | Place at `public/photo.jpg` — About section shows it automatically |
+| Photo | Place at `public/profile.png` — About section shows it automatically |
 | CV / resume | Managed via the admin **Career** panel (`/admin/career`). Fill `career-ops/config/profile.yml` and `career-ops/cv.md`, then use the Career panel to evaluate jobs and publish the master CV to `public/cv.pdf`. Manual PDF upload also available at `/admin/cv`. |
 | Projects, skills, experience | Use the admin panel at `/admin` once DB is running, or edit `src/lib/mock-data.ts` for mock mode |
 
@@ -201,7 +205,8 @@ Add to `.mcp.json` at the project root for Claude Code integration — see `docs
 - **Milestone 7** — MCP server (stdio + HTTP/SSE, 14 tools, Claude Desktop + n8n) ✅
 - **Milestone 7.5** — Career-ops integration: isolated Docker service, admin Career panel, job evaluation pipeline, CV publishing ✅
 - **Milestone 8** — Pre-Launch Audit Fix Sprint: 21 UX/bug findings from the 2026-05-12 three-agent assessment — `publishedAt` drop, CSP, mobile grid, unsaved-changes guard, career-ops reliability, admin polish ✅
-- **Milestone 9** — Cloudflare Zero Trust Tunnel → `diboy.dev` (public internet, no port forwarding) ⬜
+- **Milestone 9** — Cloudflare Zero Trust Tunnel → `diboy.dev` (public internet, no port forwarding) ✅
+- **Milestone 9.5** — Content population: skills/experience/projects seeded to DB, profile photo, Fusion 360 robotics embed, blog post, dark mode default ✅
 - **Milestone 10** — Open source preparation: licence, docs, mock-data cleanup, public repo ⬜
 - **Milestone 11** — Growth features: analytics, newsletter, 2FA (deferred) ⏸
 
