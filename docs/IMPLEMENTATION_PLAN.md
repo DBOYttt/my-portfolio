@@ -992,39 +992,45 @@ Career-ops is designed for interactive Claude Code sessions. We need a thin wrap
 
 ---
 
-## Milestone 9 — Cloudflare Zero Trust Tunnel (diboy.dev) ⬜
+## Milestone 9 — Cloudflare Zero Trust Tunnel (diboy.dev) ✅
 
 **Goal:** Expose the homelab server at `192.168.0.104` to the public internet on `diboy.dev` via Cloudflare Zero Trust Tunnel. No open router ports. Cloudflare handles HTTPS automatically.
 
 ### Phase 1 — Migrate DNS to Cloudflare
-- ⬜ Add `diboy.dev` to Cloudflare (free plan) → Add a Site
-- ⬜ Copy the two Cloudflare nameservers provided
-- ⬜ Log into name.com → diboy.dev → Nameservers → replace with Cloudflare's NS records
-- ⬜ Verify propagation: `dig NS diboy.dev`
+- ✅ Add `diboy.dev` to Cloudflare (free plan) → Add a Site
+- ✅ Copy the two Cloudflare nameservers provided (angela + noel)
+- ✅ Log into name.com → diboy.dev → Nameservers → replaced with Cloudflare's NS records
+- ✅ Verify propagation: `dig NS diboy.dev`
 
 ### Phase 2 — Create Cloudflare Tunnel
-- ⬜ Cloudflare dashboard → Zero Trust → Networks → Tunnels → Create tunnel
-- ⬜ Name: `portfolio-homelab`
-- ⬜ Save the tunnel token (used in Phase 3)
+- ✅ Cloudflare dashboard → Zero Trust → Networks → Tunnels → Create tunnel
+- ✅ Name: `portfolio-homelab`
+- ✅ Tunnel token saved and installed
 
 ### Phase 3 — Install cloudflared on 192.168.0.104
-- ⬜ Download and install `cloudflared` (latest Linux amd64 .deb)
-- ⬜ Install as systemd service: `sudo cloudflared service install <TUNNEL_TOKEN>`
-- ⬜ Enable + start: `sudo systemctl enable --now cloudflared`
+- ✅ Downloaded and installed `cloudflared` 2026.5.0 (latest Linux amd64 .deb)
+- ✅ Installed as systemd service: `sudo cloudflared service install <TUNNEL_TOKEN>`
+- ✅ Enabled + started: 4 connections to Cloudflare Warsaw edge (waw02/03/04) via QUIC
 
 ### Phase 4 — Configure Public Hostnames
-- ⬜ Zero Trust → Tunnels → portfolio-homelab → Public Hostnames
-- ⬜ `diboy.dev` (root) → `http://localhost:80`
-- ⬜ `www.diboy.dev` → `http://localhost:80`
+- ✅ Zero Trust → Tunnels → portfolio-homelab → Public Hostnames
+- ✅ `diboy.dev` (root) → `http://localhost:80`
+- ✅ `www.diboy.dev` → `http://localhost:80`
 
 ### Phase 5 — Update App Config and Redeploy
-- ⬜ Update `~/projects/my-portfolio/.env` on server: `AUTH_URL=https://diboy.dev`, `NEXT_PUBLIC_BASE_URL=https://diboy.dev`
-- ⬜ Redeploy: `git pull && docker compose up -d --build`
+- ✅ Updated `~/projects/my-portfolio/.env` on server: `AUTH_URL=https://diboy.dev`, `NEXT_PUBLIC_BASE_URL=https://diboy.dev`
+- ✅ Fixed `docker-compose.yml`: `NEXT_PUBLIC_SITE_URL` → `NEXT_PUBLIC_BASE_URL`
+- ✅ Fixed `Dockerfile`: added `ARG NEXT_PUBLIC_BASE_URL` so SWC bakes correct URL into sitemap/robots at build time
+- ✅ Created `nginx/portfolio-cf.conf`: hardcoded `X-Forwarded-Proto "https"`, HSTS, `CF-Connecting-IP` for real-IP rate limiting
+- ✅ Rebuilt and redeployed
 
 ### Phase 6 — Verify
-- ⬜ `curl https://diboy.dev` returns portfolio homepage
-- ⬜ `https://diboy.dev/admin` shows admin login
-- ⬜ SSL padlock visible — cert issued by Cloudflare (Universal SSL)
+- ✅ `https://diboy.dev` → HTTP/2 200, `server: cloudflare`
+- ✅ `https://diboy.dev/admin` → 307 → /admin/login
+- ✅ `https://www.diboy.dev` → HTTP/2 200
+- ✅ HSTS header: `max-age=31536000; includeSubDomains`
+- ✅ Sitemap uses `https://diboy.dev` URLs
+- ✅ robots.txt: `Disallow: /admin`, sitemap points to `https://diboy.dev/sitemap.xml`
 
 ---
 
