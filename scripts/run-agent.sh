@@ -68,6 +68,11 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
   exit 1
 fi
 
+# When running from the host, replace the Docker service hostname with localhost.
+# .env uses postgres://...@db:5432/... (Docker network) which is unreachable outside containers.
+DATABASE_URL="${DATABASE_URL//@db:/@127.0.0.1:}"
+export DATABASE_URL
+
 TSX_BIN="$REPO_DIR/node_modules/.bin/tsx"
 if [[ -x "$TSX_BIN" ]]; then
   exec "$TSX_BIN" "$AGENT_FILE"
