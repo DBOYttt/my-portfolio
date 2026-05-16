@@ -15,7 +15,8 @@
 
 ```bash
 # 1. Clone
-git clone git@github.com:DBOYttt/my-portfolio.git
+git clone https://github.com/yourusername/my-portfolio.git
+# Or SSH: git clone git@github.com:yourusername/my-portfolio.git
 cd my-portfolio
 
 # 2. Install dependencies
