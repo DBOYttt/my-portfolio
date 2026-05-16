@@ -1,5 +1,7 @@
 # Personal Portfolio Platform
 
+**Live preview → [diboy.dev](https://diboy.dev)**
+
 > A self-hosted, full-stack portfolio platform with an admin panel, 7 AI agents, and a CV pipeline. Fork it, fill in your details, deploy it.
 
 A two-layer platform:
