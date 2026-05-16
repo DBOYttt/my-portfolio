@@ -1,18 +1,28 @@
 # Personal Portfolio Platform
 
-**Live at [diboy.dev](https://diboy.dev)**
-
-A full-stack personal portfolio and admin platform built with Next.js 14, PostgreSQL, and Prisma. Self-hosted on a homelab server, exposed via Cloudflare Zero Trust Tunnel.
-
-## What this is
+> A self-hosted, full-stack portfolio platform with an admin panel, 7 AI agents, and a CV pipeline. Fork it, fill in your details, deploy it.
 
 A two-layer platform:
-- **Public portfolio** — Engineering Logbook aesthetic (dark mode default, bone-paper/serif design). Sections: About, Skills, Projects, Robotics (Fusion 360 embed), Experience, Blog, Contact
+- **Public portfolio** — Engineering Logbook aesthetic (dark mode default, bone-paper/serif design). Sections: About, Skills, Projects, Robotics, Experience, Blog, Contact
 - **Private admin** — full content CRUD, markdown blog editor, 7 AI agents, career-ops CV pipeline, MCP server status
 
-## Tech Stack
+---
 
-**Live deployment:** `https://diboy.dev` — home server at `192.168.0.104`, Docker Compose (Next.js + PostgreSQL 16 + Nginx + career-ops), Cloudflare Zero Trust Tunnel (no open router ports).
+## Quick Start
+
+```bash
+git clone https://github.com/yourusername/my-portfolio.git
+cd my-portfolio
+npm install
+npm run dev
+# → http://localhost:3000  — works immediately with mock data, no DB needed
+```
+
+To make it yours: run `/setup-portfolio` in Claude Code, or edit `src/lib/mock-data.ts` directly with your name, bio, links, and experience.
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -27,9 +37,11 @@ A two-layer platform:
 | Career-Ops | Express + Claude Code CLI (isolated Docker service) |
 | Deployment | Docker Compose + Nginx |
 
+---
+
 ## What You Need to Provide
 
-Before the site is fully functional you must supply the following. The site runs in **mock mode** without a database (public pages work, admin does not).
+The site runs in **mock mode** without a database — public pages work, admin does not. Add env vars progressively to unlock features.
 
 ### Required — admin panel + DB mode
 
@@ -65,7 +77,7 @@ Before the site is fully functional you must supply the following. The site runs
 
 | Item | What to do |
 |---|---|
-| Personal info | Edit the `OWNER` object in `src/lib/mock-data.ts` — name, title, bio, social links |
+| Personal info | Run `/setup-portfolio` in Claude Code (recommended), or edit the `OWNER` object in `src/lib/mock-data.ts` directly — name, tagline, bio, social links, experience |
 | Photo | Place at `public/profile.png` — About section shows it automatically |
 | CV / resume | Managed via the admin **Career** panel (`/admin/career`). Fill `career-ops/config/profile.yml` and `career-ops/cv.md`, then use the Career panel to evaluate jobs and publish the master CV to `public/cv.pdf`. Manual PDF upload also available at `/admin/cv`. |
 | Projects, skills, experience | Use the admin panel at `/admin` once DB is running, or edit `src/lib/mock-data.ts` for mock mode |
@@ -74,7 +86,9 @@ Before the site is fully functional you must supply the following. The site runs
 
 ## Getting Started
 
-### 1. Clone and install
+### 1. Fork and clone
+
+Fork on GitHub first, then clone your fork:
 
 ```bash
 git clone https://github.com/yourusername/my-portfolio.git
@@ -86,10 +100,21 @@ npm install
 
 ```bash
 npm run dev
-# → http://localhost:3000  — public portfolio with placeholder content
+# → http://localhost:3000  — public portfolio with mock content
 ```
 
-### 3. Set up the database
+### 3. Fill in your information
+
+The fastest way is the `/setup-portfolio` Claude Code skill — it walks through each section interactively and rewrites `src/lib/mock-data.ts` in one go:
+
+```bash
+# In Claude Code (this repo):
+/setup-portfolio
+```
+
+Or edit `src/lib/mock-data.ts` manually. The `OWNER` object controls name, bio, links, and contact details.
+
+### 4. Set up the database (optional — for admin panel + agents)
 
 ```bash
 cp .env.example .env
@@ -106,12 +131,14 @@ npm run dev               # Now running against real DB
 DATABASE_URL="postgres://user:password@127.0.0.1:5432/portfolio"
 ```
 
-### 4. Open the app
+### 5. Open the app
 
 ```
 http://localhost:3000        — public portfolio
 http://localhost:3000/admin  — admin panel (login with your seeded credentials)
 ```
+
+---
 
 ## Project Structure
 
@@ -127,6 +154,7 @@ src/
 │   ├── public/               # Public-facing components
 │   └── admin/                # Admin panel components
 └── lib/
+    ├── mock-data.ts          # All placeholder/personal content lives here
     └── prisma.ts             # Prisma client singleton
 prisma/
 ├── schema.prisma             # Database schema
@@ -136,6 +164,8 @@ career-ops/                   # git submodule — job evaluation + CV targeting 
 career-ops-server/            # Express HTTP wrapper for career-ops (Docker service)
 mcp-server/                   # MCP server (stdio + HTTP/SSE transports)
 ```
+
+---
 
 ## AI Agents
 
@@ -158,7 +188,9 @@ npx tsx agents/github-project-importer.ts
 npx tsx agents/platform-sync.ts
 ```
 
-Or use the "Run now" button on `/admin/agents` or the shortcut buttons on `/admin/skills` (Sync from GitHub) and `/admin/projects` (Import from GitHub).
+Or use the "Run now" button on `/admin/agents`.
+
+---
 
 ## Career-Ops
 
@@ -168,7 +200,7 @@ The platform includes a **career-ops** Docker service for job evaluation and CV 
 1. Fill `career-ops/config/profile.yml` with your job preferences and `career-ops/cv.md` with your base CV
 2. From `/admin/career`, submit a job posting URL for evaluation
 3. Career-ops scores the job against your profile using Claude
-4. When satisfied, publish the master CV — it lands at `public/cv.pdf` and is served as your downloadable CV
+4. When satisfied, publish the master CV — it lands at `public/cv.pdf`
 
 **HTTP endpoints** (internal, port 4200):
 - `POST /evaluate` — start a job evaluation
@@ -176,6 +208,8 @@ The platform includes a **career-ops** Docker service for job evaluation and CV 
 - `POST /cv/master` — generate master CV
 - `POST /sync` — push profile + CV markdown from DB to career-ops
 - `GET /pipeline` — full evaluation history
+
+---
 
 ## MCP Server
 
@@ -190,25 +224,29 @@ npm run mcp:stdio   # stdio transport (Claude Desktop / Claude Code)
 npm run mcp:http    # HTTP/SSE transport (n8n / remote agents)
 ```
 
-Add to `.mcp.json` at the project root for Claude Code integration — see `docs/MCP_SETUP.md` for full setup instructions.
+See `docs/MCP_SETUP.md` for full setup instructions.
+
+---
 
 ## Implementation Phases
 
 - **Milestone 1** — Foundation: Next.js setup, DB, auth, core portfolio sections ✅
 - **Milestone 2** — Full portfolio: projects, experience, contact form, SEO ✅
 - **Milestone 3** — Admin + Blog: CRUD editor, markdown, media uploads ✅
-- **Milestone 4** — AI Agents, CV generator, skills inference, project importer, inline editor triggers, platform scraping ✅
+- **Milestone 4** — AI Agents, CV generator, skills inference, project importer, platform scraping ✅
 - **Milestone 4.10** — Pre-deployment security audit: 39/39 checks passed ✅
-- **Milestone 5** — Homelab deployment: Docker Compose, Nginx, PostgreSQL, cron agents live at `http://192.168.0.104` ✅
-- **Milestone 5.5** — Engineering Logbook redesign: bone-paper aesthetic, light/dark theme, SVG primitives, new typography ✅
+- **Milestone 5** — Homelab deployment: Docker Compose, Nginx, PostgreSQL, cron agents ✅
+- **Milestone 5.5** — Engineering Logbook redesign: bone-paper aesthetic, light/dark theme ✅
 - **Milestone 6.5** — Admin panel audit & bug fixes ✅
 - **Milestone 7** — MCP server (stdio + HTTP/SSE, 14 tools, Claude Desktop + n8n) ✅
-- **Milestone 7.5** — Career-ops integration: isolated Docker service, admin Career panel, job evaluation pipeline, CV publishing ✅
-- **Milestone 8** — Pre-Launch Audit Fix Sprint: 21 UX/bug findings from the 2026-05-12 three-agent assessment — `publishedAt` drop, CSP, mobile grid, unsaved-changes guard, career-ops reliability, admin polish ✅
-- **Milestone 9** — Cloudflare Zero Trust Tunnel → `diboy.dev` (public internet, no port forwarding) ✅
-- **Milestone 9.5** — Content population: skills/experience/projects seeded to DB, profile photo, Fusion 360 robotics embed, blog post, dark mode default ✅
-- **Milestone 10** — Open source preparation: licence, docs, mock-data cleanup, public repo ⬜
+- **Milestone 7.5** — Career-ops integration: isolated Docker service, job evaluation pipeline ✅
+- **Milestone 8** — Pre-Launch Audit Fix Sprint: CSP, mobile grid, unsaved-changes guard, career-ops reliability ✅
+- **Milestone 9** — Cloudflare Zero Trust Tunnel → public domain (no port forwarding) ✅
+- **Milestone 9.5** — Content population: skills/experience/projects seeded to DB, profile photo, blog ✅
+- **Milestone 10** — Open source preparation: MIT licence, docs, hardcoded strings removed ✅
 - **Milestone 11** — Growth features: analytics, newsletter, 2FA (deferred) ⏸
+
+---
 
 ## Security Notes
 
@@ -217,6 +255,14 @@ Add to `.mcp.json` at the project root for Claude Code integration — see `docs
 - Never commit `.env` — use `.env.example` as the reference
 - Rate limiting applied to contact form endpoint
 
+---
+
+## Contributing
+
+See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for development setup, code standards, and PR guidelines.
+
+---
+
 ## License
 
-Private — not for redistribution.
+MIT — see [LICENSE](./LICENSE).

@@ -99,11 +99,11 @@ export default function ContactSection() {
             </div>
             <div>
               <div className="mono" style={{ fontSize: 10.5, color: "var(--ink-faint)", letterSpacing: "0.08em", textTransform: "uppercase" }}>github</div>
-              <a href={OWNER.github} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13.5, color: "var(--ink)" }}>@DBOYttt</a>
+              <a href={OWNER.github} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13.5, color: "var(--ink)" }}>@{OWNER.github.split("/").pop() ?? OWNER.github}</a>
             </div>
             <div>
               <div className="mono" style={{ fontSize: 10.5, color: "var(--ink-faint)", letterSpacing: "0.08em", textTransform: "uppercase" }}>linkedin</div>
-              <a href={OWNER.linkedin} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13.5, color: "var(--ink)" }}>andrzej-nazim</a>
+              <a href={OWNER.linkedin} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13.5, color: "var(--ink)" }}>{OWNER.linkedin.split("/in/")[1]?.replace(/\/$/, "") ?? OWNER.linkedin}</a>
             </div>
           </div>
         </aside>

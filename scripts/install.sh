@@ -29,8 +29,9 @@ die()     { echo -e "${RED}✗ $*${RESET}" >&2; exit 1; }
 step()    { echo -e "\n${BOLD}${CYAN}════ $* ════${RESET}"; }
 prompt()  { echo -e "${YELLOW}$*${RESET}"; }
 
-REPO_URL_SSH="git@github.com:DBOYttt/my-portfolio.git"
-REPO_URL_HTTPS="https://github.com/DBOYttt/my-portfolio.git"
+# CUSTOMIZE: Replace with your forked repository URL before running on a new server.
+REPO_URL_SSH="git@github.com:yourusername/my-portfolio.git"
+REPO_URL_HTTPS="https://github.com/yourusername/my-portfolio.git"
 DEFAULT_INSTALL_DIR="$HOME/projects/my-portfolio"
 
 # ── Help ──────────────────────────────────────────────────────────────────────

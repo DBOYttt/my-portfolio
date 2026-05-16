@@ -12,7 +12,7 @@ A full-stack personal portfolio + private admin platform for a programmer and ro
 Built to help the owner get hired. Every decision should serve that goal first.
 
 **Owner:** `src/lib/mock-data.ts` → `OWNER` object (update with real info before going live)
-**GitHub:** https://github.com/DBOYttt/my-portfolio (private)
+**GitHub:** https://github.com/DBOYttt/my-portfolio
 **Stack:** Next.js 14 (App Router) · TypeScript · Tailwind CSS v3 · PostgreSQL · Prisma · Auth.js v5
 
 ---
@@ -160,13 +160,11 @@ async function getData() {
 
 ---
 
-## Current State (post-Milestone 8, M9 Cloudflare Tunnel next)
+## Current State (post-Milestone 10 — repository is public)
 
-All public sections, admin CRUD, seven AI agents, career-ops integration, security audit, and 67 Vitest tests are complete. The Engineering Logbook redesign (M5.5) is live. M6.5 (Admin Panel Audit & Bug Fixes) is complete. M7 (MCP Server) is complete — 14 MCP tools, 9 read-only resources, stdio + HTTP/SSE transports, AuditLog integration, and `/admin/mcp` status page. M7.5 (Career-Ops Integration) is complete — career-ops runs as an isolated Docker service, admin Career panel triggers job evaluations and publishes master CV to `public/cv.pdf`. M8 (Pre-Launch Audit Fix Sprint) is complete — all 18 in-scope findings from `docs/PRE_M8_ASSESSMENT.md` addressed across two branches (`fix/pre-m8-blockers` and `fix/pre-traffic-polish`), merged to `main`. App is **live on the LAN** at `http://192.168.0.104` (Docker Compose: app + PostgreSQL + Nginx + career-ops, port 80).
+All public sections, admin CRUD, seven AI agents, career-ops integration, security audit, and 67 Vitest tests are complete. The Engineering Logbook redesign (M5.5) is live. M7 (MCP Server) is complete — 14 MCP tools, 9 read-only resources, stdio + HTTP/SSE transports. M7.5 (Career-Ops Integration) is complete — career-ops runs as an isolated Docker service, admin Career panel triggers job evaluations and publishes master CV to `public/cv.pdf`. M8 (Pre-Launch Audit Fix Sprint) is complete — all 18 in-scope findings addressed. M9 (Cloudflare Zero Trust Tunnel) is complete — site is live at `https://diboy.dev`. M10 (Open Source Preparation) is complete — MIT licence added, README rewritten for external users, hardcoded personal strings removed from components, GitHub issue/PR templates added, repo made public.
 
 **Next milestones:**
-- **M9 — Cloudflare Zero Trust Tunnel** — Expose homelab to public internet at `diboy.dev` via `cloudflared`. Requires DNS migration from name.com to Cloudflare nameservers first. See `docs/IMPLEMENTATION_PLAN.md` for the 6-phase checklist.
-- **M10 — Open Source Preparation** — Audit hardcoded personal data, rewrite README for external users, add `LICENSE`, `CONTRIBUTING.md`, issue/PR templates, then make repo public.
 - **M11 — Growth Features** ⏸ — Deferred until site is live and generating traffic.
 
 ### Deployment: `192.168.0.104`

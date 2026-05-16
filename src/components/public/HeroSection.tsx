@@ -78,12 +78,15 @@ export default function HeroSection() {
               marginBottom: 18,
             }}
           >
-            Andrzej
-            <br />
-            Czajkowski-
-            <span style={{ position: "relative", display: "inline-block" }}>
-              Nazim<sup className="fn">*</sup>
-            </span>
+            {OWNER.nameParts.map((part, i) =>
+              i === OWNER.nameParts.length - 1 ? (
+                <span key={i} style={{ position: "relative", display: "inline-block" }}>
+                  {part}<sup className="fn">*</sup>
+                </span>
+              ) : (
+                <span key={i}>{part}<br /></span>
+              )
+            )}
           </h1>
 
           <p
@@ -98,7 +101,7 @@ export default function HeroSection() {
             }}
           >
             Software engineer, robotics builder, perpetual{" "}
-            <span className="hl">tinkerer</span> — currently logging entries from Kraków.
+            <span className="hl">tinkerer</span> — currently logging entries from {OWNER.location}.
           </p>
 
           <div className="row" style={{ gap: 28, marginTop: 28 }}>
@@ -127,21 +130,19 @@ export default function HeroSection() {
             <Specimen k="Languages" v="C# · C++ · Python · TS" />
             <Specimen k="Disciplines" v="Software · Robotics · Embedded" />
             <Specimen k="Built so far" v="14+ projects" />
-            <Specimen k="Based in" v="Kraków, PL" />
+            <Specimen k="Based in" v={OWNER.location} />
           </div>
 
-          <div style={{ marginTop: 36 }}>
-            <p
-              className="mono"
-              style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.06em" }}
-            >
-              <sup className="fn">*</sup> pron.{" "}
-              <em className="serif" style={{ fontStyle: "italic" }}>
-                chai-KOV-skee na-ZEEM
-              </em>
-              . Yes, the dash is on purpose.
-            </p>
-          </div>
+          {OWNER.nameHint && (
+            <div style={{ marginTop: 36 }}>
+              <p
+                className="mono"
+                style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.06em" }}
+              >
+                <sup className="fn">*</sup>{" "}{OWNER.nameHint}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
