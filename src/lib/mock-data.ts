@@ -6,6 +6,8 @@
 
 export const OWNER = {
   name: "Andrzej Czajkowski-Nazim",
+  nameParts: ["Andrzej", "Czajkowski-", "Nazim"] as string[],
+  nameHint: "pron. chai-KOV-skee na-ZEEM. Yes, the dash is on purpose." as string | null,
   tagline: "Software engineer. Robotics enthusiast. Always building.",
   status: "Open to opportunities — Spring 2026",
   bio: [
