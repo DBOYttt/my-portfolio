@@ -37,7 +37,7 @@ bash scripts/install.sh --dir /opt/portfolio
 If you clone the repo first and then run the script from inside it, the clone step is skipped:
 
 ```bash
-git clone git@github.com:DBOYttt/my-portfolio.git
+git clone git@github.com:yourusername/my-portfolio.git
 cd my-portfolio
 bash scripts/install.sh
 ```
@@ -239,7 +239,7 @@ After running, fill in `career-ops/config/profile.yml` with your job preferences
 ssh diboy@192.168.0.104
 
 # 2. Clone repo (or let install.sh clone it)
-git clone git@github.com:DBOYttt/my-portfolio.git ~/projects/my-portfolio
+git clone git@github.com:yourusername/my-portfolio.git ~/projects/my-portfolio
 cd ~/projects/my-portfolio
 
 # 3. Run installer — follow the prompts
