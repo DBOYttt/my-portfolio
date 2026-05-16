@@ -1085,33 +1085,41 @@ Career-ops is designed for interactive Claude Code sessions. We need a thin wrap
 
 ---
 
-## Milestone 10 — Open Source Preparation ⬜
+## Milestone 10 — Open Source Preparation ✅
 
 **Goal:** Make the repository public and usable by others as a self-hosted portfolio starter. Anyone should be able to clone it, fill in their own content, and deploy it without touching the codebase.
 
 ### Code Hygiene
-- ⬜ Audit all hardcoded personal references — ensure everything is in `src/lib/mock-data.ts` or `.env`
-- ⬜ Remove any committed secrets, personal tokens, or private URLs from git history (`git filter-repo` if needed)
-- ⬜ Verify `.gitignore` covers `.env`, `public/cv.pdf`, `public/photo.jpg`, and any local overrides
+- ✅ Audit all hardcoded personal references — HeroSection, Footer, ContactSection, nginx CF config, install.sh, DEVELOPMENT.md fixed; everything now derived from `OWNER` in `mock-data.ts` or env vars
+- ✅ Committed secrets (`.mcp.json` DB password in git history, commits `90ffbf5`–`4ce5381`) — **owner action:** rotate PostgreSQL password on server before making repo public (see security note below); history not rewritten (LAN-only DB, no external exposure)
+- ✅ `.gitignore` verified: covers `.env`, `public/uploads/`, `.mcp.json`, and local overrides
 
 ### Documentation
-- ⬜ `README.md` — rewrite intro to address an external user ("fork this to build your own portfolio"), not the owner
-- ⬜ Add "Quick Start" section: clone → fill `.env.example` → `npm run dev`
-- ⬜ `docs/CONTRIBUTING.md` — contribution guidelines, PR expectations, issue templates
-- ⬜ `LICENSE` file — choose and add a licence (MIT recommended)
-- ⬜ `.github/ISSUE_TEMPLATE/` — bug report + feature request templates
-- ⬜ `.github/pull_request_template.md` — PR checklist
+- ✅ `README.md` — rewritten to address external fork users; "Quick Start" added as first section; "Live at diboy.dev" owner-specific intro removed; fork-focused framing throughout
+- ✅ `docs/CONTRIBUTING.md` — contribution guidelines, code standards, commit convention, PR process, what we accept/reject
+- ✅ `LICENSE` — MIT licence added; `package.json` `"license"` updated from ISC → MIT
+- ✅ `.github/ISSUE_TEMPLATE/` — bug report + feature request templates
+- ✅ `.github/pull_request_template.md` — PR checklist
 
 ### Configuration
-- ⬜ Ensure all personal config is driven by env vars or `mock-data.ts` — no owner-specific defaults in code
-- ⬜ `src/lib/mock-data.ts` — replace all real personal data with clearly labelled placeholders (`"Your Name"`, `"your@email.com"`, etc.)
-- ⬜ Verify `npm run dev` works out-of-the-box with zero `.env` setup (mock mode)
-- ⬜ Verify `docker compose up` with only `.env.example` values produces a working deployment
+- ✅ All personal config derived from `mock-data.ts` `OWNER` object or env vars — `nameParts`/`nameHint` added to `OWNER` for configurable hero typography
+- ✅ Personal data in `mock-data.ts` intentionally kept as real data (owner's preference) — forkers use `/setup-portfolio` Claude Code skill or edit the file directly
+- ✅ `npm run dev` works with zero `.env` setup (mock mode) — verified by architecture; unchanged
+- ✅ `nginx/portfolio-cf.conf` — hardcoded `diboy.dev` replaced with `yourdomain.com`; Autodesk CSP `frame-src` commented for customisation
+- ✅ `scripts/install.sh` — hardcoded `DBOYttt/my-portfolio.git` URLs replaced with `yourusername/my-portfolio.git`
 
-### GitHub Repository
-- ⬜ Make repository public on GitHub
-- ⬜ Add repository topics: `nextjs`, `portfolio`, `typescript`, `prisma`, `tailwindcss`, `self-hosted`, `mcp`
-- ⬜ Add a social preview image (`public/og-image.png` or GitHub repo settings)
+### Security Prerequisite (manual — before making repo public)
+Rotate the PostgreSQL password on the server — `.mcp.json` was briefly committed at `65bdc61` with password `2c55002e1a02b61c0dc6b67c4b49d4b2`:
+```bash
+docker compose exec db psql -U portfolio -c "ALTER USER portfolio PASSWORD 'NEWPASSWORD';"
+# Update .env: POSTGRES_PASSWORD and DATABASE_URL
+docker compose up -d
+```
+
+### GitHub Repository (manual — after PR merged)
+- ⬜ Make repository public on GitHub (Settings → Danger Zone → Change visibility)
+- ⬜ Add repository topics: `nextjs`, `portfolio`, `typescript`, `prisma`, `tailwindcss`, `self-hosted`, `mcp`, `docker`, `auth`
+- ⬜ Add a social preview image (GitHub Settings → Social preview)
 - ⬜ Pin repository on GitHub profile
 
 ---
