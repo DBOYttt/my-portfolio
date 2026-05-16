@@ -33,7 +33,7 @@ export default function Footer() {
               textAlign: "right",
             }}
           >
-            <div>© {year} {OWNER.name.split(" ")[0]} Czajkowski-Nazim</div>
+            <div>© {year} {OWNER.name}</div>
             <div>set in Newsreader, Inter Tight, JetBrains Mono</div>
           </div>
         </div>
