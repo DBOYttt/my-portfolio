@@ -10,9 +10,7 @@ A two-layer platform:
 
 ## Demo
 
-<video src="public/demo.mp4" controls width="100%"></video>
-
-> [Download demo.mp4](public/demo.mp4) if the video does not play inline.
+https://github.com/user-attachments/assets/bc463825-92bb-479e-9deb-43f5d6bb7d13
 
 ---
 
