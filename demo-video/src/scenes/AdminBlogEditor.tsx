@@ -4,7 +4,7 @@ import { fadeIn, fadeOut } from "../utils";
 import { C, F } from "../design";
 import { newsreader, interTight, jetbrainsMono } from "../Root";
 
-const DURATION = 180;
+const DURATION = 360;
 
 const NAV_ITEMS = [
   { label: "Dashboard", active: false },
@@ -49,7 +49,8 @@ function Sidebar() {
   );
 }
 
-function TopBar() {
+function TopBar({ frame }: { frame: number }) {
+  const topbarOpacity = fadeIn(frame, 0, 20);
   return (
     <div style={{
       height: 56,
@@ -61,6 +62,7 @@ function TopBar() {
       padding: "0 24px",
       gap: 12,
       flexShrink: 0,
+      opacity: topbarOpacity,
     }}>
       <span style={{ fontFamily: jetbrainsMono, fontSize: 11, color: C.adminMuted }}>admin@localhost</span>
       <span style={{
@@ -71,15 +73,70 @@ function TopBar() {
   );
 }
 
+function FeatureBar({ label, sub, frame, DURATION: dur }: {
+  label: string; sub: string; frame: number; DURATION: number;
+}) {
+  const opacity = interpolate(
+    frame,
+    [25, 40, dur - 35, dur - 20],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  return (
+    <div style={{
+      position: "absolute", bottom: 0, left: 0, right: 0, height: 44,
+      background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)",
+      display: "flex", alignItems: "center", padding: "0 48px", gap: 16,
+      opacity, pointerEvents: "none", zIndex: 20,
+    }}>
+      <div style={{
+        width: 4, height: 20, borderRadius: 2,
+        background: "#06b6d4",
+      }} />
+      <div style={{ fontFamily: jetbrainsMono, fontSize: 12, color: "#fff", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+        {label}
+      </div>
+      <div style={{ fontFamily: jetbrainsMono, fontSize: 11, color: "rgba(255,255,255,0.55)", letterSpacing: "0.02em" }}>
+        {sub}
+      </div>
+    </div>
+  );
+}
+
+function Callout({ label, x, y, from, to, frame }: {
+  label: string; x: number; y: number; from: number; to: number; frame: number;
+}) {
+  const opacity = interpolate(
+    frame, [from, from + 12, to - 8, to], [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  return (
+    <div style={{
+      position: "absolute", left: x, top: y, opacity,
+      pointerEvents: "none", zIndex: 15,
+    }}>
+      <div style={{
+        background: "rgba(12,12,20,0.85)", backdropFilter: "blur(6px)",
+        border: "1px solid rgba(255,255,255,0.20)", borderRadius: 5,
+        padding: "5px 12px", fontSize: 12, color: "#fff", fontWeight: 500,
+        fontFamily: "JetBrains Mono, monospace", whiteSpace: "nowrap",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+      }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
 export const AdminBlogEditor: React.FC = () => {
   const frame = useCurrentFrame();
 
-  const globalFadeIn = fadeOut(frame, 0, 18);
-  const globalFadeOut = fadeIn(frame, DURATION - 18, 18);
+  const globalFadeIn = fadeOut(frame, 0, 20);
+  const globalFadeOut = fadeIn(frame, DURATION - 20, 20);
 
   // Animate how many markdown lines are visible — typing effect
   const lineCount = Math.floor(
-    interpolate(frame, [20, 150], [0, 14], {
+    interpolate(frame, [30, 280], [0, 14], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     })
@@ -109,7 +166,7 @@ export const AdminBlogEditor: React.FC = () => {
       <Sidebar />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <TopBar />
+        <TopBar frame={frame} />
 
         <div style={{ padding: 24, flex: 1, overflowY: "hidden" }}>
           <h1 style={{
@@ -264,6 +321,20 @@ export const AdminBlogEditor: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Callout annotations */}
+      <Callout frame={frame} label="Title + 💡 Suggest topics (AI)" x={248} y={175} from={50} to={180} />
+      <Callout frame={frame} label="🦆 Generate draft with AI" x={248} y={465} from={130} to={260} />
+      <Callout frame={frame} label="Left: Markdown source · Right: live preview" x={248} y={510} from={200} to={330} />
+      <Callout frame={frame} label="Blinking cursor · typing animation" x={248} y={560} from={280} to={352} />
+
+      {/* Feature bar */}
+      <FeatureBar
+        label="Admin Panel — Blog Editor"
+        sub="Split Markdown editor · 💡 AI topic suggester · 🦆 AI draft generator · live preview"
+        frame={frame}
+        DURATION={DURATION}
+      />
 
       {/* Crossfade overlays */}
       <div style={{ position: "absolute", inset: 0, background: "#000", opacity: globalFadeIn, pointerEvents: "none" }} />

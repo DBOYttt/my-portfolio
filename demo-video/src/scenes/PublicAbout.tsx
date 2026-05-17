@@ -1,11 +1,11 @@
 import React from "react";
-import { useCurrentFrame, AbsoluteFill } from "remotion";
+import { useCurrentFrame, interpolate, AbsoluteFill } from "remotion";
 import { fadeIn, fadeOut, stagger } from "../utils";
 import { C, F } from "../design";
 import { OWNER, SKILLS } from "../data";
 import { newsreader, interTight, jetbrainsMono } from "../Root";
 
-const DURATION = 140;
+const DURATION = 270;
 
 const NAV_LINKS = ["01 ABOUT", "02 STACK", "03 PROJECTS", "04 ROBOTICS", "05 EXPERIENCE", "06 WRITING", "07 CONTACT"];
 
@@ -56,12 +56,42 @@ function NavBar() {
   );
 }
 
+function FeatureBar({ label, sub, frame, DURATION: dur }: {
+  label: string; sub: string; frame: number; DURATION: number;
+}) {
+  const opacity = interpolate(
+    frame,
+    [25, 40, dur - 35, dur - 20],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  return (
+    <div style={{
+      position: "absolute", bottom: 0, left: 0, right: 0, height: 44,
+      background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)",
+      display: "flex", alignItems: "center", padding: "0 48px", gap: 16,
+      opacity, pointerEvents: "none", zIndex: 20,
+    }}>
+      <div style={{
+        width: 4, height: 20, borderRadius: 2,
+        background: "oklch(58% 0.13 45)",
+      }} />
+      <div style={{ fontFamily: jetbrainsMono, fontSize: 12, color: "#fff", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+        {label}
+      </div>
+      <div style={{ fontFamily: jetbrainsMono, fontSize: 11, color: "rgba(255,255,255,0.55)", letterSpacing: "0.02em" }}>
+        {sub}
+      </div>
+    </div>
+  );
+}
+
 export const PublicAbout: React.FC = () => {
   const frame = useCurrentFrame();
 
   const titleOpacity = fadeIn(frame, 8, 20);
-  const globalFadeIn = fadeOut(frame, 0, 18);
-  const globalFadeOut = fadeIn(frame, DURATION - 18, 18);
+  const globalFadeIn = fadeOut(frame, 0, 20);
+  const globalFadeOut = fadeIn(frame, DURATION - 20, 20);
 
   const BIO_PARAS = [
     "I'm a software engineer with a solid foundation in designing, programming, and testing applications. I enjoy working at the intersection of software and hardware.",
@@ -114,7 +144,7 @@ export const PublicAbout: React.FC = () => {
               lineHeight: 1.65,
               color: C.inkSoft,
               margin: "0 0 16px",
-              opacity: stagger(i, frame, 20, 12, 20),
+              opacity: stagger(i, frame, 30, 20, 25),
             }}>
               {text}
             </p>
@@ -125,7 +155,7 @@ export const PublicAbout: React.FC = () => {
             <div style={{
               fontFamily: jetbrainsMono, fontSize: 9, color: C.inkFaint,
               letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16,
-              opacity: stagger(0, frame, 55, 0, 20),
+              opacity: stagger(0, frame, 110, 0, 20),
             }}>
               TECHNICAL STACK
             </div>
@@ -133,7 +163,7 @@ export const PublicAbout: React.FC = () => {
               display: "grid",
               gridTemplateColumns: "repeat(2, 1fr)",
               gap: "10px 32px",
-              opacity: stagger(0, frame, 60, 0, 25),
+              opacity: stagger(0, frame, 120, 0, 25),
             }}>
               {SKILLS.map(({ category, skills }) => (
                 <div key={category}>
@@ -155,6 +185,14 @@ export const PublicAbout: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Feature bar */}
+      <FeatureBar
+        label="§01 About"
+        sub="Bio · tech background · multi-category skills"
+        frame={frame}
+        DURATION={DURATION}
+      />
 
       {/* Crossfade overlays */}
       <div style={{ position: "absolute", inset: 0, background: "#000", opacity: globalFadeIn, pointerEvents: "none" }} />

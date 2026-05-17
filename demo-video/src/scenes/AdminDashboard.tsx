@@ -1,10 +1,10 @@
 import React from "react";
-import { useCurrentFrame, AbsoluteFill } from "remotion";
+import { useCurrentFrame, interpolate, AbsoluteFill } from "remotion";
 import { fadeIn, fadeOut, stagger, countUp } from "../utils";
 import { C, F } from "../design";
 import { newsreader, interTight, jetbrainsMono } from "../Root";
 
-const DURATION = 150;
+const DURATION = 270;
 
 const NAV_ITEMS = [
   { label: "Dashboard", active: true },
@@ -82,12 +82,67 @@ function TopBar() {
   );
 }
 
+function FeatureBar({ label, sub, frame, DURATION: dur }: {
+  label: string; sub: string; frame: number; DURATION: number;
+}) {
+  const opacity = interpolate(
+    frame,
+    [25, 40, dur - 35, dur - 20],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  return (
+    <div style={{
+      position: "absolute", bottom: 0, left: 0, right: 0, height: 44,
+      background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)",
+      display: "flex", alignItems: "center", padding: "0 48px", gap: 16,
+      opacity, pointerEvents: "none", zIndex: 20,
+    }}>
+      <div style={{
+        width: 4, height: 20, borderRadius: 2,
+        background: "#06b6d4",
+      }} />
+      <div style={{ fontFamily: jetbrainsMono, fontSize: 12, color: "#fff", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+        {label}
+      </div>
+      <div style={{ fontFamily: jetbrainsMono, fontSize: 11, color: "rgba(255,255,255,0.55)", letterSpacing: "0.02em" }}>
+        {sub}
+      </div>
+    </div>
+  );
+}
+
+function Callout({ label, x, y, from, to, frame }: {
+  label: string; x: number; y: number; from: number; to: number; frame: number;
+}) {
+  const opacity = interpolate(
+    frame, [from, from + 12, to - 8, to], [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  return (
+    <div style={{
+      position: "absolute", left: x, top: y, opacity,
+      pointerEvents: "none", zIndex: 15,
+    }}>
+      <div style={{
+        background: "rgba(12,12,20,0.85)", backdropFilter: "blur(6px)",
+        border: "1px solid rgba(255,255,255,0.20)", borderRadius: 5,
+        padding: "5px 12px", fontSize: 12, color: "#fff", fontWeight: 500,
+        fontFamily: "JetBrains Mono, monospace", whiteSpace: "nowrap",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+      }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
 export const AdminDashboard: React.FC = () => {
   const frame = useCurrentFrame();
 
-  const globalFadeIn = fadeOut(frame, 0, 18);
-  const globalFadeOut = fadeIn(frame, DURATION - 18, 18);
-  const insightsOpacity = fadeIn(frame, 60, 20);
+  const globalFadeIn = fadeOut(frame, 0, 20);
+  const globalFadeOut = fadeIn(frame, DURATION - 20, 20);
+  const insightsOpacity = fadeIn(frame, 90, 25);
 
   const AGENT_REPORTS = [
     { title: "Skills Analysis — May 2026",         agent: "Skills Inference",        highlighted: false },
@@ -136,7 +191,7 @@ export const AdminDashboard: React.FC = () => {
                 border: `1px solid ${C.adminBorder}`,
                 borderRadius: 8,
                 padding: "20px 20px",
-                opacity: stagger(i, frame, 15, 12, 18),
+                opacity: stagger(i, frame, 20, 15, 20),
               }}>
                 <div style={{
                   fontFamily: interTight, fontSize: 11, color: C.adminMuted,
@@ -190,7 +245,7 @@ export const AdminDashboard: React.FC = () => {
                 justifyContent: "space-between",
                 alignItems: "center",
                 background: highlighted ? "rgba(6,182,212,0.06)" : "transparent",
-                opacity: stagger(i, frame, 65, 8, 12),
+                opacity: stagger(i, frame, 95, 10, 15),
                 paddingLeft: highlighted ? 8 : 0,
               }}>
                 <div>
@@ -214,6 +269,19 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Callout annotations */}
+      <Callout frame={frame} label="10 admin sections" x={12} y={200} from={45} to={180} />
+      <Callout frame={frame} label="Live stats — real DB counts" x={248} y={170} from={80} to={200} />
+      <Callout frame={frame} label="AI agent reports · 5 unread" x={248} y={320} from={130} to={260} />
+
+      {/* Feature bar */}
+      <FeatureBar
+        label="Admin Panel — Dashboard"
+        sub="Content overview · live stats · AI agent insights"
+        frame={frame}
+        DURATION={DURATION}
+      />
 
       {/* Crossfade overlays */}
       <div style={{ position: "absolute", inset: 0, background: "#000", opacity: globalFadeIn, pointerEvents: "none" }} />

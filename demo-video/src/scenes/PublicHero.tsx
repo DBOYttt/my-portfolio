@@ -5,7 +5,7 @@ import { C, F } from "../design";
 import { OWNER } from "../data";
 import { newsreader, interTight, jetbrainsMono } from "../Root";
 
-const DURATION = 150;
+const DURATION = 300;
 
 const NAV_LINKS = ["01 ABOUT", "02 STACK", "03 PROJECTS", "04 ROBOTICS", "05 EXPERIENCE", "06 WRITING", "07 CONTACT"];
 
@@ -56,19 +56,74 @@ function NavBar() {
   );
 }
 
+function FeatureBar({ label, sub, frame, DURATION: dur }: {
+  label: string; sub: string; frame: number; DURATION: number;
+}) {
+  const opacity = interpolate(
+    frame,
+    [25, 40, dur - 35, dur - 20],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  return (
+    <div style={{
+      position: "absolute", bottom: 0, left: 0, right: 0, height: 44,
+      background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)",
+      display: "flex", alignItems: "center", padding: "0 48px", gap: 16,
+      opacity, pointerEvents: "none", zIndex: 20,
+    }}>
+      <div style={{
+        width: 4, height: 20, borderRadius: 2,
+        background: "oklch(58% 0.13 45)",
+      }} />
+      <div style={{ fontFamily: jetbrainsMono, fontSize: 12, color: "#fff", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+        {label}
+      </div>
+      <div style={{ fontFamily: jetbrainsMono, fontSize: 11, color: "rgba(255,255,255,0.55)", letterSpacing: "0.02em" }}>
+        {sub}
+      </div>
+    </div>
+  );
+}
+
+function Callout({ label, x, y, from, to, frame }: {
+  label: string; x: number; y: number; from: number; to: number; frame: number;
+}) {
+  const opacity = interpolate(
+    frame, [from, from + 12, to - 8, to], [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  return (
+    <div style={{
+      position: "absolute", left: x, top: y, opacity,
+      pointerEvents: "none", zIndex: 15,
+    }}>
+      <div style={{
+        background: "rgba(12,12,20,0.85)", backdropFilter: "blur(6px)",
+        border: "1px solid rgba(255,255,255,0.20)", borderRadius: 5,
+        padding: "5px 12px", fontSize: 12, color: "#fff", fontWeight: 500,
+        fontFamily: "JetBrains Mono, monospace", whiteSpace: "nowrap",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+      }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
 export const PublicHero: React.FC = () => {
   const frame = useCurrentFrame();
 
-  const nameOpacity = fadeIn(frame, 15, 30);
-  const slideY = interpolate(frame, [15, 45], [30, 0], {
+  const nameOpacity = fadeIn(frame, 20, 35);
+  const slideY = interpolate(frame, [20, 55], [30, 0], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp",
   });
-  const tagOpacity = fadeIn(frame, 35, 25);
-  const ctaOpacity = fadeIn(frame, 55, 20);
-  const statsOpacity = fadeIn(frame, 70, 20);
+  const tagOpacity = fadeIn(frame, 50, 30);
+  const ctaOpacity = fadeIn(frame, 75, 25);
+  const statsOpacity = fadeIn(frame, 95, 25);
 
-  const globalFadeIn = fadeOut(frame, 0, 18);    // black overlay fades out on open
-  const globalFadeOut = fadeIn(frame, 132, 18);  // black overlay fades in on close
+  const globalFadeIn = fadeOut(frame, 0, 20);    // black overlay fades out on open
+  const globalFadeOut = fadeIn(frame, DURATION - 20, 20);  // black overlay fades in on close
 
   return (
     <AbsoluteFill style={{ background: C.paper, display: "flex", flexDirection: "column" }}>
@@ -200,6 +255,20 @@ export const PublicHero: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Callout annotations */}
+      <Callout frame={frame} label="● OPEN TO OPPORTUNITIES — SPRING 2026" x={310} y={118} from={45} to={200} />
+      <Callout frame={frame} label="→ Read the entries / Get in touch" x={310} y={530} from={75} to={220} />
+      <Callout frame={frame} label="§ 00 · Kraków, Poland" x={48} y={135} from={120} to={260} />
+      <Callout frame={frame} label="C# · C++ · Python — real skill stack" x={310} y={640} from={170} to={285} />
+
+      {/* Feature bar */}
+      <FeatureBar
+        label="Public Portfolio"
+        sub="Engineering Logbook — light/dark theme · Newsreader serif design"
+        frame={frame}
+        DURATION={DURATION}
+      />
 
       {/* Crossfade overlays */}
       <div style={{ position: "absolute", inset: 0, background: "#000", opacity: globalFadeIn, pointerEvents: "none" }} />

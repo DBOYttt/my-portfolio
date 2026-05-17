@@ -10,7 +10,7 @@ export const TitleCard: React.FC = () => {
   const titleOpacity = fadeIn(frame, 0, 25);
   const subtitleOpacity = fadeIn(frame, 18, 20);
   const iconsOpacity = fadeIn(frame, 30, 15);
-  const globalFadeOut = fadeOut(frame, 52, 18);
+  const globalFadeOut = fadeOut(frame, 70, 20);
   const opacity = Math.min(titleOpacity, 1) * (1 - globalFadeOut);
 
   return (

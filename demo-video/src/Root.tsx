@@ -13,8 +13,8 @@ const { fontFamily: jetbrainsMono } = loadJetBrainsMono("normal", { weights: ["4
 // Export so scenes can use the resolved font families
 export { newsreader, interTight, jetbrainsMono };
 
-// Total frames: 1570 at 30fps ≈ 52.3 seconds
-const TOTAL_FRAMES = 1570;
+// Total frames: 2820 at 30fps ≈ 94 seconds
+const TOTAL_FRAMES = 2820;
 const FPS = 30;
 const WIDTH = 1280;
 const HEIGHT = 720;

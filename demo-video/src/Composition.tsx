@@ -14,68 +14,68 @@ import { AdminCareer } from "./scenes/AdminCareer";
 import { EndCard } from "./scenes/EndCard";
 
 // Scene schedule (start frame, duration in frames at 30fps):
-// TitleCard      0    → 70
-// PublicHero     70   → 150
-// PublicAbout    220  → 140
-// PublicProjects 360  → 150
-// PublicBlog     510  → 120
-// PublicContact  630  → 90
-// AdminTransition 720 → 60
-// AdminDashboard 780  → 150
-// AdminBlogEditor 930 → 180
-// AdminAgents    1110 → 180
-// AdminCareer    1290 → 150
-// EndCard        1440 → 130
-// Total:                1570 frames ≈ 52.3 seconds
+// TitleCard        0    → 90
+// PublicHero       90   → 300
+// PublicAbout      390  → 270
+// PublicProjects   660  → 300
+// PublicBlog       960  → 240
+// PublicContact    1200 → 150
+// AdminTransition  1350 → 90
+// AdminDashboard   1440 → 270
+// AdminBlogEditor  1710 → 360
+// AdminAgents      2070 → 330
+// AdminCareer      2400 → 270
+// EndCard          2670 → 150
+// Total:                  2820 frames ≈ 94 seconds
 
 export const PortfolioDemo: React.FC = () => {
   return (
     <>
-      <Sequence from={0} durationInFrames={70} name="TitleCard">
+      <Sequence from={0} durationInFrames={90} name="TitleCard">
         <TitleCard />
       </Sequence>
 
-      <Sequence from={70} durationInFrames={150} name="PublicHero">
+      <Sequence from={90} durationInFrames={300} name="PublicHero">
         <PublicHero />
       </Sequence>
 
-      <Sequence from={220} durationInFrames={140} name="PublicAbout">
+      <Sequence from={390} durationInFrames={270} name="PublicAbout">
         <PublicAbout />
       </Sequence>
 
-      <Sequence from={360} durationInFrames={150} name="PublicProjects">
+      <Sequence from={660} durationInFrames={300} name="PublicProjects">
         <PublicProjects />
       </Sequence>
 
-      <Sequence from={510} durationInFrames={120} name="PublicBlog">
+      <Sequence from={960} durationInFrames={240} name="PublicBlog">
         <PublicBlog />
       </Sequence>
 
-      <Sequence from={630} durationInFrames={90} name="PublicContact">
+      <Sequence from={1200} durationInFrames={150} name="PublicContact">
         <PublicContact />
       </Sequence>
 
-      <Sequence from={720} durationInFrames={60} name="AdminTransition">
+      <Sequence from={1350} durationInFrames={90} name="AdminTransition">
         <AdminTransition />
       </Sequence>
 
-      <Sequence from={780} durationInFrames={150} name="AdminDashboard">
+      <Sequence from={1440} durationInFrames={270} name="AdminDashboard">
         <AdminDashboard />
       </Sequence>
 
-      <Sequence from={930} durationInFrames={180} name="AdminBlogEditor">
+      <Sequence from={1710} durationInFrames={360} name="AdminBlogEditor">
         <AdminBlogEditor />
       </Sequence>
 
-      <Sequence from={1110} durationInFrames={180} name="AdminAgents">
+      <Sequence from={2070} durationInFrames={330} name="AdminAgents">
         <AdminAgents />
       </Sequence>
 
-      <Sequence from={1290} durationInFrames={150} name="AdminCareer">
+      <Sequence from={2400} durationInFrames={270} name="AdminCareer">
         <AdminCareer />
       </Sequence>
 
-      <Sequence from={1440} durationInFrames={130} name="EndCard">
+      <Sequence from={2670} durationInFrames={150} name="EndCard">
         <EndCard />
       </Sequence>
     </>

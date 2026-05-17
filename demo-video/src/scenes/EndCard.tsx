@@ -12,7 +12,7 @@ export const EndCard: React.FC = () => {
   const detailsOpacity = fadeIn(frame, 30, 20);
   const badgesOpacity = fadeIn(frame, 50, 20);
   const ctaOpacity = fadeIn(frame, 65, 20);
-  const finalFade = fadeOut(frame, 110, 20);
+  const finalFade = fadeOut(frame, 130, 20);
 
   const overallOpacity = bgOpacity * (1 - finalFade);
 
