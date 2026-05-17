@@ -8,6 +8,12 @@ A two-layer platform:
 - **Public portfolio** — Engineering Logbook aesthetic (dark mode default, bone-paper/serif design). Sections: About, Skills, Projects, Robotics, Experience, Blog, Contact
 - **Private admin** — full content CRUD, markdown blog editor, 7 AI agents, career-ops CV pipeline, MCP server status
 
+## Demo
+
+<video src="public/demo.mp4" controls width="100%"></video>
+
+> [Download demo.mp4](public/demo.mp4) if the video does not play inline.
+
 ---
 
 ## Quick Start

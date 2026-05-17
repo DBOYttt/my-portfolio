@@ -1,0 +1,16 @@
+{
+  "name": "portfolio-demo-video",
+  "version": "1.0.0",
+  "description": "Remotion demo video for portfolio platform",
+  "scripts": {
+    "build": "npx remotion render PortfolioDemo ../public/demo.mp4 --codec=h264 --width=1280 --height=720 --fps=30 --crf=22",
+    "build:gif": "npx remotion render PortfolioDemo ../public/demo.gif --codec=gif --width=1280 --height=720 --every-nth-frame=3",
+    "preview": "npx remotion studio"
+  },
+  "dependencies": {
+    "remotion": "^4.0.0",
+    "@remotion/renderer": "^4.0.0",
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/cli": "^4.0.0"
+  }
+}

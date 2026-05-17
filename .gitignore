@@ -43,3 +43,7 @@ career-ops/.env
 
 # MCP config (may contain real DB credentials)
 .mcp.json
+
+# Demo video build artifacts
+demo-video/node_modules/
+demo-video/.cache/
