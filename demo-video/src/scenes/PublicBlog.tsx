@@ -1,260 +1,81 @@
 import React from "react";
-import { useCurrentFrame } from "remotion";
-import { fadeIn, stagger } from "../utils";
+import { useCurrentFrame, Img, staticFile, interpolate, AbsoluteFill } from "remotion";
+import { fadeIn, fadeOut } from "../utils";
 
-const PAPER = "#f5f0e8";
-const INK = "#2c2621";
-const ACCENT = "#c17d3c";
-const INK_SOFT = "#6b5e54";
-const INK_FAINT = "#a89a8f";
-const HAIRLINE = "rgba(44,38,33,0.15)";
+const DURATION = 120;
 
-const POSTS = [
-  {
-    date: "2026-05-10",
-    title: "Introduction to ROS2 Navigation Stack",
-    excerpt:
-      "Nav2 is the standard autonomous navigation solution for ROS2. Here's how to configure it for a real robot with SLAM Toolbox and a custom costmap.",
-    readTime: "8 min read",
-  },
-  {
-    date: "2026-04-28",
-    title: "Building a Full-Stack Portfolio with Next.js 14 App Router",
-    excerpt:
-      "Walking through the architecture decisions behind this platform: RSC, Prisma with PrismaPg adapter, Auth.js v5, and why I chose PostgreSQL over MongoDB.",
-    readTime: "12 min read",
-  },
-  {
-    date: "2026-04-14",
-    title: "MCP: Giving Claude Real-Time Access to Your App",
-    excerpt:
-      "Model Context Protocol lets you expose your database and business logic as callable tools. I built a 14-tool MCP server for this portfolio.",
-    readTime: "6 min read",
-  },
-];
-
-export const PublicBlog: React.FC = () => {
-  const frame = useCurrentFrame();
-
-  const navOpacity = fadeIn(frame, 0, 15);
-  const headerOpacity = fadeIn(frame, 5, 20);
-  const viewAllOpacity = fadeIn(frame, 80, 20);
-
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        background: PAPER,
-        fontFamily: "Georgia, serif",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
-    >
-      {/* Nav */}
-      <nav
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "18px 60px",
-          borderBottom: `1px solid ${HAIRLINE}`,
-          opacity: navOpacity,
-        }}
-      >
-        <div style={{ fontSize: 18, fontWeight: "bold", color: INK }}>
-          Portfolio
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: 36,
-            fontFamily: "'Inter', sans-serif",
-            fontSize: 13,
-            color: INK_SOFT,
-          }}
-        >
-          {["About", "Projects", "Blog", "Contact"].map((item) => (
-            <span
-              key={item}
-              style={{
-                color: item === "Blog" ? ACCENT : INK_SOFT,
-                borderBottom: item === "Blog" ? `1px solid ${ACCENT}` : "none",
-                paddingBottom: 2,
-              }}
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-        <div style={{ width: 80 }} />
-      </nav>
-
-      {/* Section header */}
-      <div
-        style={{ padding: "28px 60px 0", opacity: headerOpacity }}
-      >
-        <div
-          style={{
-            fontSize: 11,
-            fontFamily: "'Courier New', monospace",
-            color: ACCENT,
-            letterSpacing: "2px",
-            textTransform: "uppercase",
-            marginBottom: 6,
-          }}
-        >
-          §04
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <h2
-            style={{
-              fontSize: 28,
-              fontWeight: "bold",
-              color: INK,
-              margin: 0,
-              letterSpacing: "-0.5px",
-            }}
-          >
-            Engineering Logbook
-          </h2>
-          <div style={{ flex: 1, height: 1, background: HAIRLINE }} />
-        </div>
-      </div>
-
-      {/* Blog entries */}
-      <div style={{ flex: 1, padding: "20px 60px 0" }}>
-        {POSTS.map((post, i) => {
-          const entryOpacity = stagger(i, frame, 20, 22, 20);
-          return (
-            <BlogEntry key={i} {...post} opacity={entryOpacity} />
-          );
-        })}
-      </div>
-
-      {/* View all */}
-      <div
-        style={{
-          padding: "0 60px 28px",
-          display: "flex",
-          justifyContent: "flex-end",
-          opacity: viewAllOpacity,
-        }}
-      >
-        <span
-          style={{
-            fontSize: 14,
-            color: ACCENT,
-            fontStyle: "italic",
-            borderBottom: `1px solid ${ACCENT}`,
-            paddingBottom: 1,
-          }}
-        >
-          All posts →
-        </span>
-      </div>
-    </div>
-  );
-};
-
-function BlogEntry({
-  date,
-  title,
-  excerpt,
-  readTime,
-  opacity,
-}: {
-  date: string;
-  title: string;
-  excerpt: string;
-  readTime: string;
-  opacity: number;
+function Callout({ x, y, label, from, to, frame }: {
+  x: number; y: number; label: string; from: number; to: number; frame: number;
 }) {
+  const opacity = interpolate(
+    frame, [from, from + 12, to - 8, to], [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
   return (
-    <div
-      style={{
-        display: "flex",
-        gap: 0,
-        borderTop: "1px solid rgba(44,38,33,0.1)",
-        padding: "18px 0",
-        opacity,
-      }}
-    >
-      {/* Margin: date */}
-      <div style={{ width: 120, flexShrink: 0, paddingTop: 2 }}>
-        <div
-          style={{
-            fontSize: 11,
-            fontFamily: "'Courier New', monospace",
-            color: "#a89a8f",
-            letterSpacing: "0.5px",
-            lineHeight: 1.6,
-          }}
-        >
-          {date.replace(/-/g, ".")}
-        </div>
-      </div>
-
-      {/* Body */}
-      <div
-        style={{
-          flex: 1,
-          borderLeft: "1px solid rgba(44,38,33,0.1)",
-          paddingLeft: 32,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: "bold",
-            color: "#2c2621",
-            marginBottom: 8,
-            letterSpacing: "-0.2px",
-            lineHeight: 1.3,
-          }}
-        >
-          {title}
-        </div>
-        <p
-          style={{
-            fontSize: 14,
-            color: "#6b5e54",
-            lineHeight: 1.7,
-            margin: "0 0 10px 0",
-            fontFamily: "'Inter', sans-serif",
-            maxWidth: 620,
-          }}
-        >
-          {excerpt}
-        </p>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 12,
-              color: "#c17d3c",
-              fontStyle: "italic",
-            }}
-          >
-            Read →
-          </span>
-          <span
-            style={{
-              fontSize: 11,
-              color: "#a89a8f",
-              fontFamily: "'Courier New', monospace",
-            }}
-          >
-            {readTime}
-          </span>
-        </div>
+    <div style={{ position: "absolute", left: x, top: y, opacity, pointerEvents: "none", zIndex: 10 }}>
+      <div style={{
+        background: "rgba(0,0,0,0.80)", backdropFilter: "blur(4px)",
+        border: "1px solid rgba(255,255,255,0.25)", borderRadius: 4,
+        padding: "4px 10px", fontSize: 12, color: "#fff", fontWeight: 500,
+        fontFamily: "Inter, system-ui, sans-serif", whiteSpace: "nowrap",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+      }}>
+        {label}
       </div>
     </div>
   );
 }
+
+export const PublicBlog: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  // First screenshot: public-blog-preview.png
+  const scale1 = interpolate(frame, [0, DURATION], [1.0, 1.04], { extrapolateRight: "clamp" });
+  const ty1 = interpolate(frame, [0, DURATION], [0, -8], { extrapolateRight: "clamp" });
+
+  // Second screenshot: blog-post.png
+  const scale2 = interpolate(frame, [0, DURATION], [1.0, 1.04], { extrapolateRight: "clamp" });
+  const tx2 = interpolate(frame, [0, DURATION], [0, -6], { extrapolateRight: "clamp" });
+
+  // Crossfade: second image fades in over frames 55–75
+  const secondOpacity = interpolate(frame, [55, 75], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+
+  const fadeInOverlay = fadeOut(frame, 0, 20);
+  const fadeOutOverlay = fadeIn(frame, DURATION - 20, 20);
+
+  return (
+    <AbsoluteFill style={{ background: "#000" }}>
+      {/* First screenshot */}
+      <div style={{
+        position: "absolute", inset: 0, overflow: "hidden",
+        transform: `scale(${scale1}) translateY(${ty1}px)`,
+        transformOrigin: "center center",
+      }}>
+        <Img
+          src={staticFile("screenshots/public-blog-preview.png")}
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+        />
+      </div>
+
+      {/* Second screenshot — crossfades in */}
+      <div style={{
+        position: "absolute", inset: 0, overflow: "hidden",
+        transform: `scale(${scale2}) translateX(${tx2}px)`,
+        transformOrigin: "center center",
+        opacity: secondOpacity,
+      }}>
+        <Img
+          src={staticFile("screenshots/blog-post.png")}
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+        />
+      </div>
+
+      <div style={{ position: "absolute", inset: 0, background: "#000", opacity: fadeInOverlay, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 0, background: "#000", opacity: fadeOutOverlay, pointerEvents: "none" }} />
+
+      <Callout frame={frame} from={20} to={58} x={300} y={85} label="§06 Writing — Engineering Logbook posts" />
+      <Callout frame={frame} from={35} to={63} x={300} y={200} label="12 min read — real markdown + code blocks" />
+      <Callout frame={frame} from={75} to={115} x={300} y={100} label="Full post with ToC, syntax highlighting" />
+    </AbsoluteFill>
+  );
+};

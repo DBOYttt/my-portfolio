@@ -1,289 +1,57 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
-import { fadeIn } from "../utils";
+import { useCurrentFrame, Img, staticFile, interpolate, AbsoluteFill } from "remotion";
+import { fadeIn, fadeOut } from "../utils";
 
-const PAPER = "#f5f0e8";
-const INK = "#2c2621";
-const ACCENT = "#c17d3c";
-const INK_SOFT = "#6b5e54";
-const INK_FAINT = "#a89a8f";
-const HAIRLINE = "rgba(44,38,33,0.15)";
+const DURATION = 90;
+
+function Callout({ x, y, label, from, to, frame }: {
+  x: number; y: number; label: string; from: number; to: number; frame: number;
+}) {
+  const opacity = interpolate(
+    frame, [from, from + 12, to - 8, to], [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  return (
+    <div style={{ position: "absolute", left: x, top: y, opacity, pointerEvents: "none", zIndex: 10 }}>
+      <div style={{
+        background: "rgba(0,0,0,0.80)", backdropFilter: "blur(4px)",
+        border: "1px solid rgba(255,255,255,0.25)", borderRadius: 4,
+        padding: "4px 10px", fontSize: 12, color: "#fff", fontWeight: 500,
+        fontFamily: "Inter, system-ui, sans-serif", whiteSpace: "nowrap",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+      }}>
+        {label}
+      </div>
+    </div>
+  );
+}
 
 export const PublicContact: React.FC = () => {
   const frame = useCurrentFrame();
 
-  const formScale = interpolate(frame, [10, 35], [0.96, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const formOpacity = fadeIn(frame, 10, 25);
-  const navOpacity = fadeIn(frame, 0, 15);
-  const socialOpacity = fadeIn(frame, 50, 20);
+  const scale = interpolate(frame, [0, DURATION], [1.0, 1.05], { extrapolateRight: "clamp" });
+
+  const fadeInOverlay = fadeOut(frame, 0, 20);
+  const fadeOutOverlay = fadeIn(frame, DURATION - 20, 20);
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        background: PAPER,
-        fontFamily: "Georgia, serif",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
-    >
-      {/* Nav */}
-      <nav
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "18px 60px",
-          borderBottom: `1px solid ${HAIRLINE}`,
-          opacity: navOpacity,
-        }}
-      >
-        <div style={{ fontSize: 18, fontWeight: "bold", color: INK }}>
-          Portfolio
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: 36,
-            fontFamily: "'Inter', sans-serif",
-            fontSize: 13,
-            color: INK_SOFT,
-          }}
-        >
-          {["About", "Projects", "Blog", "Contact"].map((item) => (
-            <span
-              key={item}
-              style={{
-                color: item === "Contact" ? ACCENT : INK_SOFT,
-                borderBottom:
-                  item === "Contact" ? `1px solid ${ACCENT}` : "none",
-                paddingBottom: 2,
-              }}
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-        <div style={{ width: 80 }} />
-      </nav>
-
-      {/* Content */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 80,
-          padding: "0 80px",
-        }}
-      >
-        {/* Left: heading */}
-        <div style={{ opacity: formOpacity, maxWidth: 280 }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontFamily: "'Courier New', monospace",
-              color: ACCENT,
-              letterSpacing: "2px",
-              textTransform: "uppercase",
-              marginBottom: 12,
-            }}
-          >
-            §06
-          </div>
-          <h2
-            style={{
-              fontSize: 36,
-              fontWeight: "bold",
-              color: INK,
-              margin: "0 0 16px 0",
-              lineHeight: 1.2,
-              letterSpacing: "-0.5px",
-            }}
-          >
-            Get in
-            <br />
-            Touch
-          </h2>
-          <p
-            style={{
-              fontSize: 15,
-              color: INK_SOFT,
-              lineHeight: 1.7,
-              margin: "0 0 28px 0",
-              fontFamily: "'Inter', sans-serif",
-            }}
-          >
-            Open to engineering roles, robotics projects, and interesting
-            collaborations.
-          </p>
-
-          {/* Social links */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-              opacity: socialOpacity,
-            }}
-          >
-            {[
-              { label: "GitHub", value: "github.com/DBOYttt" },
-              { label: "Email", value: "andrzejcn041@gmail.com" },
-              { label: "Site", value: "diboy.dev" },
-            ].map(({ label, value }) => (
-              <div
-                key={label}
-                style={{ display: "flex", gap: 10, alignItems: "center" }}
-              >
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontFamily: "'Courier New', monospace",
-                    color: INK_FAINT,
-                    letterSpacing: "1.5px",
-                    textTransform: "uppercase",
-                    width: 50,
-                  }}
-                >
-                  {label}
-                </span>
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: ACCENT,
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                >
-                  {value}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right: contact form */}
-        <div
-          style={{
-            opacity: formOpacity,
-            transform: `scale(${formScale})`,
-            background: "rgba(44,38,33,0.04)",
-            border: `1px solid ${HAIRLINE}`,
-            borderRadius: 6,
-            padding: "32px",
-            width: 380,
-          }}
-        >
-          <FormField label="Name" placeholder="Your name" />
-          <FormField label="Email" placeholder="your@email.com" />
-          <FormTextarea label="Message" placeholder="What's on your mind?" />
-
-          <button
-            style={{
-              width: "100%",
-              padding: "13px",
-              background: ACCENT,
-              border: "none",
-              borderRadius: 4,
-              color: "#fff",
-              fontSize: 14,
-              fontFamily: "'Inter', sans-serif",
-              fontWeight: 500,
-              cursor: "pointer",
-              marginTop: 4,
-              letterSpacing: "0.3px",
-            }}
-          >
-            Send Message
-          </button>
-        </div>
+    <AbsoluteFill style={{ background: "#000" }}>
+      <div style={{
+        position: "absolute", inset: 0, overflow: "hidden",
+        transform: `scale(${scale})`,
+        transformOrigin: "center center",
+      }}>
+        <Img
+          src={staticFile("screenshots/public-contact.png")}
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "bottom" }}
+        />
       </div>
-    </div>
+
+      <div style={{ position: "absolute", inset: 0, background: "#000", opacity: fadeInOverlay, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 0, background: "#000", opacity: fadeOutOverlay, pointerEvents: "none" }} />
+
+      <Callout frame={frame} from={15} to={72} x={300} y={85} label="§07 Contact" />
+      <Callout frame={frame} from={30} to={80} x={300} y={200} label="andrzejczn@diboy.dev · Rate-limited form" />
+    </AbsoluteFill>
   );
 };
-
-function FormField({
-  label,
-  placeholder,
-}: {
-  label: string;
-  placeholder: string;
-}) {
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <label
-        style={{
-          display: "block",
-          fontSize: 11,
-          fontFamily: "'Courier New', monospace",
-          color: "#a89a8f",
-          letterSpacing: "1.5px",
-          textTransform: "uppercase",
-          marginBottom: 6,
-        }}
-      >
-        {label}
-      </label>
-      <div
-        style={{
-          padding: "10px 14px",
-          background: "#f5f0e8",
-          border: "1px solid rgba(44,38,33,0.2)",
-          borderRadius: 3,
-          fontSize: 14,
-          color: "#a89a8f",
-          fontFamily: "'Inter', sans-serif",
-        }}
-      >
-        {placeholder}
-      </div>
-    </div>
-  );
-}
-
-function FormTextarea({
-  label,
-  placeholder,
-}: {
-  label: string;
-  placeholder: string;
-}) {
-  return (
-    <div style={{ marginBottom: 20 }}>
-      <label
-        style={{
-          display: "block",
-          fontSize: 11,
-          fontFamily: "'Courier New', monospace",
-          color: "#a89a8f",
-          letterSpacing: "1.5px",
-          textTransform: "uppercase",
-          marginBottom: 6,
-        }}
-      >
-        {label}
-      </label>
-      <div
-        style={{
-          padding: "10px 14px",
-          background: "#f5f0e8",
-          border: "1px solid rgba(44,38,33,0.2)",
-          borderRadius: 3,
-          fontSize: 14,
-          color: "#a89a8f",
-          fontFamily: "'Inter', sans-serif",
-          height: 90,
-          lineHeight: 1.6,
-        }}
-      >
-        {placeholder}
-      </div>
-    </div>
-  );
-}
