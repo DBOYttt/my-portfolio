@@ -1,27 +1,57 @@
 import React from "react";
-import { useCurrentFrame, Img, staticFile, interpolate, AbsoluteFill } from "remotion";
-import { fadeIn, fadeOut } from "../utils";
+import { useCurrentFrame, AbsoluteFill } from "remotion";
+import { fadeIn, fadeOut, stagger } from "../utils";
+import { C, F } from "../design";
+import { BLOG_POSTS } from "../data";
+import { newsreader, interTight, jetbrainsMono } from "../Root";
 
 const DURATION = 120;
 
-function Callout({ x, y, label, from, to, frame }: {
-  x: number; y: number; label: string; from: number; to: number; frame: number;
-}) {
-  const opacity = interpolate(
-    frame, [from, from + 12, to - 8, to], [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
+const NAV_LINKS = ["01 ABOUT", "02 STACK", "03 PROJECTS", "04 ROBOTICS", "05 EXPERIENCE", "06 WRITING", "07 CONTACT"];
+
+function NavBar() {
   return (
-    <div style={{ position: "absolute", left: x, top: y, opacity, pointerEvents: "none", zIndex: 10 }}>
-      <div style={{
-        background: "rgba(0,0,0,0.80)", backdropFilter: "blur(4px)",
-        border: "1px solid rgba(255,255,255,0.25)", borderRadius: 4,
-        padding: "4px 10px", fontSize: 12, color: "#fff", fontWeight: 500,
-        fontFamily: "Inter, system-ui, sans-serif", whiteSpace: "nowrap",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-      }}>
-        {label}
+    <div style={{
+      height: 52,
+      background: C.paper,
+      borderBottom: `1px solid ${C.hairline}`,
+      display: "flex",
+      alignItems: "center",
+      padding: "0 48px",
+      justifyContent: "space-between",
+      flexShrink: 0,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontFamily: newsreader, fontSize: 17, color: C.ink, letterSpacing: "-0.01em" }}>
+          The Logbook
+        </span>
+        <span style={{
+          fontFamily: jetbrainsMono, fontSize: 10, color: C.accent,
+          border: `1px solid ${C.accent}`, padding: "2px 6px", borderRadius: 2,
+          transform: "rotate(-2deg)", letterSpacing: "0.04em", display: "inline-block",
+        }}>
+          A.C.N. · 2026
+        </span>
       </div>
+      <div style={{ display: "flex", gap: 24 }}>
+        {NAV_LINKS.map((l) => (
+          <span key={l} style={{
+            fontFamily: jetbrainsMono, fontSize: 10,
+            color: l.startsWith("06") ? C.accent : C.inkSoft,
+            letterSpacing: "0.06em", textTransform: "uppercase",
+            borderBottom: l.startsWith("06") ? `1px solid ${C.accent}` : "none",
+            paddingBottom: 2,
+          }}>
+            {l}
+          </span>
+        ))}
+      </div>
+      <span style={{
+        fontFamily: jetbrainsMono, fontSize: 11, color: C.inkSoft,
+        border: `1px solid ${C.hairline}`, padding: "4px 10px", letterSpacing: "0.04em",
+      }}>
+        ← DARK
+      </span>
     </div>
   );
 }
@@ -29,53 +59,103 @@ function Callout({ x, y, label, from, to, frame }: {
 export const PublicBlog: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // First screenshot: public-blog-preview.png
-  const scale1 = interpolate(frame, [0, DURATION], [1.0, 1.04], { extrapolateRight: "clamp" });
-  const ty1 = interpolate(frame, [0, DURATION], [0, -8], { extrapolateRight: "clamp" });
-
-  // Second screenshot: blog-post.png
-  const scale2 = interpolate(frame, [0, DURATION], [1.0, 1.04], { extrapolateRight: "clamp" });
-  const tx2 = interpolate(frame, [0, DURATION], [0, -6], { extrapolateRight: "clamp" });
-
-  // Crossfade: second image fades in over frames 55–75
-  const secondOpacity = interpolate(frame, [55, 75], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-
-  const fadeInOverlay = fadeOut(frame, 0, 20);
-  const fadeOutOverlay = fadeIn(frame, DURATION - 20, 20);
+  const titleOpacity = fadeIn(frame, 8, 20);
+  const allPostsOpacity = fadeIn(frame, 90, 20);
+  const globalFadeIn = fadeOut(frame, 0, 18);
+  const globalFadeOut = fadeIn(frame, DURATION - 18, 18);
 
   return (
-    <AbsoluteFill style={{ background: "#000" }}>
-      {/* First screenshot */}
+    <AbsoluteFill style={{ background: C.paper, display: "flex", flexDirection: "column" }}>
+      <NavBar />
+
       <div style={{
-        position: "absolute", inset: 0, overflow: "hidden",
-        transform: `scale(${scale1}) translateY(${ty1}px)`,
-        transformOrigin: "center center",
+        maxWidth: 1240,
+        width: "100%",
+        margin: "0 auto",
+        padding: "48px 48px 0",
+        display: "grid",
+        gridTemplateColumns: "180px 1fr",
+        gap: 56,
+        flex: 1,
       }}>
-        <Img
-          src={staticFile("screenshots/public-blog-preview.png")}
-          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
-        />
+        {/* Left marginalia */}
+        <div style={{
+          fontFamily: jetbrainsMono, fontSize: 11, color: C.inkFaint,
+          textTransform: "uppercase", letterSpacing: "0.06em", lineHeight: 1.7,
+        }}>
+          <div style={{ color: C.accent, fontSize: 13 }}>§ 06</div>
+          <div>WRITING</div>
+        </div>
+
+        {/* Right content */}
+        <div>
+          <h2 style={{
+            fontFamily: newsreader,
+            fontSize: 42,
+            fontWeight: 500,
+            color: C.ink,
+            margin: "0 0 24px",
+            letterSpacing: "-0.02em",
+            opacity: titleOpacity,
+          }}>
+            Engineering <em style={{ color: C.inkSoft }}>Logbook</em>
+          </h2>
+
+          {BLOG_POSTS.map((post, i) => (
+            <div key={i} style={{
+              display: "grid",
+              gridTemplateColumns: "72px 1fr",
+              gap: 24,
+              borderTop: `1px solid ${C.hairline}`,
+              padding: "20px 0",
+              opacity: stagger(i, frame, 20, 18, 20),
+            }}>
+              {/* Left: date + read time */}
+              <div style={{
+                fontFamily: jetbrainsMono, fontSize: 10, color: C.inkFaint, letterSpacing: "0.02em",
+                paddingTop: 2,
+              }}>
+                <div>{post.date.slice(0, 7).replace("-", ".")}</div>
+                <div style={{ marginTop: 4 }}>{post.readTime}</div>
+              </div>
+              {/* Right: post info */}
+              <div>
+                <div style={{
+                  fontFamily: newsreader, fontSize: 20, fontWeight: 500, color: C.ink, marginBottom: 6,
+                }}>
+                  {post.title}
+                </div>
+                <p style={{
+                  fontFamily: interTight, fontSize: 13, color: C.inkSoft, lineHeight: 1.5, margin: "0 0 10px",
+                }}>
+                  {post.excerpt}
+                </p>
+                <div style={{
+                  fontFamily: jetbrainsMono, fontSize: 9, color: C.inkFaint,
+                  textTransform: "uppercase", letterSpacing: "0.06em",
+                }}>
+                  {post.tags.join(" · ")}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <div style={{
+            marginTop: 16,
+            fontFamily: newsreader,
+            fontStyle: "italic",
+            fontSize: 14,
+            color: C.accent,
+            opacity: allPostsOpacity,
+          }}>
+            All posts →
+          </div>
+        </div>
       </div>
 
-      {/* Second screenshot — crossfades in */}
-      <div style={{
-        position: "absolute", inset: 0, overflow: "hidden",
-        transform: `scale(${scale2}) translateX(${tx2}px)`,
-        transformOrigin: "center center",
-        opacity: secondOpacity,
-      }}>
-        <Img
-          src={staticFile("screenshots/blog-post.png")}
-          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
-        />
-      </div>
-
-      <div style={{ position: "absolute", inset: 0, background: "#000", opacity: fadeInOverlay, pointerEvents: "none" }} />
-      <div style={{ position: "absolute", inset: 0, background: "#000", opacity: fadeOutOverlay, pointerEvents: "none" }} />
-
-      <Callout frame={frame} from={20} to={58} x={300} y={85} label="§06 Writing — Engineering Logbook posts" />
-      <Callout frame={frame} from={35} to={63} x={300} y={200} label="12 min read — real markdown + code blocks" />
-      <Callout frame={frame} from={75} to={115} x={300} y={100} label="Full post with ToC, syntax highlighting" />
+      {/* Crossfade overlays */}
+      <div style={{ position: "absolute", inset: 0, background: "#000", opacity: globalFadeIn, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 0, background: "#000", opacity: globalFadeOut, pointerEvents: "none" }} />
     </AbsoluteFill>
   );
 };
