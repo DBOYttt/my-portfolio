@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 // is perfectly secure for a single-owner admin panel.
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt", maxAge: 24 * 60 * 60 },
-  pages: { signIn: "/admin/login" },
+  pages: { signIn: "/admin/login", error: "/admin/login" },
   providers: [
     Credentials({
       credentials: {
@@ -17,16 +17,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
-        if (!user) return null;
-        const valid = await bcrypt.compare(
-          credentials.password as string,
-          user.passwordHash
-        );
-        if (!valid) return null;
-        return { id: user.id, email: user.email, name: user.name };
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email as string },
+          });
+          if (!user) return null;
+          const valid = await bcrypt.compare(
+            credentials.password as string,
+            user.passwordHash
+          );
+          if (!valid) return null;
+          return { id: user.id, email: user.email, name: user.name };
+        } catch {
+          return null;
+        }
       },
     }),
   ],

@@ -63,6 +63,13 @@ export async function POST(): Promise<NextResponse<SyncResponse>> {
   const twitterLink =
     links.find((l) => l.type === "TWITTER")?.url ?? cfg.contact?.twitter;
 
+  const skillsByCategory = skills.reduce<Record<string, string[]>>((acc, s) => {
+    const cat = s.category;
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(s.name);
+    return acc;
+  }, {});
+
   const profile = {
     candidate: {
       full_name: user?.name ?? OWNER.name,
@@ -101,14 +108,8 @@ export async function POST(): Promise<NextResponse<SyncResponse>> {
       visa_status: cfg.location?.visa_status ?? "",
     },
     cv: { output_format: cfg.cv_output_format ?? "html" },
+    skills: skillsByCategory,
   };
-
-  const skillsByCategory = skills.reduce<Record<string, string[]>>((acc, s) => {
-    const cat = s.category;
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(s.name);
-    return acc;
-  }, {});
 
   const formatDate = (d: Date | null): string =>
     d
@@ -167,6 +168,7 @@ export async function POST(): Promise<NextResponse<SyncResponse>> {
       method: "POST",
       headers,
       body: JSON.stringify({ profile, cv }),
+      signal: AbortSignal.timeout(30_000),
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Network error";
