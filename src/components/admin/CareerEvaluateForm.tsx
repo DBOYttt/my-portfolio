@@ -181,6 +181,7 @@ export default function CareerEvaluateForm() {
 
   // ── CV generation state ───────────────────────────────────────────────────
   const [cvGenStatus, setCvGenStatus] = useState<JobStatus | null>(null);
+  const [cvGenMessage, setCvGenMessage] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const cvPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cvPollCountRef = useRef(0);
@@ -204,6 +205,7 @@ export default function CareerEvaluateForm() {
     return () => {
       stopPolling();
       stopCvPolling();
+      if (debounceRef.current !== null) clearTimeout(debounceRef.current);
     };
   }, [stopPolling, stopCvPolling]);
 
@@ -277,6 +279,7 @@ export default function CareerEvaluateForm() {
           stopCvPolling();
           setGenerating(false);
           setCvGenStatus("error");
+          setCvGenMessage("Timed out after 5 minutes.");
           return;
         }
 
@@ -344,7 +347,8 @@ export default function CareerEvaluateForm() {
 
       setJobStatus("running");
       pollStatus(data.jobId);
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setJobStatus("error");
       setLogLines(["Network error — could not reach career-ops service"]);
       setEvaluating(false);
@@ -354,6 +358,8 @@ export default function CareerEvaluateForm() {
   async function handleGenerate() {
     stopCvPolling();
     setCvGenStatus("pending");
+    setCvGenMessage(null);
+    setPublishResult(null);
     setGenerating(true);
     try {
       const res = await fetch("/api/admin/career/cv/generate", { method: "POST" });
@@ -410,7 +416,7 @@ export default function CareerEvaluateForm() {
                 <span>&#10003;</span> Saved
               </span>
             )}
-            {saveError && (
+            {saveError && !configLoading && !configError && (
               <span
                 title="Auto-save failed — check your session"
                 className="inline-block w-2 h-2 rounded-full bg-red-500 ml-1 align-middle"
@@ -484,7 +490,7 @@ export default function CareerEvaluateForm() {
                 <summary className="text-slate-300 text-sm font-semibold cursor-pointer select-none py-1">
                   Target Roles
                 </summary>
-                <div className="mt-3 border-t border-[#2a2d3a] pt-3 space-y-3">
+                <div className="mt-3 border-t border-[#2a2d3a] pt-3">
                   <FieldGroup label="Primary roles (one per line)">
                     <textarea
                       rows={4}
@@ -493,17 +499,6 @@ export default function CareerEvaluateForm() {
                       value={(config.target_roles?.primary ?? []).join("\n")}
                       onChange={(e) => setTargetRoles(e.target.value)}
                     />
-                  </FieldGroup>
-                  <FieldGroup label="CV output format">
-                    <select
-                      className={INPUT_CLS}
-                      value={config.cv_output_format ?? "html"}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, cv_output_format: e.target.value }))}
-                    >
-                      <option value="html">HTML</option>
-                      <option value="pdf">PDF</option>
-                      <option value="docx">DOCX</option>
-                    </select>
                   </FieldGroup>
                 </div>
               </details>
@@ -745,8 +740,23 @@ export default function CareerEvaluateForm() {
         </p>
 
         <div className="space-y-4">
+          {/* Output format */}
+          <div className="max-w-xs">
+            <FieldGroup label="Output format">
+              <select
+                className={INPUT_CLS}
+                value={config.cv_output_format ?? "html"}
+                onChange={(e) => setConfig((prev) => ({ ...prev, cv_output_format: e.target.value }))}
+              >
+                <option value="html">HTML</option>
+                <option value="pdf">PDF</option>
+                <option value="docx">DOCX</option>
+              </select>
+            </FieldGroup>
+          </div>
+
           {/* Generate */}
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-4 flex-wrap border-t border-[#2a2d3a] pt-4">
             <button
               onClick={handleGenerate}
               disabled={generating || evaluating}
@@ -754,10 +764,27 @@ export default function CareerEvaluateForm() {
             >
               {generating ? "Generating…" : "Generate master CV"}
             </button>
+            {generating && (
+              <button
+                type="button"
+                onClick={() => {
+                  stopCvPolling();
+                  setGenerating(false);
+                  setCvGenStatus("error");
+                  setCvGenMessage("Cancelled.");
+                }}
+                className="px-4 py-2 rounded border border-slate-600 text-slate-300 text-sm hover:bg-[#2a2d3a] transition-colors"
+              >
+                Cancel
+              </button>
+            )}
             {cvGenStatus && (
               <span className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[cvGenStatus]}`}>
                 {cvGenStatus}
               </span>
+            )}
+            {cvGenMessage && (
+              <span className="text-xs font-mono text-slate-400">{cvGenMessage}</span>
             )}
           </div>
 
