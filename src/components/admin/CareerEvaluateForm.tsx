@@ -391,11 +391,7 @@ export default function CareerEvaluateForm() {
           message: `Published at ${data.publishedAt ? new Date(data.publishedAt).toLocaleString() : "—"}`,
         });
       } else {
-        const message =
-          res.status === 404
-            ? "No CV found. Run a job evaluation first."
-            : data.error ?? "Publish failed";
-        setPublishResult({ ok: false, message });
+        setPublishResult({ ok: false, message: data.error ?? "Publish failed" });
       }
     } catch {
       setPublishResult({ ok: false, message: "Network error — could not publish CV" });

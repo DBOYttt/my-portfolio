@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import { spawn } from "child_process";
 import { randomUUID } from "crypto";
-import { readFile } from "fs/promises";
+import { readFile, readdir, stat, copyFile } from "fs/promises";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { dump } from "js-yaml";
@@ -57,7 +57,13 @@ function authMiddleware(req: Request, res: Response, next: NextFunction): void {
 
 app.use(authMiddleware);
 
-function spawnJob(jobId: string, args: string[], cwd: string, pipelineUrl?: string): void {
+function spawnJob(
+  jobId: string,
+  args: string[],
+  cwd: string,
+  pipelineUrl?: string,
+  onClose?: (code: number | null, job: Job) => Promise<void>
+): void {
   const job = jobs.get(jobId);
   if (!job) return;
 
@@ -83,9 +89,13 @@ function spawnJob(jobId: string, args: string[], cwd: string, pipelineUrl?: stri
     job.log.push(chunk.toString());
   });
 
-  child.on("close", (code: number | null) => {
+  child.on("close", async (code: number | null) => {
     clearTimeout(watchdog);
-    job.status = code === 0 ? "done" : "error";
+    if (onClose) {
+      await onClose(code, job);
+    } else {
+      job.status = code === 0 ? "done" : "error";
+    }
     if (pipelineUrl) appendToPipeline(jobId, pipelineUrl, job);
   });
 }
@@ -132,7 +142,46 @@ app.post("/cv/master", (req: Request, res: Response): void => {
   jobs.set(jobId, { status: "pending", log: [] });
   res.json({ jobId });
 
-  spawnJob(jobId, ["-p", "/cv master"], "/app/career-ops");
+  const careerOpsDir = "/app/career-ops";
+  const outputDir = `${careerOpsDir}/output`;
+
+  spawnJob(
+    jobId,
+    ["-p", "/career-ops pdf"],
+    careerOpsDir,
+    undefined,
+    async (code, job) => {
+      if (code !== 0) {
+        job.status = "error";
+        job.log.push("\ncareer-ops exited with an error.");
+        return;
+      }
+      // Find the most recently modified PDF in career-ops/output/
+      try {
+        const files = (await readdir(outputDir)).filter((f) => f.endsWith(".pdf"));
+        if (files.length === 0) {
+          job.status = "error";
+          job.log.push("\nNo PDF found in output/ after generation.");
+          return;
+        }
+        const withStats = await Promise.all(
+          files.map(async (f) => ({ f, mtime: (await stat(path.join(outputDir, f))).mtimeMs }))
+        );
+        withStats.sort((a, b) => b.mtime - a.mtime);
+        const latest = withStats[0].f;
+        const src = path.join(outputDir, latest);
+        const dest = path.join(CV_OUTPUT_DIR, "master-cv.pdf");
+        mkdirSync(CV_OUTPUT_DIR, { recursive: true });
+        await copyFile(src, dest);
+        job.pdfPath = dest;
+        job.status = "done";
+        job.log.push(`\nMaster CV ready: ${latest}`);
+      } catch (err) {
+        job.status = "error";
+        job.log.push(`\nFailed to finalise CV: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  );
 });
 
 // GET /pipeline
