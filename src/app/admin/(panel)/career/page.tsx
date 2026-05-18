@@ -121,7 +121,7 @@ export default async function CareerAdminPage() {
                       </span>
                     </td>
                     <td className="py-2">
-                      {job.pdfPath ? (
+                      {job.pdfPath && job.pdfPath.startsWith("http") ? (
                         <a
                           href={job.pdfPath}
                           target="_blank"
