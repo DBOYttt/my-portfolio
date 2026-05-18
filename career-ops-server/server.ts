@@ -62,7 +62,8 @@ function spawnJob(
   args: string[],
   cwd: string,
   pipelineUrl?: string,
-  onClose?: (code: number | null, job: Job) => Promise<void>
+  onClose?: (code: number | null, job: Job) => Promise<void>,
+  stdinInput?: string
 ): void {
   const job = jobs.get(jobId);
   if (!job) return;
@@ -73,6 +74,11 @@ function spawnJob(
     cwd,
     env: { ...process.env },
   });
+
+  if (stdinInput !== undefined) {
+    child.stdin.write(stdinInput);
+    child.stdin.end();
+  }
 
   const watchdog = setTimeout(() => {
     child.kill("SIGTERM");
@@ -180,7 +186,8 @@ app.post("/cv/master", (req: Request, res: Response): void => {
         job.status = "error";
         job.log.push(`\nFailed to finalise CV: ${err instanceof Error ? err.message : String(err)}`);
       }
-    }
+    },
+    "generic\n"
   );
 });
 
