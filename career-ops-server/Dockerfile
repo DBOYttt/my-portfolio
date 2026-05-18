@@ -55,5 +55,11 @@ COPY career-ops-server ./career-ops-server
 # Output volume mount point
 RUN mkdir -p /app/cv_output
 
+# Pre-approve Claude Code Write + Bash + Read within the career-ops working directory.
+# Required because generate jobs run in non-interactive -p mode and cannot prompt for approval.
+RUN mkdir -p /app/career-ops/.claude && \
+    printf '{"permissions":{"allow":["Bash(*)","Write(*)","Read(*)"]}}\n' \
+    > /app/career-ops/.claude/settings.json
+
 EXPOSE 4200
 CMD ["npx", "--yes", "tsx", "career-ops-server/server.ts"]

@@ -155,12 +155,12 @@ app.post("/cv/master", (req: Request, res: Response): void => {
     "Generate a master CV PDF from the existing cv.md and HTML template. Steps:",
     "1. Read ./cv.md",
     "2. Read ./templates/cv-template.html",
-    "3. Populate the HTML template with the CV content.",
+    "3. Populate the template with the CV content.",
     "   For any empty sections (Experience, Projects, Skills), insert one brief placeholder entry so the template renders without errors.",
-    "4. Write the completed HTML to /tmp/master-cv.html",
-    "5. Run: node generate-pdf.mjs /tmp/master-cv.html output/master-cv.pdf --format=a4",
-    "6. Confirm the PDF path.",
-    "Do not ask any clarifying questions — proceed directly through all steps.",
+    "4. Write the completed HTML to ./output/master-cv.html (relative to cwd /app/career-ops)",
+    "5. Run: node generate-pdf.mjs ./output/master-cv.html ./output/master-cv.pdf --format=a4",
+    "6. Confirm the PDF was written to ./output/master-cv.pdf",
+    "Do not ask any questions — execute all steps directly.",
   ].join(" ");
 
   spawnJob(
@@ -198,7 +198,8 @@ app.post("/cv/master", (req: Request, res: Response): void => {
         job.status = "error";
         job.log.push(`\nFailed to finalise CV: ${err instanceof Error ? err.message : String(err)}`);
       }
-    }
+    },
+    ""
   );
 });
 
