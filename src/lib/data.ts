@@ -41,22 +41,36 @@ export async function getProjects(): Promise<ProjectSummary[]> {
     }));
   }
 
-  const { prisma } = await import("./prisma");
-  const rows = await prisma.project.findMany({
-    where: { publishedAt: { not: null } },
-    orderBy: { order: "asc" },
-  });
-  return rows.map((p) => ({
-    slug: p.slug,
-    title: p.title,
-    summary: p.summary,
-    techTags: p.techTags,
-    type: p.type,
-    githubUrl: p.githubUrl,
-    liveUrl: p.liveUrl,
-    year: p.year ?? undefined,
-    sketchLabel: p.sketchLabel ?? undefined,
-  }));
+  try {
+    const { prisma } = await import("./prisma");
+    const rows = await prisma.project.findMany({
+      where: { publishedAt: { not: null } },
+      orderBy: { order: "asc" },
+    });
+    return rows.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      summary: p.summary,
+      techTags: p.techTags,
+      type: p.type,
+      githubUrl: p.githubUrl,
+      liveUrl: p.liveUrl,
+      year: p.year ?? undefined,
+      sketchLabel: p.sketchLabel ?? undefined,
+    }));
+  } catch {
+    return PROJECTS.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      summary: p.summary,
+      techTags: p.techTags,
+      type: p.type,
+      githubUrl: p.githubUrl,
+      liveUrl: p.liveUrl,
+      year: p.year,
+      sketchLabel: p.sketchLabel,
+    }));
+  }
 }
 
 export async function getProjectBySlug(
@@ -75,22 +89,26 @@ export async function getProjectBySlug(
     };
   }
 
-  const { prisma } = await import("./prisma");
-  const p = await prisma.project.findUnique({ where: { slug } });
-  if (!p) return null;
-  return {
-    slug: p.slug,
-    title: p.title,
-    summary: p.summary,
-    techTags: p.techTags,
-    type: p.type,
-    githubUrl: p.githubUrl,
-    liveUrl: p.liveUrl,
-    content: p.content,
-    coverImage: p.coverImage,
-    featured: p.featured,
-    publishedAt: p.publishedAt,
-  };
+  try {
+    const { prisma } = await import("./prisma");
+    const p = await prisma.project.findUnique({ where: { slug } });
+    if (!p) return null;
+    return {
+      slug: p.slug,
+      title: p.title,
+      summary: p.summary,
+      techTags: p.techTags,
+      type: p.type,
+      githubUrl: p.githubUrl,
+      liveUrl: p.liveUrl,
+      content: p.content,
+      coverImage: p.coverImage,
+      featured: p.featured,
+      publishedAt: p.publishedAt,
+    };
+  } catch {
+    return null;
+  }
 }
 
 // ─── Experience ───────────────────────────────────────────────────────────────
@@ -100,33 +118,37 @@ export async function getExperience(): Promise<ExperienceItem[]> {
     return EXPERIENCE;
   }
 
-  const { prisma } = await import("./prisma");
-  const rows = await prisma.experience.findMany({ orderBy: { order: "asc" } });
+  try {
+    const { prisma } = await import("./prisma");
+    const rows = await prisma.experience.findMany({ orderBy: { order: "asc" } });
 
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 
-  const typeLabel: Record<string, string> = {
-    FULLTIME: "Full-time",
-    PARTTIME: "Part-time",
-    CONTRACT: "Contract",
-    INTERNSHIP: "Internship",
-    VOLUNTEER: "Volunteer",
-  };
-
-  return rows.map((exp) => {
-    const period = exp.current
-      ? `${fmt(exp.startDate)} — Present`
-      : `${fmt(exp.startDate)} — ${fmt(exp.endDate!)}`;
-    const type = typeLabel[exp.type] ?? exp.type;
-    return {
-      company: exp.company,
-      role: exp.role,
-      period,
-      type,
-      description: exp.description,
+    const typeLabel: Record<string, string> = {
+      FULLTIME: "Full-time",
+      PARTTIME: "Part-time",
+      CONTRACT: "Contract",
+      INTERNSHIP: "Internship",
+      VOLUNTEER: "Volunteer",
     };
-  });
+
+    return rows.map((exp) => {
+      const period = exp.current
+        ? `${fmt(exp.startDate)} — Present`
+        : `${fmt(exp.startDate)} — ${fmt(exp.endDate!)}`;
+      const type = typeLabel[exp.type] ?? exp.type;
+      return {
+        company: exp.company,
+        role: exp.role,
+        period,
+        type,
+        description: exp.description,
+      };
+    });
+  } catch {
+    return EXPERIENCE;
+  }
 }
 
 // ─── Skills ──────────────────────────────────────────────────────────────────
@@ -136,34 +158,38 @@ export async function getSkills(): Promise<SkillGroup[]> {
     return SKILLS;
   }
 
-  const { prisma } = await import("./prisma");
-  const rows = await prisma.skill.findMany({ orderBy: { order: "asc" } });
+  try {
+    const { prisma } = await import("./prisma");
+    const rows = await prisma.skill.findMany({ orderBy: { order: "asc" } });
 
-  const categoryLabel: Record<string, string> = {
-    LANGUAGE: "Languages",
-    FRAMEWORK: "Frameworks & Libraries",
-    TOOL: "Tools & Infrastructure",
-    ROBOTICS: "Robotics & Embedded",
-    EMBEDDED: "Robotics & Embedded",
-    DATABASE: "Databases",
-    OTHER: "Other",
-  };
+    const categoryLabel: Record<string, string> = {
+      LANGUAGE: "Languages",
+      FRAMEWORK: "Frameworks & Libraries",
+      TOOL: "Tools & Infrastructure",
+      ROBOTICS: "Robotics & Embedded",
+      EMBEDDED: "Robotics & Embedded",
+      DATABASE: "Databases",
+      OTHER: "Other",
+    };
 
-  const grouped = new Map<string, string[]>();
-  for (const skill of rows) {
-    const label = categoryLabel[skill.category] ?? skill.category;
-    const existing = grouped.get(label);
-    if (existing) {
-      existing.push(skill.name);
-    } else {
-      grouped.set(label, [skill.name]);
+    const grouped = new Map<string, string[]>();
+    for (const skill of rows) {
+      const label = categoryLabel[skill.category] ?? skill.category;
+      const existing = grouped.get(label);
+      if (existing) {
+        existing.push(skill.name);
+      } else {
+        grouped.set(label, [skill.name]);
+      }
     }
-  }
 
-  return Array.from(grouped.entries()).map(([category, skills]) => ({
-    category,
-    skills,
-  }));
+    return Array.from(grouped.entries()).map(([category, skills]) => ({
+      category,
+      skills,
+    }));
+  } catch {
+    return SKILLS;
+  }
 }
 
 // ─── Blog Posts ───────────────────────────────────────────────────────────────
@@ -180,23 +206,34 @@ export async function getBlogPosts(): Promise<BlogPostSummary[]> {
     }));
   }
 
-  const { prisma } = await import("./prisma");
-  const rows = await prisma.post.findMany({
-    where: { status: "PUBLISHED" },
-    orderBy: { publishedAt: "desc" },
-    include: { tags: true },
-  });
+  try {
+    const { prisma } = await import("./prisma");
+    const rows = await prisma.post.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { publishedAt: "desc" },
+      include: { tags: true },
+    });
 
-  return rows.map((p) => ({
-    slug: p.slug,
-    title: p.title,
-    excerpt: p.excerpt ?? "",
-    date: p.publishedAt
-      ? p.publishedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-      : "",
-    readTime: computeReadTime(p.content),
-    tags: p.tags.map((t) => t.name),
-  }));
+    return rows.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      excerpt: p.excerpt ?? "",
+      date: p.publishedAt
+        ? p.publishedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+        : "",
+      readTime: computeReadTime(p.content),
+      tags: p.tags.map((t) => t.name),
+    }));
+  } catch {
+    return BLOG_POSTS.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      excerpt: p.excerpt,
+      date: p.date,
+      readTime: p.readTime,
+      tags: p.tags,
+    }));
+  }
 }
 
 export async function getBlogPostBySlug(
@@ -219,25 +256,29 @@ export async function getBlogPostBySlug(
     };
   }
 
-  const { prisma } = await import("./prisma");
-  const p = await prisma.post.findUnique({
-    where: { slug, status: "PUBLISHED" },
-    include: { tags: true },
-  });
-  if (!p) return null;
+  try {
+    const { prisma } = await import("./prisma");
+    const p = await prisma.post.findUnique({
+      where: { slug, status: "PUBLISHED" },
+      include: { tags: true },
+    });
+    if (!p) return null;
 
-  return {
-    slug: p.slug,
-    title: p.title,
-    excerpt: p.excerpt ?? "",
-    date: p.publishedAt
-      ? p.publishedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-      : "",
-    readTime: computeReadTime(p.content),
-    tags: p.tags.map((t) => t.name),
-    content: p.content,
-    seoTitle: p.seoTitle,
-    seoDesc: p.seoDesc,
-    publishedAt: p.publishedAt,
-  };
+    return {
+      slug: p.slug,
+      title: p.title,
+      excerpt: p.excerpt ?? "",
+      date: p.publishedAt
+        ? p.publishedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+        : "",
+      readTime: computeReadTime(p.content),
+      tags: p.tags.map((t) => t.name),
+      content: p.content,
+      seoTitle: p.seoTitle,
+      seoDesc: p.seoDesc,
+      publishedAt: p.publishedAt,
+    };
+  } catch {
+    return null;
+  }
 }

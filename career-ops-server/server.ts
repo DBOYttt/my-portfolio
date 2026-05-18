@@ -1,9 +1,10 @@
 import express, { Request, Response, NextFunction } from "express";
 import { spawn } from "child_process";
 import { randomUUID } from "crypto";
-import { readFile } from "fs/promises";
+import { readFile, readdir, stat, copyFile } from "fs/promises";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
+import { dump } from "js-yaml";
 
 const app = express();
 app.use(express.json());
@@ -56,7 +57,14 @@ function authMiddleware(req: Request, res: Response, next: NextFunction): void {
 
 app.use(authMiddleware);
 
-function spawnJob(jobId: string, args: string[], cwd: string, pipelineUrl?: string): void {
+function spawnJob(
+  jobId: string,
+  args: string[],
+  cwd: string,
+  pipelineUrl?: string,
+  onClose?: (code: number | null, job: Job) => Promise<void>,
+  stdinInput?: string
+): void {
   const job = jobs.get(jobId);
   if (!job) return;
 
@@ -67,6 +75,18 @@ function spawnJob(jobId: string, args: string[], cwd: string, pipelineUrl?: stri
     env: { ...process.env },
   });
 
+  if (stdinInput !== undefined) {
+    child.stdin.write(stdinInput);
+    child.stdin.end();
+  }
+
+  const watchdog = setTimeout(() => {
+    child.kill("SIGTERM");
+    job.status = "error";
+    job.log.push("\nJob timed out after 10 minutes.");
+    if (pipelineUrl) appendToPipeline(jobId, pipelineUrl, job);
+  }, 10 * 60 * 1000);
+
   child.stdout.on("data", (chunk: Buffer) => {
     job.log.push(chunk.toString());
   });
@@ -75,8 +95,13 @@ function spawnJob(jobId: string, args: string[], cwd: string, pipelineUrl?: stri
     job.log.push(chunk.toString());
   });
 
-  child.on("close", (code: number | null) => {
-    job.status = code === 0 ? "done" : "error";
+  child.on("close", async (code: number | null) => {
+    clearTimeout(watchdog);
+    if (onClose) {
+      await onClose(code, job);
+    } else {
+      job.status = code === 0 ? "done" : "error";
+    }
     if (pipelineUrl) appendToPipeline(jobId, pipelineUrl, job);
   });
 }
@@ -86,6 +111,17 @@ app.post("/evaluate", (req: Request, res: Response): void => {
   const { url } = req.body as { url?: string };
   if (!url) {
     res.status(400).json({ error: "url is required" });
+    return;
+  }
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    res.status(400).json({ error: "Invalid URL" });
+    return;
+  }
+  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+    res.status(400).json({ error: "URL must be http or https" });
     return;
   }
 
@@ -112,7 +148,59 @@ app.post("/cv/master", (req: Request, res: Response): void => {
   jobs.set(jobId, { status: "pending", log: [] });
   res.json({ jobId });
 
-  spawnJob(jobId, ["-p", "/cv master"], "/app/career-ops");
+  const careerOpsDir = "/app/career-ops";
+  const outputDir = `${careerOpsDir}/output`;
+
+  const generatePrompt = [
+    "Generate a master CV PDF from the existing cv.md and HTML template. Steps:",
+    "1. Read ./cv.md",
+    "2. Read ./templates/cv-template.html",
+    "3. Populate the template with the CV content.",
+    "   For any empty sections (Experience, Projects, Skills), insert one brief placeholder entry so the template renders without errors.",
+    "4. Write the completed HTML to ./output/master-cv.html (relative to cwd /app/career-ops)",
+    "5. Run: node generate-pdf.mjs ./output/master-cv.html ./output/master-cv.pdf --format=a4",
+    "6. Confirm the PDF was written to ./output/master-cv.pdf",
+    "Do not ask any questions — execute all steps directly.",
+  ].join(" ");
+
+  spawnJob(
+    jobId,
+    ["-p", generatePrompt],
+    careerOpsDir,
+    undefined,
+    async (code, job) => {
+      if (code !== 0) {
+        job.status = "error";
+        job.log.push("\ncareer-ops exited with an error.");
+        return;
+      }
+      // Find the most recently modified PDF in career-ops/output/
+      try {
+        const files = (await readdir(outputDir)).filter((f) => f.endsWith(".pdf"));
+        if (files.length === 0) {
+          job.status = "error";
+          job.log.push("\nNo PDF found in output/ after generation.");
+          return;
+        }
+        const withStats = await Promise.all(
+          files.map(async (f) => ({ f, mtime: (await stat(path.join(outputDir, f))).mtimeMs }))
+        );
+        withStats.sort((a, b) => b.mtime - a.mtime);
+        const latest = withStats[0].f;
+        const src = path.join(outputDir, latest);
+        const dest = path.join(CV_OUTPUT_DIR, "master-cv.pdf");
+        mkdirSync(CV_OUTPUT_DIR, { recursive: true });
+        await copyFile(src, dest);
+        job.pdfPath = dest;
+        job.status = "done";
+        job.log.push(`\nMaster CV ready: ${latest}`);
+      } catch (err) {
+        job.status = "error";
+        job.log.push(`\nFailed to finalise CV: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    },
+    ""
+  );
 });
 
 // GET /pipeline
@@ -136,52 +224,6 @@ app.get("/pipeline", async (_req: Request, res: Response): Promise<void> => {
 app.get("/health", (_req: Request, res: Response): void => {
   res.json({ ok: true });
 });
-
-// ─── YAML serialiser (no extra deps) ─────────────────────────────────────────
-
-function toYaml(obj: unknown, indent = 0): string {
-  const pad = "  ".repeat(indent);
-  if (obj === null || obj === undefined) return "~";
-  if (typeof obj === "string") {
-    if (/[:#\[\]{},|>&*!'"\\]/.test(obj) || obj.includes("\n")) {
-      return `"${obj.replace(/"/g, '\\"')}"`;
-    }
-    return obj;
-  }
-  if (typeof obj === "number" || typeof obj === "boolean") return String(obj);
-  if (Array.isArray(obj)) {
-    if (obj.length === 0) return "[]";
-    return obj
-      .map((item) => {
-        if (typeof item === "object" && item !== null) {
-          const entries = Object.entries(item as Record<string, unknown>);
-          const first = entries[0];
-          const rest = entries.slice(1);
-          const firstLine = `${pad}- ${first[0]}: ${toYaml(first[1], indent + 1)}`;
-          const restLines = rest.map(([k, v]) => `${pad}  ${k}: ${toYaml(v, indent + 1)}`);
-          return [firstLine, ...restLines].join("\n");
-        }
-        return `${pad}- ${toYaml(item, indent)}`;
-      })
-      .join("\n");
-  }
-  if (typeof obj === "object") {
-    return Object.entries(obj as Record<string, unknown>)
-      .map(([k, v]) => {
-        if (typeof v === "object" && v !== null && !Array.isArray(v)) {
-          return `${pad}${k}:\n${Object.entries(v as Record<string, unknown>)
-            .map(([sk, sv]) => `${"  ".repeat(indent + 1)}${sk}: ${toYaml(sv, indent + 2)}`)
-            .join("\n")}`;
-        }
-        if (Array.isArray(v) && v.length > 0) {
-          return `${pad}${k}:\n${toYaml(v, indent + 1)}`;
-        }
-        return `${pad}${k}: ${toYaml(v, indent + 1)}`;
-      })
-      .join("\n");
-  }
-  return String(obj);
-}
 
 // POST /sync
 interface SyncBody {
@@ -209,7 +251,7 @@ app.post("/sync", (req: Request, res: Response): void => {
       `# Auto-generated by portfolio sync — edit via admin Career panel`,
       `# Last synced: ${timestamp}`,
       ``,
-      toYaml(profile),
+      dump(profile),
     ].join("\n");
 
     writeFileSync(profilePath, profileContent, "utf-8");

@@ -21,7 +21,9 @@ export default function LoginForm({ action, error }: LoginFormProps) {
     <form action={action} className="space-y-4">
       {error && (
         <p className="text-red-400 text-sm font-mono text-center">
-          Invalid email or password.
+          {error === "Configuration"
+            ? "Server configuration error — contact the site owner."
+            : "Invalid email or password."}
         </p>
       )}
       <div>

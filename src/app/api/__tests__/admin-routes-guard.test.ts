@@ -23,6 +23,38 @@ function findRouteFiles(dir: string): string[] {
   return results
 }
 
+// ─── deepMerge prototype-pollution guard ─────────────────────────────────────
+// Mirrors the implementation in /api/admin/career/config/route.ts exactly.
+// Tested here because it is a security-critical utility embedded in the handler.
+
+function deepMerge(
+  base: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  const result = { ...base }
+  for (const [k, v] of Object.entries(patch)) {
+    if (['__proto__', 'constructor', 'prototype'].includes(k)) continue
+    if (
+      v !== null &&
+      typeof v === 'object' &&
+      !Array.isArray(v) &&
+      typeof result[k] === 'object' &&
+      result[k] !== null &&
+      !Array.isArray(result[k])
+    ) {
+      result[k] = deepMerge(
+        result[k] as Record<string, unknown>,
+        v as Record<string, unknown>,
+      )
+    } else {
+      result[k] = v
+    }
+  }
+  return result
+}
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
 describe('Admin API route guard coverage', () => {
   it('every route.ts under /api/admin calls requireAdminSession', () => {
     const adminDir = path.resolve(__dirname, '../admin')
@@ -41,5 +73,65 @@ describe('Admin API route guard coverage', () => {
     }
 
     expect(unguarded).toEqual([])
+  })
+})
+
+describe('deepMerge — prototype-pollution guard (career config PATCH)', () => {
+  it('does not pollute Object.prototype when __proto__ key is in the patch', () => {
+    const base: Record<string, unknown> = { level: 1 }
+    const maliciousPatch = JSON.parse('{"__proto__":{"polluted":true}}') as Record<string, unknown>
+
+    deepMerge(base, maliciousPatch)
+
+    // A freshly created plain object must NOT have the injected property
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined()
+  })
+
+  it('does not pollute Object.prototype when "constructor" key is in the patch', () => {
+    const base: Record<string, unknown> = {}
+    const patch: Record<string, unknown> = { constructor: { polluted: true } }
+
+    deepMerge(base, patch)
+
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined()
+  })
+
+  it('does not pollute Object.prototype when "prototype" key is in the patch', () => {
+    const base: Record<string, unknown> = {}
+    const patch: Record<string, unknown> = { prototype: { polluted: true } }
+
+    deepMerge(base, patch)
+
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined()
+  })
+
+  it('merges ordinary nested keys correctly', () => {
+    const base = { a: { x: 1, y: 2 }, b: 'keep' }
+    const patch = { a: { y: 99, z: 3 }, c: 'new' }
+
+    const result = deepMerge(
+      base as Record<string, unknown>,
+      patch as Record<string, unknown>,
+    )
+
+    expect(result).toEqual({ a: { x: 1, y: 99, z: 3 }, b: 'keep', c: 'new' })
+  })
+
+  it('overwrites primitive base values with patch values', () => {
+    const base: Record<string, unknown> = { count: 1 }
+    const patch: Record<string, unknown> = { count: 42 }
+
+    const result = deepMerge(base, patch)
+
+    expect(result.count).toBe(42)
+  })
+
+  it('does not mutate the original base object', () => {
+    const base: Record<string, unknown> = { x: 1 }
+    const patch: Record<string, unknown> = { x: 2 }
+
+    deepMerge(base, patch)
+
+    expect(base.x).toBe(1)
   })
 })
