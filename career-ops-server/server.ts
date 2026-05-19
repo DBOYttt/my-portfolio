@@ -98,10 +98,15 @@ function spawnJob(jobId: string, args: string[], cwd: string, options: SpawnOpti
 
   child.on("close", async (code: number | null) => {
     clearTimeout(watchdog);
-    if (onClose) {
-      await onClose(code, job);
-    } else {
-      job.status = code === 0 ? "done" : "error";
+    try {
+      if (onClose) {
+        await onClose(code, job);
+      } else {
+        job.status = code === 0 ? "done" : "error";
+      }
+    } catch (err) {
+      job.status = "error";
+      job.log.push(`\nInternal error: ${err instanceof Error ? err.message : String(err)}`);
     }
     if (pipelineUrl) appendToPipeline(jobId, pipelineUrl, job);
   });
@@ -126,12 +131,12 @@ app.post("/evaluate", (req: Request, res: Response): void => {
     return;
   }
 
-  const jobId = randomUUID();
-  jobs.set(jobId, { status: "pending", log: [] });
-  if (jobs.size > MAX_JOBS) {
+  if (jobs.size >= MAX_JOBS) {
     const oldest = jobs.keys().next().value;
     if (oldest) jobs.delete(oldest);
   }
+  const jobId = randomUUID();
+  jobs.set(jobId, { status: "pending", log: [] });
   res.json({ jobId });
 
   spawnJob(jobId, ["-p", `/career-ops ${url}`], "/app/career-ops", { pipelineUrl: url });
@@ -149,12 +154,12 @@ app.get("/status/:jobId", (req: Request, res: Response): void => {
 
 // POST /cv/master
 app.post("/cv/master", (req: Request, res: Response): void => {
-  const jobId = randomUUID();
-  jobs.set(jobId, { status: "pending", log: [] });
-  if (jobs.size > MAX_JOBS) {
+  if (jobs.size >= MAX_JOBS) {
     const oldest = jobs.keys().next().value;
     if (oldest) jobs.delete(oldest);
   }
+  const jobId = randomUUID();
+  jobs.set(jobId, { status: "pending", log: [] });
   res.json({ jobId });
 
   const careerOpsDir = "/app/career-ops";
