@@ -5,6 +5,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     agent: {
       upsert: vi.fn().mockResolvedValue({ id: "agent-test" }),
+      update: vi.fn().mockResolvedValue({}),
     },
     agentReport: {
       create: vi.fn().mockResolvedValue({}),
@@ -69,5 +70,30 @@ describe("runAgent", () => {
     ).rejects.toThrow("runner failed");
 
     expect(prisma.$disconnect).toHaveBeenCalledOnce();
+  });
+
+  it("persists _updatedConfig when runner returns it", async () => {
+    const { runAgent } = await import("../run-agent");
+    const { prisma } = await import("@/lib/prisma");
+
+    const mockResult: AgentRunResult = {
+      title: "Test",
+      summary: "Summary",
+      sources: [],
+      rawData: {},
+      _updatedConfig: { seenUrls: ["https://example.com"] },
+    };
+
+    await runAgent(
+      { id: "agent-test", name: "Test", type: "GITHUB_SUMMARIZER", description: "", schedule: "" },
+      async () => mockResult
+    );
+
+    expect(prisma.agent.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "agent-test" },
+        data: { config: { seenUrls: ["https://example.com"] } },
+      })
+    );
   });
 });

@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type { AgentRunResult } from "./types";
 import type { AgentType } from "@prisma/client";
 
-interface AgentDefinition {
+export interface AgentDefinition {
   id: string;
   name: string;
   type: AgentType;
@@ -43,6 +43,12 @@ export async function runAgent(
         rawData: result.rawData as object,
       },
     });
+    if (result._updatedConfig) {
+      await prisma.agent.update({
+        where: { id: agent.id },
+        data: { config: result._updatedConfig as object },
+      });
+    }
     console.log(`[${def.id}] Report saved: ${result.title}`);
   } finally {
     await prisma.$disconnect();
