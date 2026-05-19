@@ -58,7 +58,7 @@ RUN mkdir -p /app/cv_output
 # Pre-approve Claude Code Write + Bash + Read within the career-ops working directory.
 # Required because generate jobs run in non-interactive -p mode and cannot prompt for approval.
 RUN mkdir -p /app/career-ops/.claude && \
-    printf '{"permissions":{"allow":["Bash(*)","Write(*)","Read(*)"]}}\n' \
+    printf '{"permissions":{"allow":["Bash(*)","Write(/app/career-ops/output/*)","Read(/app/career-ops/*)"]}}\n' \
     > /app/career-ops/.claude/settings.json
 
 EXPOSE 4200

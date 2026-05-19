@@ -58,7 +58,8 @@ export async function getProjects(): Promise<ProjectSummary[]> {
       year: p.year ?? undefined,
       sketchLabel: p.sketchLabel ?? undefined,
     }));
-  } catch {
+  } catch (err) {
+    console.error("[data] getProjects failed, serving mock fallback:", err);
     return PROJECTS.map((p) => ({
       slug: p.slug,
       title: p.title,
@@ -146,7 +147,8 @@ export async function getExperience(): Promise<ExperienceItem[]> {
         description: exp.description,
       };
     });
-  } catch {
+  } catch (err) {
+    console.error("[data] getExperience failed, serving mock fallback:", err);
     return EXPERIENCE;
   }
 }
@@ -187,7 +189,8 @@ export async function getSkills(): Promise<SkillGroup[]> {
       category,
       skills,
     }));
-  } catch {
+  } catch (err) {
+    console.error("[data] getSkills failed, serving mock fallback:", err);
     return SKILLS;
   }
 }
@@ -224,7 +227,8 @@ export async function getBlogPosts(): Promise<BlogPostSummary[]> {
       readTime: computeReadTime(p.content),
       tags: p.tags.map((t) => t.name),
     }));
-  } catch {
+  } catch (err) {
+    console.error("[data] getBlogPosts failed, serving mock fallback:", err);
     return BLOG_POSTS.map((p) => ({
       slug: p.slug,
       title: p.title,

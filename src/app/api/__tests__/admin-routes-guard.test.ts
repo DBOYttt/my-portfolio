@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import fs from 'fs'
 import path from 'path'
+import { deepMerge } from '@/lib/deep-merge'
 
 /**
  * These files are not HTTP route handlers — they are a sub-path that re-exports
@@ -24,34 +25,7 @@ function findRouteFiles(dir: string): string[] {
 }
 
 // ─── deepMerge prototype-pollution guard ─────────────────────────────────────
-// Mirrors the implementation in /api/admin/career/config/route.ts exactly.
-// Tested here because it is a security-critical utility embedded in the handler.
-
-function deepMerge(
-  base: Record<string, unknown>,
-  patch: Record<string, unknown>,
-): Record<string, unknown> {
-  const result = { ...base }
-  for (const [k, v] of Object.entries(patch)) {
-    if (['__proto__', 'constructor', 'prototype'].includes(k)) continue
-    if (
-      v !== null &&
-      typeof v === 'object' &&
-      !Array.isArray(v) &&
-      typeof result[k] === 'object' &&
-      result[k] !== null &&
-      !Array.isArray(result[k])
-    ) {
-      result[k] = deepMerge(
-        result[k] as Record<string, unknown>,
-        v as Record<string, unknown>,
-      )
-    } else {
-      result[k] = v
-    }
-  }
-  return result
-}
+// Tests the shared utility extracted to src/lib/deep-merge.ts
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
