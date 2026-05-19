@@ -2,13 +2,8 @@
 
 import { useState } from "react";
 import { usePollJob } from "@/hooks/usePollJob";
-import type { JobStatus, PublishResponse } from "@/types/career";
+import type { JobStatus, PublishResponse, EvaluateResponse } from "@/types/career";
 import { STATUS_COLORS } from "./shared";
-
-interface GenerateResponse {
-  jobId?: string;
-  error?: string;
-}
 
 export default function CvGeneratePanel() {
   const [cvGenStatus, setCvGenStatus] = useState<JobStatus | null>(null);
@@ -36,7 +31,7 @@ export default function CvGeneratePanel() {
     setGenerating(true);
     try {
       const res = await fetch("/api/admin/career/cv/generate", { method: "POST" });
-      const data = (await res.json()) as GenerateResponse;
+      const data = (await res.json()) as EvaluateResponse;
       if (!res.ok || !data.jobId) {
         setCvGenStatus("error");
         setGenerating(false);
