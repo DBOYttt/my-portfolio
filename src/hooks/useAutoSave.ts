@@ -27,6 +27,7 @@ export function useAutoSave<T>(
   const isFirstLoad = useRef(true);
   const serverStateRef = useRef<string>("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveFnRef = useRef(saveFn);
   saveFnRef.current = saveFn;
 
@@ -50,7 +51,8 @@ export function useAutoSave<T>(
         serverStateRef.current = JSON.stringify(value);
         setSaving(false);
         setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        if (savedTimerRef.current !== null) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
       } catch {
         setSaving(false);
         setError(true);
@@ -61,6 +63,7 @@ export function useAutoSave<T>(
   useEffect(() => {
     return () => {
       if (debounceRef.current !== null) clearTimeout(debounceRef.current);
+      if (savedTimerRef.current !== null) clearTimeout(savedTimerRef.current);
     };
   }, []);
 
