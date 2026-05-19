@@ -79,6 +79,7 @@ export default function JobEvaluatePanel() {
     stopPoll();
     setEvaluating(false);
     setJobStatus(null);
+    setLogLines([]);
   }
 
   return (
