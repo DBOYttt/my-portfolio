@@ -68,4 +68,14 @@ describe("careerOpsRequest", () => {
     expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ url: "https://example.com" }));
     expect(fetchMock.mock.calls[0][1].headers["Content-Type"]).toBe("application/json");
   });
+
+  it("passes an AbortSignal to fetch", async () => {
+    process.env.CAREER_OPS_INTERNAL_URL = "http://career-ops:4200";
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { careerOpsRequest } = await import("../career-ops-client");
+    await careerOpsRequest("/health");
+    const fetchOptions = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(fetchOptions.signal).toBeInstanceOf(AbortSignal);
+  });
 });
