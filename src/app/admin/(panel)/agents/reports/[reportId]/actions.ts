@@ -37,8 +37,19 @@ export async function applyAllSkillAdditions(reportId: string, formData: FormDat
   } catch {
     return;
   }
+  const VALID_CATEGORIES = Object.values(SkillCategory);
+  const VALID_LEVELS = Object.values(SkillLevel);
+
+  const validItems = items.filter(
+    (i) =>
+      i.name &&
+      VALID_CATEGORIES.includes(i.category as SkillCategory) &&
+      VALID_LEVELS.includes((i.level ?? "FAMILIAR") as SkillLevel)
+  );
+  if (validItems.length === 0) return;
+
   await prisma.skill.createMany({
-    data: items.map((i) => ({
+    data: validItems.map((i) => ({
       name: i.name,
       category: i.category as SkillCategory,
       level: (i.level ?? "FAMILIAR") as SkillLevel,

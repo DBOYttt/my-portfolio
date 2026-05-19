@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { GitHubAuditRawData, ActivityLevel } from "@/lib/agents/github-summarizer";
+import ConsistencyBadge from "./ConsistencyBadge";
 
 function ActivityBadge({ level }: { level: ActivityLevel }) {
   if (level === "active") {
@@ -23,27 +24,6 @@ function ActivityBadge({ level }: { level: ActivityLevel }) {
   );
 }
 
-function ConsistencyBadge({ status }: { status: "match" | "mismatch" | "missing" }) {
-  if (status === "match") {
-    return (
-      <span className="text-xs px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-        Match
-      </span>
-    );
-  }
-  if (status === "mismatch") {
-    return (
-      <span className="text-xs px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400">
-        Mismatch
-      </span>
-    );
-  }
-  return (
-    <span className="text-xs px-2 py-0.5 rounded-full border border-slate-600/50 bg-slate-700/20 text-slate-500">
-      Missing
-    </span>
-  );
-}
 
 interface Props {
   data: GitHubAuditRawData;
@@ -155,7 +135,7 @@ export default function GitHubAuditReport({ data }: Props) {
               <li key={i} className="flex items-center justify-between px-4 py-2.5 gap-3">
                 <span className="font-mono text-xs text-slate-300">{r.repo}</span>
                 <a
-                  href={`${r.url}`}
+                  href={r.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-slate-500 hover:text-cyan-400 transition-colors flex-shrink-0"

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ProfileConsistencyRow, PlatformSyncRawData } from "@/lib/agents/platform-sync";
+import ConsistencyBadge from "./ConsistencyBadge";
 
 interface Props {
   data: PlatformSyncRawData;
@@ -55,23 +56,7 @@ export default function PlatformSyncReport({ data }: Props) {
                       {row.dbValue ?? <span className="text-slate-600 italic">not set</span>}
                     </td>
                     <td className="px-4 py-2.5">
-                      {row.status === "match" ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-                          Match
-                        </span>
-                      ) : row.status === "mismatch" ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400">
-                          Mismatch
-                        </span>
-                      ) : row.status === "missing_github" ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full border border-slate-600/50 bg-slate-700/20 text-slate-500">
-                          Not on GitHub
-                        </span>
-                      ) : (
-                        <span className="text-xs px-2 py-0.5 rounded-full border border-slate-600/50 bg-slate-700/20 text-slate-500">
-                          Missing in DB
-                        </span>
-                      )}
+                      <ConsistencyBadge status={row.status} />
                     </td>
                   </tr>
                 ))}

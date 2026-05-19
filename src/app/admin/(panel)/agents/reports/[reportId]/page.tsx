@@ -57,7 +57,7 @@ export default async function ReportDetailPage({
   const skillIdByName = new Map(currentSkills.map((s) => [s.name.toLowerCase(), s.id]));
   const existingProjectSlugs = new Set(currentProjects.map((p) => p.slug.toLowerCase()));
   const existingProjectGithubUrls = new Set(
-    currentProjects.map((p) => p.githubUrl?.toLowerCase()).filter(Boolean)
+    currentProjects.map((p) => p.githubUrl?.toLowerCase()).filter((u): u is string => !!u)
   );
 
   const rawData = isRecord(report.rawData) ? report.rawData : null;

@@ -1,12 +1,6 @@
 import Link from "next/link";
 import type { ProjectCreatedRawData } from "@/types/agent-reports";
-
-const typeColors: Record<string, string> = {
-  ROBOTICS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-  SOFTWARE: "text-blue-400 bg-blue-500/10 border-blue-500/20",
-  HARDWARE: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-  RESEARCH: "text-purple-400 bg-purple-500/10 border-purple-500/20",
-};
+import { PROJECT_TYPE_COLORS, formatProjectType } from "./project-type";
 
 interface Props {
   data: ProjectCreatedRawData;
@@ -29,8 +23,8 @@ export default function ProjectCreatedReport({ data }: Props) {
               <li key={p.id} className="flex flex-col gap-1 px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className={`text-xs px-2 py-0.5 rounded border flex-shrink-0 ${typeColors[p.type] ?? typeColors.SOFTWARE}`}>
-                      {p.type.charAt(0) + p.type.slice(1).toLowerCase()}
+                    <span className={`text-xs px-2 py-0.5 rounded border flex-shrink-0 ${PROJECT_TYPE_COLORS[p.type] ?? PROJECT_TYPE_COLORS.SOFTWARE}`}>
+                      {formatProjectType(p.type)}
                     </span>
                     {typeof p.readmeScore === "number" && (
                       <span

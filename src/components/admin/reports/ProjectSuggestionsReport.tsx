@@ -1,16 +1,10 @@
 import type { ProjectSuggestionsRawData } from "@/types/agent-reports";
-
-const typeColors: Record<string, string> = {
-  ROBOTICS: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-  SOFTWARE: "text-blue-400 bg-blue-500/10 border-blue-500/20",
-  HARDWARE: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-  RESEARCH: "text-purple-400 bg-purple-500/10 border-purple-500/20",
-};
+import { PROJECT_TYPE_COLORS, formatProjectType } from "./project-type";
 
 interface Props {
   data: ProjectSuggestionsRawData;
   existingProjectSlugs: Set<string>;
-  existingProjectGithubUrls: Set<string | undefined>;
+  existingProjectGithubUrls: Set<string>;
   createDraft: (formData: FormData) => Promise<void>;
 }
 
@@ -40,9 +34,9 @@ export default function ProjectSuggestionsReport({
                   <p className="text-slate-500 text-xs mt-0.5 line-clamp-2">{s.summary}</p>
                 </div>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded border flex-shrink-0 ${typeColors[s.type] ?? typeColors.SOFTWARE}`}
+                  className={`text-xs px-2 py-0.5 rounded border flex-shrink-0 ${PROJECT_TYPE_COLORS[s.type] ?? PROJECT_TYPE_COLORS.SOFTWARE}`}
                 >
-                  {s.type.charAt(0) + s.type.slice(1).toLowerCase()}
+                  {formatProjectType(s.type)}
                 </span>
               </div>
 
