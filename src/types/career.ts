@@ -18,7 +18,7 @@ export interface CareerConfig {
 }
 
 export interface StatusResponse {
-  status?: string;
+  status?: string; // raw unvalidated API response — callers narrow to JobStatus at runtime
   log?: string[];
   pdfPath?: string;
   error?: string;
