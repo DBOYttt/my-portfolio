@@ -157,6 +157,14 @@ export async function POST(): Promise<NextResponse<SyncResponse>> {
     timeout: 30_000,
   });
   if (!syncResult.ok) return syncResult.errorResponse as NextResponse<SyncResponse>;
-
-  return NextResponse.json({ ok: true, profileFields: Object.keys(profile.candidate) });
+  if (!syncResult.response.ok) {
+    const errText = await syncResult.response.text();
+    return NextResponse.json(
+      { ok: false, error: `career-ops sync failed (${syncResult.response.status}): ${errText}` },
+      { status: syncResult.response.status }
+    );
+  }
+  return NextResponse.json(await syncResult.response.json(), {
+    status: syncResult.response.status,
+  });
 }
