@@ -14,6 +14,7 @@ describe("usePollJob", () => {
 
   it("calls onStatus with the polled status", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
       json: async () => ({ status: "running", log: ["line 1"] }),
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -40,6 +41,7 @@ describe("usePollJob", () => {
 
   it("calls onTerminal and stops when status is done", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
       json: async () => ({ status: "done", log: [] }),
     }));
 
@@ -60,6 +62,7 @@ describe("usePollJob", () => {
 
   it("calls onTimeout after POLL_MAX ticks", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
       json: async () => ({ status: "running" }),
     }));
 
@@ -98,6 +101,7 @@ describe("usePollJob", () => {
 
   it("stop() clears the interval", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
       json: async () => ({ status: "running" }),
     });
     vi.stubGlobal("fetch", fetchMock);

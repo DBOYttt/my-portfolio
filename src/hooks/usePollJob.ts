@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { JobStatus, StatusResponse } from "@/types/career";
 
 export type { JobStatus };
@@ -52,6 +52,12 @@ export function usePollJob(callbacks: PollJobCallbacks) {
 
         try {
           const res = await fetch(`/api/admin/career/status/${jobId}`);
+          if (!res.ok) {
+            stop();
+            cbRef.current.onStatus("error");
+            cbRef.current.onError?.();
+            return;
+          }
           const data = (await res.json()) as StatusResponse;
 
           if (data.log) cbRef.current.onLog?.(data.log);
@@ -83,6 +89,8 @@ export function usePollJob(callbacks: PollJobCallbacks) {
     },
     [stop]
   );
+
+  useEffect(() => stop, [stop]);
 
   return { start, stop };
 }
