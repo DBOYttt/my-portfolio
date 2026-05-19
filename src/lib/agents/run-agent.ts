@@ -27,7 +27,7 @@ export async function runAgent(
       description: def.description,
       enabled: true,
       schedule: def.schedule,
-      config: def.config ?? {},
+      config: (def.config ?? {}) as object,
       lastRunAt: new Date(),
     },
   });
