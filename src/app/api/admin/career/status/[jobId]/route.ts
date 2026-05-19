@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-auth";
+import { careerOpsRequest } from "@/lib/career-ops-client";
 
 export async function GET(
   _req: Request,
@@ -11,20 +12,9 @@ export async function GET(
   if (error) return error;
 
   const { jobId } = await params;
-  const internalUrl = process.env.CAREER_OPS_INTERNAL_URL;
-  const secret = process.env.CAREER_OPS_INTERNAL_SECRET;
-  if (!internalUrl)
-    return NextResponse.json({ error: "Career-ops service not configured" }, { status: 503 });
+  const result = await careerOpsRequest(`/status/${jobId}`, { timeout: 5_000 });
+  if (!result.ok) return result.errorResponse;
 
-  let res: Response;
-  try {
-    res = await fetch(`${internalUrl}/status/${jobId}`, {
-      headers: secret ? { Authorization: `Bearer ${secret}` } : {},
-      signal: AbortSignal.timeout(5_000),
-    });
-  } catch {
-    return NextResponse.json({ error: "career-ops status unavailable" }, { status: 503 });
-  }
-  const data = (await res.json()) as unknown;
-  return NextResponse.json(data, { status: res.status });
+  const data = (await result.response.json()) as unknown;
+  return NextResponse.json(data, { status: result.response.status });
 }

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { OWNER } from "@/lib/mock-data";
+import { careerOpsRequest } from "@/lib/career-ops-client";
 
 interface CareerConfigData {
   contact?: { phone?: string; location?: string; twitter?: string };
@@ -36,14 +37,6 @@ interface SyncResponse {
 export async function POST(): Promise<NextResponse<SyncResponse>> {
   const { error } = await requireAdminSession();
   if (error) return error as NextResponse<SyncResponse>;
-
-  const internalUrl = process.env.CAREER_OPS_INTERNAL_URL;
-  if (!internalUrl) {
-    return NextResponse.json(
-      { ok: false, error: "CAREER_OPS_INTERNAL_URL is not configured" },
-      { status: 503 }
-    );
-  }
 
   const [user, skills, experiences, projects, links] = await Promise.all([
     prisma.user.findFirst(),
@@ -158,33 +151,12 @@ export async function POST(): Promise<NextResponse<SyncResponse>> {
 
   const cv = cvLines.join("\n");
 
-  const secret = process.env.CAREER_OPS_INTERNAL_SECRET;
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (secret) headers["Authorization"] = `Bearer ${secret}`;
-
-  let syncRes: Response;
-  try {
-    syncRes = await fetch(`${internalUrl}/sync`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ profile, cv }),
-      signal: AbortSignal.timeout(30_000),
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Network error";
-    return NextResponse.json(
-      { ok: false, error: `career-ops unreachable: ${message}` },
-      { status: 502 }
-    );
-  }
-
-  if (!syncRes.ok) {
-    const text = await syncRes.text().catch(() => "");
-    return NextResponse.json(
-      { ok: false, error: `career-ops returned ${syncRes.status}: ${text}` },
-      { status: 502 }
-    );
-  }
+  const syncResult = await careerOpsRequest("/sync", {
+    method: "POST",
+    body: { profile, cv },
+    timeout: 30_000,
+  });
+  if (!syncResult.ok) return syncResult.errorResponse as NextResponse<SyncResponse>;
 
   return NextResponse.json({ ok: true, profileFields: Object.keys(profile.candidate) });
 }
