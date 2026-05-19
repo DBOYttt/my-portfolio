@@ -243,7 +243,7 @@ export default function CareerEvaluateForm() {
           const status = data.status && knownStatuses.includes(data.status) ? data.status : null;
 
           if (status) {
-            setJobStatus(status);
+            setJobStatus((prev) => (prev !== status ? status : prev));
             if (status === "done" || status === "error") {
               stopPolling();
               setEvaluating(false);
@@ -294,7 +294,7 @@ export default function CareerEvaluateForm() {
           const status = data.status && knownStatuses.includes(data.status) ? data.status : null;
 
           if (status) {
-            setCvGenStatus(status);
+            setCvGenStatus((prev) => (prev !== status ? status : prev));
             if (status === "done" || status === "error") {
               stopCvPolling();
               setGenerating(false);
@@ -402,7 +402,6 @@ export default function CareerEvaluateForm() {
 
   return (
     <>
-      {/* Section 0 — Career Profile */}
       <div className="card p-4 mb-6">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-slate-100 font-semibold">Career Profile</h2>
@@ -663,7 +662,6 @@ export default function CareerEvaluateForm() {
         </div>
       </div>
 
-      {/* Section 1 — Evaluate */}
       <div className="card p-4 mb-6">
         <h2 className="text-slate-100 font-semibold mb-1">Evaluate a Job</h2>
         <p className="text-slate-500 text-xs font-mono mb-4">
@@ -727,7 +725,6 @@ export default function CareerEvaluateForm() {
         )}
       </div>
 
-      {/* Section 2 — Generate + Publish CV */}
       <div className="card p-4 mb-6">
         <h2 className="text-slate-100 font-semibold mb-1">Master CV</h2>
         <p className="text-slate-500 text-xs font-mono mb-4">

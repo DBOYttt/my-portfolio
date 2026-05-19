@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import { spawn } from "child_process";
 import { randomUUID } from "crypto";
-import { readFile, readdir, stat, copyFile } from "fs/promises";
+import { readFile, stat, copyFile } from "fs/promises";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { dump } from "js-yaml";
@@ -21,6 +21,7 @@ interface Job {
 }
 
 const jobs = new Map<string, Job>();
+const MAX_JOBS = 200;
 const CV_OUTPUT_DIR = "/app/cv_output";
 const PIPELINE_PATH = `${CV_OUTPUT_DIR}/pipeline.json`;
 
@@ -57,14 +58,14 @@ function authMiddleware(req: Request, res: Response, next: NextFunction): void {
 
 app.use(authMiddleware);
 
-function spawnJob(
-  jobId: string,
-  args: string[],
-  cwd: string,
-  pipelineUrl?: string,
-  onClose?: (code: number | null, job: Job) => Promise<void>,
-  stdinInput?: string
-): void {
+interface SpawnOptions {
+  pipelineUrl?: string;
+  onClose?: (code: number | null, job: Job) => Promise<void>;
+  stdinInput?: string;
+}
+
+function spawnJob(jobId: string, args: string[], cwd: string, options: SpawnOptions = {}): void {
+  const { pipelineUrl, onClose, stdinInput } = options;
   const job = jobs.get(jobId);
   if (!job) return;
 
@@ -127,9 +128,13 @@ app.post("/evaluate", (req: Request, res: Response): void => {
 
   const jobId = randomUUID();
   jobs.set(jobId, { status: "pending", log: [] });
+  if (jobs.size > MAX_JOBS) {
+    const oldest = jobs.keys().next().value;
+    if (oldest) jobs.delete(oldest);
+  }
   res.json({ jobId });
 
-  spawnJob(jobId, ["-p", `/career-ops ${url}`], "/app/career-ops", url);
+  spawnJob(jobId, ["-p", `/career-ops ${url}`], "/app/career-ops", { pipelineUrl: url });
 });
 
 // GET /status/:jobId
@@ -146,6 +151,10 @@ app.get("/status/:jobId", (req: Request, res: Response): void => {
 app.post("/cv/master", (req: Request, res: Response): void => {
   const jobId = randomUUID();
   jobs.set(jobId, { status: "pending", log: [] });
+  if (jobs.size > MAX_JOBS) {
+    const oldest = jobs.keys().next().value;
+    if (oldest) jobs.delete(oldest);
+  }
   res.json({ jobId });
 
   const careerOpsDir = "/app/career-ops";
@@ -163,44 +172,32 @@ app.post("/cv/master", (req: Request, res: Response): void => {
     "Do not ask any questions — execute all steps directly.",
   ].join(" ");
 
-  spawnJob(
-    jobId,
-    ["-p", generatePrompt],
-    careerOpsDir,
-    undefined,
-    async (code, job) => {
+  spawnJob(jobId, ["-p", generatePrompt], careerOpsDir, {
+    stdinInput: "",
+    onClose: async (code, job) => {
       if (code !== 0) {
         job.status = "error";
         job.log.push("\ncareer-ops exited with an error.");
         return;
       }
-      // Find the most recently modified PDF in career-ops/output/
+      const src = path.join(outputDir, "master-cv.pdf");
+      const dest = path.join(CV_OUTPUT_DIR, "master-cv.pdf");
       try {
-        const files = (await readdir(outputDir)).filter((f) => f.endsWith(".pdf"));
-        if (files.length === 0) {
-          job.status = "error";
-          job.log.push("\nNo PDF found in output/ after generation.");
-          return;
-        }
-        const withStats = await Promise.all(
-          files.map(async (f) => ({ f, mtime: (await stat(path.join(outputDir, f))).mtimeMs }))
-        );
-        withStats.sort((a, b) => b.mtime - a.mtime);
-        const latest = withStats[0].f;
-        const src = path.join(outputDir, latest);
-        const dest = path.join(CV_OUTPUT_DIR, "master-cv.pdf");
+        await stat(src);
         mkdirSync(CV_OUTPUT_DIR, { recursive: true });
         await copyFile(src, dest);
         job.pdfPath = dest;
         job.status = "done";
-        job.log.push(`\nMaster CV ready: ${latest}`);
+        job.log.push("\nMaster CV ready: master-cv.pdf");
       } catch (err) {
         job.status = "error";
-        job.log.push(`\nFailed to finalise CV: ${err instanceof Error ? err.message : String(err)}`);
+        const isNotFound = (err as NodeJS.ErrnoException).code === "ENOENT";
+        job.log.push(isNotFound
+          ? "\nmaster-cv.pdf not found in output/ after generation."
+          : `\nFailed to finalise CV: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
-    ""
-  );
+  });
 });
 
 // GET /pipeline

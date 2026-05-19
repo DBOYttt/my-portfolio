@@ -110,8 +110,8 @@ my-portfolio/
 │   ├── github-project-importer.ts ← seeds DB row on first run
 │   └── platform-sync.ts       ← seeds DB row on first run
 ├── career-ops/                ← git submodule (santifer/career-ops) — job evaluation + CV targeting
-├── career-ops-server/         ← Minimal Express HTTP trigger wrapper for career-ops CLI
-│   ├── server.ts              ← 5 endpoints (evaluate, status, cv/master, pipeline, health)
+├── career-ops-server/         ← Express HTTP wrapper; spawns `claude` CLI as a subprocess for each job
+│   ├── server.ts              ← 5 endpoints: POST /evaluate, GET /status/:id, POST /cv/master, GET /pipeline, GET /health
 │   └── Dockerfile             ← node:22-slim + Claude Code CLI + Playwright/Chromium
 ├── mcp-server/                ← Standalone MCP server (stdio + HTTP transports)
 │   ├── server.ts              ← Server bootstrap
@@ -179,7 +179,8 @@ All public sections, admin CRUD, seven AI agents, career-ops integration, securi
 - `src/middleware.ts` is Edge-only and checks only for cookie *presence* — not validity. Real auth is enforced server-side by `auth()` in `(panel)/layout.tsx` and `requireAdminSession()` in every `/api/admin/*` route.
 - Agent run API: `POST /api/admin/agents/[id]/run` uses an atomic `updateMany` lock — only one run at a time; concurrent callers get 409.
 - Skills Inference results are **never auto-applied** — owner must approve each diff on the report detail page.
-- CV PDF is written to `public/cv.pdf` by career-ops via the shared `cv_output` Docker volume; published to `public/cv.pdf` via `POST /api/admin/career/cv/publish`.
+- CV publish is a two-step flow: (1) `POST /api/admin/career/cv/generate` triggers career-ops-server to spawn `claude` and write `master-cv.pdf` into the `cv_output` Docker volume at `/app/cv_output/`; the app service mounts that volume read-only at `public/cv-output/`. (2) `POST /api/admin/career/cv/publish` atomically copies `public/cv-output/master-cv.pdf` → `public/cv.pdf` (copy-to-tmp then rename).
+- Admin Career API routes under `/api/admin/career/`: `evaluate` (POST — start job eval), `status` (GET — poll job), `cv/generate` (POST — trigger master CV), `cv/publish` (POST — atomically copy to `public/cv.pdf`), `pipeline` (GET — list past jobs), `config` (GET/PUT — career-ops config), `sync` (POST — sync profile).
 - `Agent.config Json?` stores per-agent persistent state (seenUrls, keywords, repoSnapshot, etc.). Runners return `_updatedConfig` in `AgentRunResult`; the run API persists it after success.
 - Build without a real DB: `DATABASE_URL="prisma+postgres://ci" npm run build` — forces `isMock()` true so all pages use mock data. Used in CI.
 - `src/app/page.tsx` and `src/app/blog/page.tsx` declare `export const dynamic = "force-dynamic"` — required because both pages were being pre-rendered as static HTML at build time (with mock data), bypassing the real DB at runtime.
@@ -187,6 +188,7 @@ All public sections, admin CRUD, seven AI agents, career-ops integration, securi
 - CI/CD pipeline: `.github/workflows/ci.yml` runs lint → type-check → test → build on every push. `.github/workflows/deploy.yml` SSH-deploys via Twingate when CI passes on `main`. Requires `TWINGATE_SERVICE_KEY`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` in GitHub repo secrets.
 - Public portfolio CSS: logbook CSS custom properties (`--paper`, `--ink`, `--accent`, etc.) in `src/app/globals.css`. Admin uses Tailwind explicit hex values — `:root` changes don't affect admin. Theme toggle writes `data-theme` attribute on `<html>` + `localStorage['logbook-theme']`.
 - `src/components/ui/hand-drawn.tsx` — SVG primitives (HandRule, HandUnderline, HandArrow, SectionHead, SketchPlaceholder). All use `useMemo` for path computation and `suppressHydrationWarning` on `<path>` elements to handle PRNG SSR/hydration differences.
+- Long-running admin operations (job evaluation, CV generation) use a POST-to-start → GET-polling pattern with `AbortController` for cancellation. An `isFirstLoad` ref guards against false "no data" empty state on initial render. The in-flight ref (`pollRef`) prevents overlapping poll intervals. See `CareerEvaluateForm` as the reference implementation.
 
 ---
 
