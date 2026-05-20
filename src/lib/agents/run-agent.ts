@@ -19,7 +19,7 @@ export async function runAgent(
 
   const agent = await prisma.agent.upsert({
     where: { id: def.id },
-    update: { lastRunAt: new Date(), status: "idle" },
+    update: { lastRunAt: new Date(), status: "running", lastError: null },
     create: {
       id: def.id,
       name: def.name,
@@ -28,6 +28,7 @@ export async function runAgent(
       enabled: true,
       schedule: def.schedule,
       config: (def.config ?? {}) as object,
+      status: "running",
       lastRunAt: new Date(),
     },
   });
@@ -43,13 +44,19 @@ export async function runAgent(
         rawData: result.rawData as object,
       },
     });
+    const agentUpdate: Record<string, unknown> = { status: "idle" };
     if (result._updatedConfig) {
-      await prisma.agent.update({
-        where: { id: agent.id },
-        data: { config: result._updatedConfig as object },
-      });
+      agentUpdate.config = result._updatedConfig as object;
     }
+    await prisma.agent.update({ where: { id: agent.id }, data: agentUpdate });
     console.log(`[${def.id}] Report saved: ${result.title}`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await prisma.agent.update({
+      where: { id: agent.id },
+      data: { status: "error", lastError: message },
+    });
+    throw err;
   } finally {
     await prisma.$disconnect();
   }
