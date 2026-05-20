@@ -58,7 +58,7 @@ describe("runAgent", () => {
     expect(prisma.$disconnect).toHaveBeenCalledOnce();
   });
 
-  it("disconnects and rethrows when runner throws", async () => {
+  it("marks the agent status=error with lastError and rethrows when runner throws", async () => {
     const { runAgent } = await import("../run-agent");
     const { prisma } = await import("@/lib/prisma");
 
@@ -69,10 +69,16 @@ describe("runAgent", () => {
       )
     ).rejects.toThrow("runner failed");
 
+    expect(prisma.agent.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "agent-test" },
+        data: { status: "error", lastError: "runner failed" },
+      })
+    );
     expect(prisma.$disconnect).toHaveBeenCalledOnce();
   });
 
-  it("persists _updatedConfig when runner returns it", async () => {
+  it("sets status=idle on success and persists _updatedConfig when runner returns it", async () => {
     const { runAgent } = await import("../run-agent");
     const { prisma } = await import("@/lib/prisma");
 
@@ -92,7 +98,23 @@ describe("runAgent", () => {
     expect(prisma.agent.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "agent-test" },
-        data: { config: { seenUrls: ["https://example.com"] } },
+        data: { status: "idle", config: { seenUrls: ["https://example.com"] } },
+      })
+    );
+  });
+
+  it("marks status=running on the upsert before running the runner", async () => {
+    const { runAgent } = await import("../run-agent");
+    const { prisma } = await import("@/lib/prisma");
+
+    await runAgent(
+      { id: "agent-test", name: "Test", type: "GITHUB_SUMMARIZER", description: "", schedule: "" },
+      async () => ({ title: "t", summary: "s", sources: [], rawData: {} }),
+    );
+
+    expect(prisma.agent.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: { lastRunAt: expect.any(Date), status: "running", lastError: null },
       })
     );
   });

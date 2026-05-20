@@ -79,6 +79,7 @@ export async function dismissStaleSkill(reportId: string, formData: FormData): P
   const id = formData.get("id") as string;
   if (!id) return;
   await prisma.skill.delete({ where: { id } });
+  revalidatePath("/admin/skills");
   revalidatePath("/admin/agents/reports");
   revalidatePath(`/admin/agents/reports/${reportId}`);
   revalidatePath("/");
