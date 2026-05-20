@@ -24,6 +24,7 @@ export function usePollJob(callbacks: PollJobCallbacks) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countRef = useRef(0);
   const fetchingRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const stop = useCallback(() => {
     if (intervalRef.current !== null) {
@@ -43,7 +44,7 @@ export function usePollJob(callbacks: PollJobCallbacks) {
 
         if (countRef.current >= POLL_MAX) {
           stop();
-          cbRef.current.onTimeout?.();
+          if (mountedRef.current) cbRef.current.onTimeout?.();
           return;
         }
 
@@ -52,6 +53,7 @@ export function usePollJob(callbacks: PollJobCallbacks) {
 
         try {
           const res = await fetch(`/api/admin/career/status/${jobId}`);
+          if (!mountedRef.current) return;
           if (!res.ok) {
             stop();
             cbRef.current.onStatus("error");
@@ -59,6 +61,7 @@ export function usePollJob(callbacks: PollJobCallbacks) {
             return;
           }
           const data = (await res.json()) as StatusResponse;
+          if (!mountedRef.current) return;
 
           if (data.log) cbRef.current.onLog?.(data.log);
 
@@ -79,6 +82,7 @@ export function usePollJob(callbacks: PollJobCallbacks) {
             cbRef.current.onError?.();
           }
         } catch {
+          if (!mountedRef.current) return;
           stop();
           cbRef.current.onStatus("error");
           cbRef.current.onError?.();
@@ -90,7 +94,13 @@ export function usePollJob(callbacks: PollJobCallbacks) {
     [stop]
   );
 
-  useEffect(() => stop, [stop]);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      stop();
+    };
+  }, [stop]);
 
   return { start, stop };
 }
